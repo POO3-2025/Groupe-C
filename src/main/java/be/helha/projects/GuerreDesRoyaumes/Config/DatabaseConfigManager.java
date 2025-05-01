@@ -60,7 +60,7 @@ public class DatabaseConfigManager {
             String user = creds.get("UserName").getAsString();
             String password = creds.get("Password").getAsString();
 
-            String dbUrl = "jdbc:" + dbType + "://" + host + ":" + port + "/" + dbName + "?serverTimezone=UTC";
+            String dbUrl = "jdbc:sqlserver://" + host + ":" + port + ";databaseName=" + dbName + ";encrypt=false";
 
             return DriverManager.getConnection(dbUrl, user, password);
 
@@ -78,7 +78,8 @@ public class DatabaseConfigManager {
                         dbConfig.get("UserName").getAsString() + ":" +
                         dbConfig.get("Password").getAsString() + "@" +
                         dbConfig.get("HostName").getAsString() + ":" +
-                        dbConfig.get("Port").getAsString();
+                        dbConfig.get("Port").getAsString() + "/" +
+                        dbConfig.get("DBName").getAsString() + "?authSource=admin";
 
                 mongoClient = MongoClients.create(uri);
             }

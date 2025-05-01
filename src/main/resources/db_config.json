@@ -1,12 +1,12 @@
 {
   "db": {
-    "mysql": {
+    "sqlserver": {
       "BDCredentials": {
-        "DBType": "mysql",
+        "DBType": "sqlserver",
         "HostName": "localhost",
-        "Port": "3306",
+        "Port": "1433",
         "DBName": "guerre_des_royaumes",
-        "UserName": "root",
+        "UserName": "sa",
         "Password": "Messadine4013"
       }
     },
@@ -16,8 +16,8 @@
         "HostName": "localhost",
         "Port": "27017",
         "DBName": "guerre_des_royaumes",
-        "UserName": "root",
-        "Password": ""
+        "UserName": "sa",
+        "Password": "1234"
       }
     }
   }
