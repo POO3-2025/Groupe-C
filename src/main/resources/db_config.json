@@ -1,0 +1,24 @@
+{
+  "db": {
+    "mysql": {
+      "BDCredentials": {
+        "DBType": "mysql",
+        "HostName": "localhost",
+        "Port": "3306",
+        "DBName": "guerre_des_royaumes",
+        "UserName": "root",
+        "Password": "Messadine4013"
+      }
+    },
+    "mongodb": {
+      "BDCredentials": {
+        "DBType": "mongodb",
+        "HostName": "localhost",
+        "Port": "27017",
+        "DBName": "guerre_des_royaumes",
+        "UserName": "root",
+        "Password": ""
+      }
+    }
+  }
+}
