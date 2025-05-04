@@ -1,70 +1,61 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
-import be.helha.projects.GuerreDesRoyaumes.Config.DatabaseConfigManager;
-import com.google.gson.JsonObject;
-import com.mongodb.client.MongoDatabase;
+import be.helha.projects.GuerreDesRoyaumes.Model.*;
+import be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage.Archer;
+import be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage.Guerrier;
+import be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage.Personnage;
 
-import java.sql.Connection;
+import java.util.Scanner;
 
 public class Main {
+
     public static void main(String[] args) {
-        // Récupérer l'instance du manager
-        DatabaseConfigManager configManager = DatabaseConfigManager.getInstance();
+        Scanner scanner = new Scanner(System.in);
 
-        // --- Tester la récupération des données sqlserver ---
-        System.out.println("===== Test récupération sqlserver =====");
-        JsonObject mysqlConfig = configManager.getConfig()
-                .getAsJsonObject("db")
-                .getAsJsonObject("sqlserver")
-                .getAsJsonObject("BDCredentials");
-        System.out.println("Infos sqlserver :");
-        System.out.println("Host: " + mysqlConfig.get("HostName").getAsString());
-        System.out.println("Port: " + mysqlConfig.get("Port").getAsString());
-        System.out.println("Database: " + mysqlConfig.get("DBName").getAsString());
-        System.out.println("User: " + mysqlConfig.get("UserName").getAsString());
-        System.out.println("Password: " + mysqlConfig.get("Password").getAsString());
+        // Demander le nom du joueur
+        System.out.print("Entrez le nom de votre joueur : ");
+        String joueurNom = scanner.nextLine();
 
-        // --- Tester la connexion sqlserver ---
-        System.out.println("\n===== Test connexion sqlserver =====");
-        try (Connection conn = configManager.getSQLConnection("sqlserver")) {
-            if (conn != null && !conn.isClosed()) {
-                System.out.println("Vous êtes bien connecté à sqlserver !");
-            } else {
-                System.out.println("Connexion sqlserver échouée !");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Erreur de connexion sqlserver : ");
+        // Créer le joueur
+        Joueur joueur = new Joueur(joueurNom);
+        System.out.println("Bienvenue, " + joueur.getNom() + " !");
+
+        // Choisir le personnage
+        System.out.println("\nChoisissez un personnage : ");
+        System.out.println("1 - Guerrier");
+        System.out.println("2 - Mage");
+        System.out.print("Entrez le numéro du personnage : ");
+        int choixPersonnage = scanner.nextInt();
+        scanner.nextLine();  // Pour consommer le '\n' restant après nextInt()
+
+        Personnage personnage = null;
+        Competence competence = null;
+        Item arme = null;
+
+        // Affecter le personnage, l'arme et la compétence en fonction du choix
+        switch (choixPersonnage) {
+            case 1: // Guerrier
+                personnage = new Guerrier("Arthur", "Un guerrier féroce avec une grande hache.");
+                break;
+            case 2: // Mage
+                personnage = new Archer("Merlin", "Un mage puissant maîtrisant les éléments.");
+                break;
+            default:
+                System.out.println("Choix invalide.");
+                return;  // Fin du programme si choix invalide
         }
 
-        // --- Tester la récupération des données MongoDB ---
-        System.out.println("\n===== Test récupération MongoDB =====");
-        JsonObject mongoConfig = configManager.getConfig()
-                .getAsJsonObject("db")
-                .getAsJsonObject("mongodb")
-                .getAsJsonObject("BDCredentials");
-        System.out.println("Infos MongoDB :");
-        System.out.println("Host: " + mongoConfig.get("HostName").getAsString());
-        System.out.println("Port: " + mongoConfig.get("Port").getAsString());
-        System.out.println("Database: " + mongoConfig.get("DBName").getAsString());
-        System.out.println("User: " + mongoConfig.get("UserName").getAsString());
-        System.out.println("Password: " + mongoConfig.get("Password").getAsString());
+        // Affecter l'arme et la compétence au personnage
+        personnage.getInventaire().ajouterItem(arme);  // Ajout de l'arme à l'inventaire du personnage
 
-        // --- Tester la connexion MongoDB ---
-        System.out.println("\n===== Test connexion MongoDB =====");
-        try {
-            MongoDatabase mongoDb = configManager.getMongoDatabase("mongodb");
-            if (mongoDb != null) {
-                System.out.println("Vous êtes bien connecté à MongoDB !");
-            } else {
-                System.out.println("Connexion MongoDB échouée !");
-            }
-        } catch (Exception e) {
+        // Afficher les détails du personnage
+        System.out.println("\nPersonnage choisi : " + personnage.getNom());
+        System.out.println("Description : " + personnage.getDescription());
+        System.out.println("Compétence bonus : " + competence.getNom() + " - " + competence.getDescription());
+        personnage.getInventaire().afficherInventaire();
 
-            System.out.println("Erreur de connexion MongoDB : " + e.getMessage());
-        }
-
-        // Fermer le client MongoDB proprement
-        configManager.closeMongoClient();
+        // Simuler une attaque avec l'arme
+        System.out.println("\nLe personnage attaque !");
+        personnage.attaquer();
     }
 }
