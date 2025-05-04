@@ -1,8 +1,8 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage;
 
-public class Guerrier extends Personnage {
-    public Guerrier() {
-        super("Guerrier",100, 40, 20);
+public class Titan extends Personnage {
+    public Titan() {
+        super("Titan",200, 25, 30);
     }
 
     @Override

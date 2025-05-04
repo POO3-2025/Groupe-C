@@ -1,8 +1,8 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
 import be.helha.projects.GuerreDesRoyaumes.Model.*;
-import be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage.Archer;
-import be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage.Guerrier;
+import be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage.Golem;
+import be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage.Voleur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage.Personnage;
 
 import java.util.Scanner;
@@ -35,10 +35,10 @@ public class Main {
         // Affecter le personnage, l'arme et la compétence en fonction du choix
         switch (choixPersonnage) {
             case 1: // Guerrier
-                personnage = new Guerrier("Arthur", "Un guerrier féroce avec une grande hache.");
+                personnage = new Voleur("Arthur", "Un guerrier féroce avec une grande hache.");
                 break;
             case 2: // Mage
-                personnage = new Archer("Merlin", "Un mage puissant maîtrisant les éléments.");
+                personnage = new Golem("Merlin", "Un mage puissant maîtrisant les éléments.");
                 break;
             default:
                 System.out.println("Choix invalide.");

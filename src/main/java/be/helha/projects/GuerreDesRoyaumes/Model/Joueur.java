@@ -15,6 +15,7 @@ public class Joueur {
     private Personnage personnage;
     private Inventaire inventaire;
 
+    //Construteur
     public Joueur(int id, String nom, String prenom, String pseudo, String email, String motDePasse, int argent , Royaume royaume, Personnage personnage, Inventaire inventaire) {
         this.id = id;
         this.nom = nom;
@@ -28,91 +29,74 @@ public class Joueur {
         this.inventaire = inventaire;
     }
 
-
+    //Getteur
     public int getId() {
         return id;
     }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
     public String getNom() {
         return nom;
     }
-
-    public void setNom(String nom) {
-        this.nom = nom;
-    }
-
     public String getPrenom() {
         return prenom;
     }
-
-    public void setPrenom(String prenom) {
-        this.prenom = prenom;
-    }
-
     public String getPseudo() {
         return pseudo;
     }
-
-    public void setPseudo(String pseudo) {
-        this.pseudo = pseudo;
-    }
-
     public String getEmail() {
         return email;
     }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
     public String getMotDePasse() {
         return motDePasse;
     }
-
-    public void setMotDePasse(String motDePasse) {
-        this.motDePasse = motDePasse;
-    }
-
     public Royaume getRoyaume() {
         return royaume;
     }
-
-    public void setRoyaume(Royaume royaume) {
-        this.royaume = royaume;
-    }
-
     public Personnage getPersonnage() {
         return personnage;
     }
-
-    public void setPersonnage(Personnage personnage) {
-        this.personnage = personnage;
-    }
-
     public Inventaire getInventaire() {
         return inventaire;
     }
-
-    public void setInventaire(Inventaire inventaire) {
-        this.inventaire = inventaire;
-    }
-
     public int getArgent() {
         return argent;
     }
 
+    //Setteur
+    public void setId(int id) {
+        this.id = id;
+    }
+    public void setNom(String nom) {
+        this.nom = nom;
+    }
+    public void setPrenom(String prenom) {
+        this.prenom = prenom;
+    }
+    public void setPseudo(String pseudo) {
+        this.pseudo = pseudo;
+    }
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    public void setMotDePasse(String motDePasse) {
+        this.motDePasse = motDePasse;
+    }
+    public void setRoyaume(Royaume royaume) {
+        this.royaume = royaume;
+    }
+    public void setPersonnage(Personnage personnage) {
+        this.personnage = personnage;
+    }
+    public void setInventaire(Inventaire inventaire) {
+        this.inventaire = inventaire;
+    }
     public void setArgent(int argent) {
         this.argent = argent;
     }
 
+
     public void ajouterArgent(int montant) {
         this.argent += montant;
     }
-
     public void retirerArgent(int montant) {
         if (this.argent >= montant) {
             this.argent -= montant;
@@ -121,4 +105,15 @@ public class Joueur {
         }
     }
 
+
+    @Override
+    public String toString() {
+        return  "\nNom        = " + nom +
+                "\nPrenom     = " + prenom +
+                "\nPseudo     = " + pseudo +
+                "\nEmail      = " + email +
+                "\nRoyaume    = " + royaume +
+                "\nPersonnage = " + personnage +
+                "\nArgent     = " + argent;
+    }
 }

@@ -7,7 +7,7 @@
         "Port": "1433",
         "DBName": "guerre_des_royaumes",
         "UserName": "sa",
-        "Password": "Messadine4013"
+        "Password": "1234"
       }
     },
     "mongodb": {
@@ -16,8 +16,8 @@
         "HostName": "localhost",
         "Port": "27017",
         "DBName": "guerre_des_royaumes",
-        "UserName": "sa",
-        "Password": "1234"
+        "UserName": "root",
+        "Password": ""
       }
     }
   }

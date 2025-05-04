@@ -3,84 +3,50 @@ package be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence;
 
 public abstract class Personnage {
-
     private String nom;
-    private String description;
     private int vie;
-    private int force;
-    private int defense;
-    private int vitesse;
+    private int degats;
+    private int resistance;
 
-
-    private Competence competenceBonus;
-
-
-    public Personnage(String nom, String description, int vie, int force, int defense, int vitesse, int argent, Competence competenceBonus) {
+    //Constructeur
+    public Personnage(String nom, int vie, int degats, int resistance) {
         this.nom = nom;
-        this.description = description;
         this.vie = vie;
-        this.force = force;
-        this.defense = defense;
-        this.vitesse = vitesse;
-        this.competenceBonus = competenceBonus;
+        this.degats = degats;
+        this.resistance = resistance;
     }
 
+    //Getteur
     public String getNom() {
         return nom;
     }
-
-    public void setNom(String nom) {
-        this.nom = nom;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
     public int getVie() {
         return vie;
     }
+    public int getDegats() {
+        return degats;
+    }
+    public int getResistance() {
+        return resistance;
+    }
 
+    //Setteur
+    public void setNom(String nom) {
+        this.nom = nom;
+    }
     public void setVie(int vie) {
         this.vie = vie;
     }
-
-    public int getForce() {
-        return force;
+    public void setDegats(int degats) {
+        this.degats = degats;
     }
-
-    public void setForce(int force) {
-        this.force = force;
-    }
-
-    public int getDefense() {
-        return defense;
-    }
-
-    public void setDefense(int defense) {
-        this.defense = defense;
-    }
-
-    public int getVitesse() {
-        return vitesse;
-    }
-
-    public void setVitesse(int vitesse) {
-        this.vitesse = vitesse;
-    }
-
-    public Competence getcompetenceBonus() {
-        return competenceBonus;
-    }
-
-    public void setcompetenceBonus(Competence competenceBonus) {
-        this.competenceBonus = competenceBonus;
+    public void setResistance(int resistance) {
+        this.resistance = resistance;
     }
 
     public abstract void attaquer();
+    public abstract void attaquerSpecial();
+    public abstract void defense();
+    public abstract void UtilisationObjet();
 
 }
