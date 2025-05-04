@@ -121,4 +121,31 @@ public class Joueur {
         }
     }
 
+    public int getNiveauRoyaume() {
+        return royaume.getNiveau();  // Assurez-vous que le royaume a une méthode getNiveau()
+    }
+
+    public void setNiveauRoyaume(int niveau) {
+        royaume.setNiveau(niveau); // Assurez-vous que le royaume a une méthode setNiveau()
+    }
+    // Méthode pour gérer la victoire ou la défaite
+    public void gestionCombat(Joueur adversaire, boolean aGagne) {
+        // Si le joueur a gagné
+        if (aGagne) {
+            // Le gagnant reçoit 250 d'argent
+            this.ajouterArgent(250);
+
+            // Le gagnant gagne un niveau de royaume
+            this.setNiveauRoyaume(this.getNiveauRoyaume() + 1);
+
+            System.out.println(this.nom + " a gagné et a gagné 250 d'argent et un niveau de royaume.");
+        } else {
+            // Le perdant perd un niveau de royaume, mais ne descend pas en dessous de 1
+            int niveauPerdant = adversaire.getNiveauRoyaume();
+            if (niveauPerdant > 1) {
+                adversaire.setNiveauRoyaume(niveauPerdant - 1);
+                System.out.println(adversaire.nom + " a perdu un niveau de royaume.");
+            }
+        }
+    }
 }
