@@ -15,7 +15,7 @@ public class Joueur {
     private Personnage personnage;
     private Inventaire inventaire;
 
-    public Joueur(int id, String nom, String prenom, String pseudo, String email, String motDePasse, String argent, int point_de_vie, Royaume royaume, Personnage personnage, Competence competence_Depart, Inventaire inventaire) {
+    public Joueur(int id, String nom, String prenom, String pseudo, String email, String motDePasse, int argent , Royaume royaume, Personnage personnage, Inventaire inventaire) {
         this.id = id;
         this.nom = nom;
         this.prenom = prenom;
@@ -23,10 +23,8 @@ public class Joueur {
         this.email = email;
         this.motDePasse = motDePasse;
         this.argent = argent;
-        this.point_de_vie = point_de_vie;
         this.royaume = royaume;
         this.personnage = personnage;
-        this.competence_Depart = competence_Depart;
         this.inventaire = inventaire;
     }
 
