@@ -1,7 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Model;
 
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
-import be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage.Personnage;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 
 public class Joueur {
     private int id;
@@ -95,16 +95,19 @@ public class Joueur {
 
 
     public void ajouterArgent(int montant) {
-        this.argent += montant;
+        if (montant > 0) {
+            this.argent += montant;
+        } else {
+            System.out.println("Montant à ajouter doit être positif.");
+        }
     }
     public void retirerArgent(int montant) {
-        if (this.argent >= montant) {
+        if (montant <= this.argent) {
             this.argent -= montant;
         } else {
             System.out.println("Pas assez d'argent.");
         }
     }
-
 
     @Override
     public String toString() {

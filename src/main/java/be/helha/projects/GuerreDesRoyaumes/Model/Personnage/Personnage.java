@@ -1,6 +1,4 @@
-package be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage;
-
-import be.helha.projects.GuerreDesRoyaumes.Model.Competence;
+package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
 public abstract class Personnage {
     private String nom;
@@ -49,4 +47,8 @@ public abstract class Personnage {
     public abstract void defense();
     public abstract void UtilisationObjet();
 
+    @Override
+    public String toString() {
+        return nom + " vie = " + vie + " degats = " + degats + " resistance = " + resistance;
+    }
 }

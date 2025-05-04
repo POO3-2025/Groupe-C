@@ -1,6 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
-import be.helha.projects.GuerreDesRoyaumes.Model.Competence;
+import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.Competence;
 
 public class TestCompetence {
 

@@ -1,8 +1,8 @@
-package be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage;
+package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
-public class Guerrier extends Personnage {
-    public Guerrier() {
-        super("Guerrier",100, 40, 20);
+public class Golem extends Personnage {
+    public Golem() {
+        super("Golem",120, 18, 50);
     }
 
     @Override

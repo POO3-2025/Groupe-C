@@ -1,6 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.DAO;
 
-import be.helha.projects.GuerreDesRoyaumes.Model.Competence;
+import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.Competence;
 import java.util.List;
 
 public interface CompetenceDAO {

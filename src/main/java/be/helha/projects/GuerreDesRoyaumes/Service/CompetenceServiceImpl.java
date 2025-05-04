@@ -2,7 +2,7 @@ package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.Service.CompetenceService;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CompetenceDAO;
-import be.helha.projects.GuerreDesRoyaumes.Model.Competence;
+import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.Competence;
 import java.util.List;
 
 public class CompetenceServiceImpl implements CompetenceService {

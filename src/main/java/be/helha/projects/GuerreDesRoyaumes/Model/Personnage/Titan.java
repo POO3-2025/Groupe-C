@@ -1,4 +1,4 @@
-package be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage;
+package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
 public class Titan extends Personnage {
     public Titan() {

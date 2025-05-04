@@ -1,7 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.CompetenceDAO;
-import be.helha.projects.GuerreDesRoyaumes.Model.Competence;
+import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.Competence;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;

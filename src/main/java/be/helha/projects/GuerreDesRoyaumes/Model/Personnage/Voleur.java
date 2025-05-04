@@ -1,8 +1,8 @@
-package be.helha.projects.GuerreDesRoyaumes.Model.Perssonnage;
+package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
-public class Golem extends Personnage {
-    public Golem() {
-        super("Golem",120, 18, 50);
+public class Voleur extends Personnage {
+    public Voleur() {
+        super("Voleur",90, 15, 15);
     }
 
     @Override
@@ -25,3 +25,5 @@ public class Golem extends Personnage {
         System.out.println(getNom() + " utilise un objet");
     }
 }
+
+// TODO Le voleur doit gagner 2x plus d'argent à la fin d'un combat

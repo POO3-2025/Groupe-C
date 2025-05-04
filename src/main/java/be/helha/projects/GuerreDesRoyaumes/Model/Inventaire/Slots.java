@@ -1,29 +1,30 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Inventaire;
 
-import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Items;
 
 public class Slots {
 
-    private Item item;
+    private Items items;
     private int quantity;
 
-    public Slots(Item item, int quantity) {
-        this.item = item;
+    //Constructeur
+    public Slots(Items items, int quantity) {
+        this.items = items;
         this.quantity = quantity;
     }
 
-    public Item getItem() {
-        return item;
+    //Getteur
+    public Items getItem() {
+        return items;
     }
-
-    public void setItem(Item item) {
-        this.item = item;
-    }
-
     public int getQuantity() {
         return quantity;
     }
 
+    //Setteur
+    public void setItem(Items items) {
+        this.items = items;
+    }
     public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
@@ -31,5 +32,10 @@ public class Slots {
     public int add(int quantity) {
         this.quantity += quantity;
         return this.quantity;
+    }
+
+    @Override
+    public String toString() {
+        return items + "x" + quantity;
     }
 }
