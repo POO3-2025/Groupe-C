@@ -11,7 +11,7 @@ public class Joueur {
     private String pseudo;
     private String email;
     private String motDePasse;
-    private int argent;
+    private double argent;
     private Royaume royaume;
     private Personnage personnage;
     private Inventaire inventaire;
@@ -58,7 +58,7 @@ public class Joueur {
     public Inventaire getInventaire() {
         return inventaire;
     }
-    public int getArgent() {
+    public double getArgent() {
         return argent;
     }
 
@@ -90,7 +90,7 @@ public class Joueur {
     public void setInventaire(Inventaire inventaire) {
         this.inventaire = inventaire;
     }
-    public void setArgent(int argent) {
+    public void setArgent(double argent) {
         this.argent = argent;
     }
 
@@ -112,13 +112,20 @@ public class Joueur {
 
     public void acheterItem(Item item) {
         if (this.argent >= item.getPrix()) {
-            this.argent -= item.getPrix();
-            this.inventaire.ajouterItem(item);
+            // Déduit le prix de l'item du solde du joueur
+            this.argent -= (int) item.getPrix();
+
+            // Ajoute 1 item à l'inventaire
+            this.inventaire.ajouterItem(item, 1);
+
+            // Affiche le message de confirmation d'achat
             System.out.println("Achat réussi : " + item.getNom());
         } else {
+            // Si le joueur n'a pas assez d'argent
             System.out.println("Pas assez d'argent pour acheter " + item.getNom());
         }
     }
+
 
     @Override
     public String toString() {

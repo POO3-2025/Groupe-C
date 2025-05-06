@@ -2,13 +2,13 @@ package be.helha.projects.GuerreDesRoyaumes.Model.Inventaire;
 
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 
-public class Slots {
+public class Slot {
 
     private Item item;
     private int quantity;
 
     //Constructeur
-    public Slots(Item item, int quantity) {
+    public Slot(Item item, int quantity) {
         this.item = item;
         this.quantity = quantity;
     }
@@ -21,10 +21,7 @@ public class Slots {
         return quantity;
     }
 
-    //Setteur
-    public void setItem(Item item) {
-        this.item = item;
-    }
+    // Setteur
     public void setQuantity(int quantity) {
         if (quantity >= 0) {  // Vérification de la quantité
             this.quantity = quantity;
