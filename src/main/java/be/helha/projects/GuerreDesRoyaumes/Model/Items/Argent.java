@@ -1,6 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Items;
 
-public class Argent extends Items {
+public class Argent extends Item {
     int quantite;
 
     //Constructeur

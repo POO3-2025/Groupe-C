@@ -1,12 +1,13 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Items;
 
-public abstract class Items {
+public abstract class Item {
+
     private int id;
     private String nom;
     private int quantiteMax; // quantité max de l'item par slot
 
     //Constructeur
-    public Items(int id, String nom, int quantiteMax) {
+    public Item(int id, String nom, int quantiteMax) {
         this.id = id;
         this.nom = nom;
         this.quantiteMax = quantiteMax;
@@ -31,8 +32,11 @@ public abstract class Items {
         this.nom = nom;
     }
     public void setQuantiteMax(int quantiteMax) {
-        quantiteMax = quantiteMax;
+        this.quantiteMax = quantiteMax;
     }
+
+    // Méthode abstraite 'use()' à implémenter dans les classes dérivées
+    public abstract void use();
 
     @Override
     public String toString() {

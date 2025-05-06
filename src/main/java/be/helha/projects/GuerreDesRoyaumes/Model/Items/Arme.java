@@ -1,6 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Items;
 
-public class Arme extends Items {
+public class Arme extends Item {
 
     private int degats;
 
