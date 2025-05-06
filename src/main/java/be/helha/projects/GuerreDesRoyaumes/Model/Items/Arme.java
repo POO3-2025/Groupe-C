@@ -26,7 +26,7 @@ public class Arme extends Item {
         System.out.println("Vous utilisez l'arme " + getNom());
         // Logique d'utilisation de l'arme
         // Il faut l'appliquer au personnage
-        personnage.setDegats(personnage.getDegats() + degats);
+        //personnage.setDegats(personnage.getDegats() + degats);
     }
 
     @Override
