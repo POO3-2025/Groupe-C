@@ -1,6 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Model;
 
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 
 public class Joueur {
@@ -106,6 +107,16 @@ public class Joueur {
             this.argent -= montant;
         } else {
             System.out.println("Pas assez d'argent.");
+        }
+    }
+
+    public void acheterItem(Item item) {
+        if (this.argent >= item.getPrix()) {
+            this.argent -= item.getPrix();
+            this.inventaire.ajouterItem(item);
+            System.out.println("Achat réussi : " + item.getNom());
+        } else {
+            System.out.println("Pas assez d'argent pour acheter " + item.getNom());
         }
     }
 

@@ -1,11 +1,13 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Items;
 
+import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+
 public class Argent extends Item {
     int quantite;
 
     //Constructeur
-    public Argent(int id, String nom, int quantiteMax, int quantite) {
-        super(id, "TerraCoin", quantiteMax, "Argent");
+    public Argent(int id, String nom, int quantiteMax, int quantite ,double prix) {
+        super(id, "TerraCoin", quantiteMax, "Argent" , 0);
         this.quantite = quantite;
     }
 
@@ -19,9 +21,16 @@ public class Argent extends Item {
         this.quantite = quantite;
     }
 
-    public void use() {
-        System.out.println("Vous utilisez l'argent " + getNom());
+    public void use(Joueur joueur) {
         // Logique d'utilisation de l'argent
+        joueur.ajouterArgent(this.quantite);
+        System.out.println("Vous avez utilisé " + this.quantite + " " + getNom());
+        // Logique d'utilisation de l'argent
+    }
+
+    @Override
+    public void use() {
+
     }
 
     @Override

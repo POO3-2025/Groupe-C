@@ -3,8 +3,8 @@ package be.helha.projects.GuerreDesRoyaumes.Model.Items;
 public class Bouclier extends Item {
     private int defense; // Represente la valeur a ajouter a la resistance du personnage
 
-    public Bouclier(int id, String nom, int quantiteMax, int defense) {
-        super(id, nom, quantiteMax, "Bouclier");
+    public Bouclier(int id, String nom, int quantiteMax, int defense, double prix) {
+        super(id, nom, quantiteMax, "Bouclier", prix);
         this.defense = defense;
     }
 
