@@ -17,7 +17,7 @@ public class Arme extends Item {
 
     //Setteur
     public void setDegats(int degats) {
-        this.degats = this.degats;
+        this.degats = degats;
     }
 
     public void use() {
