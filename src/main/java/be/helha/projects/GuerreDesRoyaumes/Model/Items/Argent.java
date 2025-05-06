@@ -5,7 +5,7 @@ public class Argent extends Item {
 
     //Constructeur
     public Argent(int id, String nom, int quantiteMax, int quantite) {
-        super(id, nom, quantiteMax);
+        super(id, "TerraCoin", quantiteMax, "Argent");
         this.quantite = quantite;
     }
 
@@ -19,8 +19,13 @@ public class Argent extends Item {
         this.quantite = quantite;
     }
 
+    public void use() {
+        System.out.println("Vous utilisez l'argent " + getNom());
+        // Logique d'utilisation de l'argent
+    }
+
     @Override
     public String toString() {
-        return quantite + "€";
+        return getNom() + " – Quantité : " + quantite;
     }
 }

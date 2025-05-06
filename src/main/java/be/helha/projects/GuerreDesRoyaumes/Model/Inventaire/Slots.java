@@ -43,6 +43,16 @@ public class Slots {
         return this.quantity;
     }
 
+    // Retirer des quantités d'items
+    public int remove(int quantityToRemove) {
+        if (quantityToRemove > 0 && quantityToRemove <= this.quantity) {  // Vérification de la quantité à retirer
+            this.quantity -= quantityToRemove;
+        } else {
+            throw new IllegalArgumentException("La quantité à retirer doit être positive et inférieure ou égale à la quantité actuelle.");
+        }
+        return this.quantity;
+    }
+    // Méthode pour afficher le contenu du slot
     @Override
     public String toString() {
         return item + "x" + quantity;

@@ -103,4 +103,24 @@ public class Coffre {
         System.out.println("L'item n'est pas présent dans le coffre.");
         return false;
     }
+
+    public List<Arme> getToutesLesArmes() {
+        List<Arme> armes = new ArrayList<>();
+        for (Slots slot : slots) {
+            if (slot != null && slot.getItem() instanceof Arme) {
+                armes.add((Arme) slot.getItem());
+            }
+        }
+        return armes;
+    }
+
+    public List<Bouclier> getTousLesBoucliers() {
+        List<Bouclier> boucliers = new ArrayList<>();
+        for (Slots slot : slots) {
+            if (slot != null && slot.getItem() instanceof Bouclier) {
+                boucliers.add((Bouclier) slot.getItem());
+            }
+        }
+        return boucliers;
+    }
 }

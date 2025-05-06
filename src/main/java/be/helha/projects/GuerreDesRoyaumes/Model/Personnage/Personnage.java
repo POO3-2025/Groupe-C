@@ -1,10 +1,15 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
+
 public abstract class Personnage {
-    private String nom;
-    private int vie;
-    private int degats;
-    private int resistance;
+    private String nom; // represente le nom du personnage
+    private int vie; // represente le niveau de vie de base du personnage
+    private int degats; // represente le niveau d'attaque de base du personnage
+    private int resistance; // represente le niveau de defense de base du personnage
+    private Arme armeEquipee; // represente l'arme equipee par le personnage
+    private Bouclier bouclierEquipee; // represente le bouclier equipee par le personnage
 
     //Constructeur
     public Personnage(String nom, int vie, int degats, int resistance) {
@@ -13,6 +18,8 @@ public abstract class Personnage {
         this.degats = degats;
         this.resistance = resistance;
     }
+
+
 
     //Getteur
     public String getNom() {
@@ -42,6 +49,21 @@ public abstract class Personnage {
         this.resistance = resistance;
     }
 
+    public int getAttaqueTotale() {
+        return degats + (armeEquipee != null ? armeEquipee.getDegats() : 0);
+    }
+
+    public int getDefenseTotale() {
+        return resistance + (bouclierEquipee != null ? bouclierEquipee.getDefense() : 0);
+    }
+
+    public void equiperArme(Arme arme) {
+        this.armeEquipee = arme;
+    }
+
+    public void equiperBouclier(Bouclier bouclier) {
+        this.bouclierEquipee = bouclier;
+    }
     public abstract void attaquer();
     public abstract void attaquerSpecial();
     public abstract void defense();
