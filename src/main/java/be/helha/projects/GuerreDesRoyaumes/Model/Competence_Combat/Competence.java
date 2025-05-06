@@ -7,15 +7,15 @@ public abstract class Competence implements AppliquerEffet {
     private String nom;
     private int prix;
     private String description;
-    private String type;
 
-    public Competence(String id, String nom, int prix, String description, String type) {
-        validatePrice(prix);
+    public Competence(String id, String nom, int prix, String description) {
+        if (prix < 0) {
+            throw new IllegalArgumentException("Le prix ne peut pas être négatif");
+        }
         this.id = id;
         this.nom = nom;
         this.prix = prix;
         this.description = description;
-        this.type = type;
     }
 
     private void validatePrice(int prix) {
@@ -30,14 +30,12 @@ public abstract class Competence implements AppliquerEffet {
     public String getNom() { return nom; }
     public int getPrix() { return prix; }
     public String getDescription() { return description; }
-    public String getType() { return type; }
-
-    //TODO appliquer l'effet une fois qu'il est acheter et que la partie commence l'effet est actif pendant toute la partie
-    // public abstract void appliquerEffet( );
-
 
     // Méthode abstraite pour appliquer l'effet (chaque compétence doit la définir)
     @Override
     public abstract void appliquerEffet(Personnage personnage);  // Applique l'effet spécifique sur le personnage
 
+    public String toString() {
+        return nom + " (" + description + ") - Prix : " + prix;
+    }
 }
