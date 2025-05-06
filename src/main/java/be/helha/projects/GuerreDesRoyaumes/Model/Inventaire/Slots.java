@@ -1,41 +1,50 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Inventaire;
 
-import be.helha.projects.GuerreDesRoyaumes.Model.Items.Items;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 
 public class Slots {
 
-    private Items items;
+    private Item item;
     private int quantity;
 
     //Constructeur
-    public Slots(Items items, int quantity) {
-        this.items = items;
+    public Slots(Item item, int quantity) {
+        this.item = item;
         this.quantity = quantity;
     }
 
     //Getteur
-    public Items getItem() {
-        return items;
+    public Item getItem() {
+        return item;
     }
     public int getQuantity() {
         return quantity;
     }
 
     //Setteur
-    public void setItem(Items items) {
-        this.items = items;
+    public void setItem(Item item) {
+        this.item = item;
     }
     public void setQuantity(int quantity) {
-        this.quantity = quantity;
+        if (quantity >= 0) {  // Vérification de la quantité
+            this.quantity = quantity;
+        } else {
+            throw new IllegalArgumentException("La quantité ne peut pas être négative.");
+        }
     }
 
-    public int add(int quantity) {
-        this.quantity += quantity;
+    // Ajouter des quantités d'items
+    public int add(int quantityToAdd) {
+        if (quantityToAdd > 0) {  // Ajout d'une validation pour une quantité positive
+            this.quantity += quantityToAdd;
+        } else {
+            throw new IllegalArgumentException("La quantité à ajouter doit être positive.");
+        }
         return this.quantity;
     }
 
     @Override
     public String toString() {
-        return items + "x" + quantity;
+        return item + "x" + quantity;
     }
 }

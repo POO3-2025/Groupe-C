@@ -1,8 +1,5 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat;
 
-import be.helha.projects.GuerreDesRoyaumes.Model.Items.Items;
-import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.*;
-
 public class AttaqueAmelioree extends Competence {
 
     public AttaqueAmelioree() {
