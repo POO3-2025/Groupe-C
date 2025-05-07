@@ -1,10 +1,5 @@
 package be.helha.projects.GuerreDesRoyaumes.Config;
 
-/**
- * Classe contenant les informations de connexion à la base de données MySQL.
- *
- * @author Khabacha Loay
- */
 public class MySqlCredentials {
 
     public static final String DB_HOST = "localhost";

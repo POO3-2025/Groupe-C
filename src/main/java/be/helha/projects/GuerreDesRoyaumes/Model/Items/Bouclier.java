@@ -2,7 +2,7 @@ package be.helha.projects.GuerreDesRoyaumes.Model.Items;
 
 public class Bouclier extends Item {
 
-    private double defense; // Represente la valeur a ajouter a la resistance du personnage
+    private double defense;
 
     public Bouclier(int id, String nom, int quantiteMax, int prix, double defense) {
         super(id, nom, quantiteMax, "Bouclier", prix);
@@ -21,7 +21,7 @@ public class Bouclier extends Item {
 
     @Override
     public void use() {
-        System.out.println("Vous utilisez le bouclier " + getNom());
+        System.out.println("Vous utilisez " + getNom());
         // TODO Logique d'équipement du bouclier il faut l'appliquer au personnage directement apres
         // TODO qu'il est choisi les items pour le combat a chaque combat le joueur devra rechoisir l'item qu'il souhaite utiliser
     }

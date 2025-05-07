@@ -2,6 +2,7 @@ package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
@@ -56,14 +57,14 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
         }
 
         // Ajouter l'item à l'inventaire
-        Inventaire inventaire = joueur.getInventaire();
-        if (inventaire == null) {
+        Coffre coffre = joueur.getCoffre();
+        if (coffre == null) {
             throw new IllegalArgumentException("Inventaire non trouvé");
         }
 
-        boolean ajoutReussi = inventaire.ajouterItem(item, quantite);
+        boolean ajoutReussi = coffre.ajouterItem(item, quantite);
         if (!ajoutReussi) {
-            throw new IllegalArgumentException("Inventaire plein ou quantité trop élevée");
+            throw new IllegalArgumentException("Coffre plein ou quantité trop élevée");
         }
 
         // Déduire le prix

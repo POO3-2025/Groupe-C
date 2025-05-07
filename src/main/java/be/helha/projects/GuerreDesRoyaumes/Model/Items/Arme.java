@@ -4,7 +4,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 
 public class Arme extends Item {
 
-    private double degats;// degats supplementaire de l'arme qui s'ajoute aux degats de base du personnage
+    private double degats;
 
     //Constructeur
     public Arme(int id, String nom, int quantiteMax, int prix, double degats) {
@@ -23,10 +23,10 @@ public class Arme extends Item {
     }
 
     public void use() {
-        System.out.println("Vous utilisez l'arme " + getNom());
-        // Logique d'utilisation de l'arme
-        // Il faut l'appliquer au personnage
-        //personnage.setDegats(personnage.getDegats() + degats);
+        System.out.println("Vous utilisez " + getNom());
+        // TODO Logique d'utilisation de l'arme
+        // TODO Il faut l'appliquer au personnage
+        // TODO personnage.setDegats(personnage.getDegats() + degats);
     }
 
     @Override

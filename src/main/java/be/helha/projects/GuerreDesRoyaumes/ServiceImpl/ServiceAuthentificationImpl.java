@@ -2,6 +2,7 @@ package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageDAO;
+import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
@@ -27,10 +28,10 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
         // Créer un nouveau royaume et inventaire par défaut
         Royaume royaume = new Royaume(0, "Royaume de " + pseudo, 1);
-        Inventaire inventaire = new Inventaire();
+        Coffre coffre = new Coffre();
 
         // Créer le joueur (sans personnage pour l'instant)
-        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasse, 100, royaume, null, inventaire);
+        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasse, 100, royaume, null, coffre);
 
         // Persister le joueur
         joueurDAO.ajouterJoueur(joueur);

@@ -7,8 +7,8 @@ import java.util.List;
 
 public abstract class Stockage {
 
-    private List<Slot> slots;  // Liste des slots dans le stockage
-    private int maxSlots;      // Nombre maximum de slots dans le stockage
+    private List<Slot> slots;
+    private int maxSlots;
 
     // Constructeur
     public Stockage(int maxSlots) {

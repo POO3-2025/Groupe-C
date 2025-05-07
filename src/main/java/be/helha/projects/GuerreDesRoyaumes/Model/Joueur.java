@@ -1,8 +1,10 @@
 package be.helha.projects.GuerreDesRoyaumes.Model;
 
+import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
 
 public class Joueur {
     private int id;
@@ -13,10 +15,11 @@ public class Joueur {
     private int argent;
     private Royaume royaume;
     private Personnage personnage;
-    private Inventaire inventaire;
+    private Coffre coffre;
+
 
     //Construteur
-    public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent , Royaume royaume, Personnage personnage, Inventaire inventaire) {
+    public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent , Royaume royaume, Personnage personnage, Coffre coffre) {
         this.id = id;
         this.nom = nom;
         this.prenom = prenom;
@@ -25,7 +28,7 @@ public class Joueur {
         this.argent = argent;
         this.royaume = royaume;
         this.personnage = personnage;
-        this.inventaire = inventaire;
+        this.coffre = coffre;
     }
 
     public Joueur() {
@@ -55,11 +58,11 @@ public class Joueur {
     public Personnage getPersonnage() {
         return personnage;
     }
-    public Inventaire getInventaire() {
-        return inventaire;
-    }
     public int getArgent() {
         return argent;
+    }
+    public Coffre getCoffre() {
+        return coffre;
     }
 
     //Setteur
@@ -84,14 +87,15 @@ public class Joueur {
     public void setPersonnage(Personnage personnage) {
         this.personnage = personnage;
     }
-    public void setInventaire(Inventaire inventaire) {
-        this.inventaire = inventaire;
-    }
     public void setArgent(int argent) {
         this.argent = argent;
     }
+    public void setCoffre(Coffre coffre) {
+        this.coffre = coffre;
+    }
 
 
+    // Méthode pour ajouter de l'argent
     public void ajouterArgent(int montant) {
         if (montant > 0) {
             this.argent += montant;
@@ -99,6 +103,9 @@ public class Joueur {
             System.out.println("Montant à ajouter doit être positif.");
         }
     }
+
+
+    // Méthode pour retirer de l'argent
     public void retirerArgent(int montant) {
         if (montant <= this.argent) {
             this.argent -= montant;
@@ -107,13 +114,25 @@ public class Joueur {
         }
     }
 
+    // Méthode pour gagner de l'argent
+    public void gagnerArgent(int montant) {
+        if (this.personnage instanceof Voleur) {
+            // Si le personnage est un voleur, l'argent gagné est doublé
+            montant *= 2;
+            System.out.println("Le voleur gagne " + montant + " TerraCoin (argent doublé).");
+        } else {
+            System.out.println("Le joueur gagne " + montant + " TerraCoin.");
+        }
+        ajouterArgent(montant); // Ajoute l'argent gagné
+    }
+
     public void acheterItem(Item item) {
         if (this.argent >= item.getPrix()) {
             // Déduit le prix de l'item du solde du joueur
-            this.argent -= (int) item.getPrix();
+            this.argent -= item.getPrix();
 
-            // Ajoute 1 item à l'inventaire
-            this.inventaire.ajouterItem(item, 1);
+            // Ajoute 1 item au coffre du joueur
+            this.coffre.ajouterItem(item, 1);
 
             // Affiche le message de confirmation d'achat
             System.out.println("Achat réussi : " + item.getNom());
@@ -122,7 +141,6 @@ public class Joueur {
             System.out.println("Pas assez d'argent pour acheter " + item.getNom());
         }
     }
-
 
     @Override
     public String toString() {

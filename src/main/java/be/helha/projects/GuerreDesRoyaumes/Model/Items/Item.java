@@ -4,9 +4,9 @@ public abstract class Item {
 
     private int id;
     private String nom;
-    private int quantiteMax; // quantité max de l'item par slot
-    private String type;// type de l'item (ex: arme, bouclier, etc.)
-    private int prix; // prix de l'item en TerraCoin
+    private int quantiteMax;
+    private String type;
+    private int prix;
 
     //Constructeur
     public Item(int id, String nom, int quantiteMax, String type, int prix) {

@@ -1,8 +1,8 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
-import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 
@@ -52,17 +52,20 @@ public class JoueurDAOImpl implements JoueurDAO {
         }
     }
 
-    private void creerJoueuroSiInexistante() {
+    private void creerTableJoueuroSiInexistante() {
         String createTableQuery = """
         IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='joueur' AND xtype='U')
-        CREATE TABLE Joueur (
-            id INT PRIMARY KEY, 
-            nom String NOT NULL,
-            prenom String NOT NULL,
-            pseudo String NOT NULL,
-            motDePasse String NOT NULL
-        )
-         """;
+        BEGIN
+            CREATE TABLE Joueur (
+                id_joueur INT PRIMARY KEY,
+                nom_joueur NVARCHAR(255) NOT NULL,
+                prenom_joueur NVARCHAR(255) NOT NULL,
+                pseudo_joueur NVARCHAR(255) NOT NULL,
+                motDePasse_joueur NVARCHAR(255) NOT NULL,
+                argent_joueur INT NOT NULL
+            )
+        END
+        """;
 
         try (PreparedStatement statement = connection.prepareStatement(createTableQuery)) {
             statement.executeUpdate();
@@ -75,13 +78,13 @@ public class JoueurDAOImpl implements JoueurDAO {
     // Create
     @Override
     public void ajouterJoueur(Joueur joueur) {
-        String sql = "INSERT INTO joueurs (nom, prenom, pseudo, motDePasse, argent) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO joueurs (nom_joueur, prenom_joueur, pseudo_joueur, motDePasse_joueur, argent_joueur) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, joueur.getNom());
             statement.setString(2, joueur.getPrenom());
             statement.setString(3, joueur.getPseudo());
-            statement.setString(5, joueur.getMotDePasse());
-            statement.setInt(6, joueur.getArgent());
+            statement.setString(4, joueur.getMotDePasse());
+            statement.setInt(5, joueur.getArgent());
             statement.executeUpdate();
 
             ResultSet generatedKeys = statement.getGeneratedKeys();
@@ -96,7 +99,7 @@ public class JoueurDAOImpl implements JoueurDAO {
     // Read
     @Override
     public Joueur obtenirJoueurParId(int id) {
-        String sql = "SELECT * FROM joueurs WHERE id = ?";
+        String sql = "SELECT * FROM joueur WHERE id_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
@@ -111,7 +114,7 @@ public class JoueurDAOImpl implements JoueurDAO {
 
     @Override
     public Joueur obtenirJoueurParPseudo(String pseudo) {
-        String sql = "SELECT * FROM joueurs WHERE pseudo = ?";
+        String sql = "SELECT * FROM joueur WHERE pseudo_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, pseudo);
             ResultSet resultSet = statement.executeQuery();
@@ -127,7 +130,7 @@ public class JoueurDAOImpl implements JoueurDAO {
     @Override
     public List<Joueur> obtenirTousLesJoueurs() {
         List<Joueur> joueurs = new ArrayList<>();
-        String sql = "SELECT * FROM joueurs";
+        String sql = "SELECT * FROM joueur";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -142,14 +145,14 @@ public class JoueurDAOImpl implements JoueurDAO {
     // Update
     @Override
     public void mettreAJourJoueur(Joueur joueur) {
-        String sql = "UPDATE joueurs SET nom = ?, prenom = ?, pseudo = ?, motDePasse = ?, argent = ? WHERE id = ?";
+        String sql = "UPDATE joueurs SET nom_joueur = ?, prenom_joueur = ?, pseudo_joueur = ?, motDePasse_joueur = ?, argent_joueur = ? WHERE id_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, joueur.getNom());
             statement.setString(2, joueur.getPrenom());
             statement.setString(3, joueur.getPseudo());
-            statement.setString(5, joueur.getMotDePasse());
-            statement.setInt(6, joueur.getArgent());
-            statement.setInt(7, joueur.getId());
+            statement.setString(4, joueur.getMotDePasse());
+            statement.setInt(5, joueur.getArgent());
+            statement.setInt(6, joueur.getId());
             statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -159,7 +162,7 @@ public class JoueurDAOImpl implements JoueurDAO {
     // Delete
     @Override
     public void supprimerJoueur(int id) {
-        String sql = "DELETE FROM joueurs WHERE id = ?";
+        String sql = "DELETE FROM joueurs WHERE id_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             statement.executeUpdate();
@@ -177,19 +180,19 @@ public class JoueurDAOImpl implements JoueurDAO {
     }
 
     private Joueur extraireJoueurDeResultSet(ResultSet resultSet) throws SQLException {
-        int id = resultSet.getInt("id");
-        String nom = resultSet.getString("nom");
-        String prenom = resultSet.getString("prenom");
-        String pseudo = resultSet.getString("pseudo");
-        String motDePasse = resultSet.getString("motDePasse");
-        int argent = resultSet.getInt("argent");
+        int id = resultSet.getInt("id_joueur");
+        String nom = resultSet.getString("nom_joueur");
+        String prenom = resultSet.getString("prenom_joueur");
+        String pseudo = resultSet.getString("pseudo_joueur");
+        String motDePasse = resultSet.getString("motDePasse_joueur");
+        int argent = resultSet.getInt("argent_joueur");
 
         // Ces objets seraient normalement récupérés via leurs propres DAOs
         Royaume royaume = null; // À compléter avec le DAO du royaume
         Personnage personnage = null; // À compléter avec le DAO du personnage
-        Inventaire inventaire = null; // À compléter avec le DAO de l'inventaire
+        Coffre coffre = null; // À compléter avec le DAO du coffre
 
-        return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, royaume, personnage, inventaire);
+        return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, royaume, personnage, coffre);
     }
 }
 

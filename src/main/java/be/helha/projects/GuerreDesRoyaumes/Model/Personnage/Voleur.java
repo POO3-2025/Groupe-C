@@ -1,8 +1,10 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
+import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
+
 public class Voleur extends Personnage {
-    public Voleur(String nom, int vie, int degats, int resistance) {
-        super("Voleur",90, 15, 15);
+    public Voleur() {
+        super("Voleur",90, 0, 15, new Inventaire());
     }
 
     @Override
@@ -23,6 +25,20 @@ public class Voleur extends Personnage {
     @Override
     public void UtilisationObjet() {
         System.out.println(getNom() + " utilise un objet");
+    }
+
+    @Override
+    public void subirDegats(double degatsSubis) {
+        double degatsReels = degatsSubis / (100 / getResistance());
+        //    double degatsReels = degatsSubis * (1 - (getResistance() / 100.0));
+        setVie(getVie() - degatsReels);
+        System.out.println(getNom() + " subit " + degatsReels + " points de dégâts. Vie restante : " + getVie());
+    }
+
+    @Override
+    public void soigner(double pointsSoin) {
+        setVie(getVie() + pointsSoin);
+        System.out.println(getNom() + " se soigne de " + pointsSoin + " points de vie. Vie actuelle : " + getVie());
     }
 }
 
