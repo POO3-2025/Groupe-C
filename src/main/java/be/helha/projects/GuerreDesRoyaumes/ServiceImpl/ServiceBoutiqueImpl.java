@@ -15,7 +15,7 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
     private JoueurDAO joueurDAO;
     private static final int PRIX_BASE = 100;
 
-    public ServiceBoutiqueImpl(ItemDAO itemDAO, JoueurDAO joueurDAO) {
+    public ServiceBoutiqueImpl() {
         this.itemDAO = itemDAO;
         this.joueurDAO = joueurDAO;
     }

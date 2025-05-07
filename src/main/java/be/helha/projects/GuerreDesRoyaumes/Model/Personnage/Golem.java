@@ -1,7 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
 public class Golem extends Personnage {
-    public Golem() {
+    public Golem(String nom, int vie, int degats, int resistance) {
         super("Golem",120, 18, 50);
     }
 

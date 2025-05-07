@@ -1,7 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
 public class Titan extends Personnage {
-    public Titan() {
+    public Titan(String nom, int vie, int degats, int resistance) {
         super("Titan",200, 25, 30);
     }
 

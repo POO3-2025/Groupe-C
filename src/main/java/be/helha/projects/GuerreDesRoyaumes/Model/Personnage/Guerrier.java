@@ -1,7 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
 public class Guerrier extends Personnage {
-    public Guerrier() {
+    public Guerrier(String nom, int vie, int degats, int resistance) {
         super("Guerrier",100, 40, 20);
     }
 

@@ -1,7 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
 public class Voleur extends Personnage {
-    public Voleur() {
+    public Voleur(String nom, int vie, int degats, int resistance) {
         super("Voleur",90, 15, 15);
     }
 

@@ -25,7 +25,6 @@ public class JoueurDAOImpl implements JoueurDAO {
             statement.setString(1, joueur.getNom());
             statement.setString(2, joueur.getPrenom());
             statement.setString(3, joueur.getPseudo());
-            statement.setString(4, joueur.getEmail());
             statement.setString(5, joueur.getMotDePasse());
             statement.setDouble(6, joueur.getArgent());
             statement.executeUpdate();
@@ -91,7 +90,6 @@ public class JoueurDAOImpl implements JoueurDAO {
             statement.setString(1, joueur.getNom());
             statement.setString(2, joueur.getPrenom());
             statement.setString(3, joueur.getPseudo());
-            statement.setString(4, joueur.getEmail());
             statement.setString(5, joueur.getMotDePasse());
             statement.setDouble(6, joueur.getArgent());
             statement.setInt(7, joueur.getId());

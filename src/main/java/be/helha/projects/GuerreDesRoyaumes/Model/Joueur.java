@@ -9,7 +9,6 @@ public class Joueur {
     private String nom;
     private String prenom;
     private String pseudo;
-    private String email;
     private String motDePasse;
     private double argent;
     private Royaume royaume;
@@ -22,7 +21,6 @@ public class Joueur {
         this.nom = nom;
         this.prenom = prenom;
         this.pseudo = pseudo;
-        this.email = email;
         this.motDePasse = motDePasse;
         this.argent = argent;
         this.royaume = royaume;
@@ -42,9 +40,6 @@ public class Joueur {
     }
     public String getPseudo() {
         return pseudo;
-    }
-    public String getEmail() {
-        return email;
     }
     public String getMotDePasse() {
         return motDePasse;
@@ -74,9 +69,6 @@ public class Joueur {
     }
     public void setPseudo(String pseudo) {
         this.pseudo = pseudo;
-    }
-    public void setEmail(String email) {
-        this.email = email;
     }
     public void setMotDePasse(String motDePasse) {
         this.motDePasse = motDePasse;
@@ -132,7 +124,6 @@ public class Joueur {
         return  "\nNom        = " + nom +
                 "\nPrenom     = " + prenom +
                 "\nPseudo     = " + pseudo +
-                "\nEmail      = " + email +
                 "\nRoyaume    = " + royaume +
                 "\nPersonnage = " + personnage +
                 "\nArgent     = " + argent;

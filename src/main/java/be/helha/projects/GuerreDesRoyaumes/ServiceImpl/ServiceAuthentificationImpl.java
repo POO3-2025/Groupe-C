@@ -8,6 +8,8 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 
+import java.util.ArrayList;
+
 public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
     private JoueurDAO joueurDAO;
@@ -19,26 +21,40 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
     }
 
     @Override
-    public void inscrireJoueur(String nom, String prenom, String pseudo, String email, String motDePasse) {
-        // Vérifier si le pseudo existe déjà
-        if (joueurDAO.obtenirJoueurParPseudo(pseudo) != null) {
-            throw new IllegalArgumentException("Ce pseudo est déjà utilisé");
+    public boolean inscrireJoueur(String nom, String prenom, String pseudo, String email, String motDePasse) {
+        try {
+            // Vérifier si le pseudo existe déjà
+            if (joueurDAO.obtenirJoueurParPseudo(pseudo) != null) {
+                throw new IllegalArgumentException("Ce pseudo est déjà utilisé");
+            }
+
+            // Créer un nouveau royaume et inventaire par défaut
+            Royaume royaume = new Royaume(0, "Royaume de " + pseudo, 1);
+            Inventaire inventaire = new Inventaire();
+
+            // Créer le joueur (sans personnage pour l'instant)
+            Joueur joueur = new Joueur(0, nom, prenom, pseudo, email, motDePasse, 100, royaume, null, inventaire);
+
+            // Persister le joueur
+            joueurDAO.ajouterJoueur(joueur);
+            return true;
+        } catch (Exception e) {
+            return false;
         }
-
-        // Créer un nouveau royaume et inventaire par défaut
-        Royaume royaume = new Royaume(0, "Royaume de " + pseudo, 1);
-        Inventaire inventaire = new Inventaire();
-
-        // Créer le joueur (sans personnage pour l'instant)
-        Joueur joueur = new Joueur(0, nom, prenom, pseudo, email, motDePasse, 100, royaume, null, inventaire);
-
-        // Persister le joueur
-        joueurDAO.ajouterJoueur(joueur);
     }
 
     @Override
-    public boolean authentifierJoueur(String pseudo, String motDePasse) {
-        return joueurDAO.authentifierJoueur(pseudo, motDePasse);
+    public Joueur authentifierJoueur(String pseudo, String motDePasse) {
+        // On récupère d'abord le joueur par son pseudo
+        Joueur joueur = joueurDAO.obtenirJoueurParPseudo(pseudo);
+
+        // Si le joueur n'existe pas ou le mot de passe ne correspond pas, on renvoie null
+        if (joueur == null || !joueur.getMotDePasse().equals(motDePasse)) {
+            return null;
+        }
+
+        // Sinon, on renvoie l'objet joueur authentifié
+        return joueur;
     }
 
     @Override
@@ -68,7 +84,6 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
         // Mettre à jour les informations
         joueur.setPseudo(pseudo);
-        joueur.setEmail(email);
         joueur.setMotDePasse(motDePasse);
 
         // Persister les modifications
