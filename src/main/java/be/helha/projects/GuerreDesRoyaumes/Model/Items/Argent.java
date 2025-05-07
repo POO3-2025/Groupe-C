@@ -6,7 +6,7 @@ public class Argent extends Item {
     int quantite;
 
     //Constructeur
-    public Argent(int id, String nom, int quantiteMax, int quantite ,double prix) {
+    public Argent(int id, String nom, int quantiteMax, int quantite ,int prix) {
         super(id, "TerraCoin", quantiteMax, "Argent" , 0);
         this.quantite = quantite;
     }

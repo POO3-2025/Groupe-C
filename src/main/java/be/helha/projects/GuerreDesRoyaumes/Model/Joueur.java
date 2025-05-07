@@ -10,13 +10,13 @@ public class Joueur {
     private String prenom;
     private String pseudo;
     private String motDePasse;
-    private double argent;
+    private int argent;
     private Royaume royaume;
     private Personnage personnage;
     private Inventaire inventaire;
 
     //Construteur
-    public Joueur(int id, String nom, String prenom, String pseudo, String email, String motDePasse, int argent , Royaume royaume, Personnage personnage, Inventaire inventaire) {
+    public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent , Royaume royaume, Personnage personnage, Inventaire inventaire) {
         this.id = id;
         this.nom = nom;
         this.prenom = prenom;
@@ -53,7 +53,7 @@ public class Joueur {
     public Inventaire getInventaire() {
         return inventaire;
     }
-    public double getArgent() {
+    public int getArgent() {
         return argent;
     }
 
@@ -82,7 +82,7 @@ public class Joueur {
     public void setInventaire(Inventaire inventaire) {
         this.inventaire = inventaire;
     }
-    public void setArgent(double argent) {
+    public void setArgent(int argent) {
         this.argent = argent;
     }
 

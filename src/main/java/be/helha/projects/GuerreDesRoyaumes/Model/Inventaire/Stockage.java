@@ -16,6 +16,23 @@ public abstract class Stockage {
         this.slots = new ArrayList<>();
     }
 
+    // Getters
+    public List<Slot> getSlots() {
+        return slots;
+    }
+    public int getMaxSlots() {
+        return maxSlots;
+    }
+
+    // Setters
+    public void setSlots(List<Slot> slots) {
+        this.slots = slots;
+    }
+    public void setMaxSlots(int maxSlots) {
+        this.maxSlots = maxSlots;
+    }
+
+
     // Méthode pour ajouter un item dans le stockage
     public boolean ajouterItem(Item item, int quantite) {
         // Vérifier si l'item existe déjà dans le stockage
@@ -70,23 +87,5 @@ public abstract class Stockage {
 
         System.out.println("L'item n'est pas présent dans le stockage.");
         return false;
-    }
-
-    // Getters
-    public List<Slot> getSlots() {
-        return slots;
-    }
-
-    public int getMaxSlots() {
-        return maxSlots;
-    }
-
-    // Setters
-    public void setSlots(List<Slot> slots) {
-        this.slots = slots;
-    }
-
-    public void setMaxSlots(int maxSlots) {
-        this.maxSlots = maxSlots;
     }
 }

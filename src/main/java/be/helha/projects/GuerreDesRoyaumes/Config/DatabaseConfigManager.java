@@ -46,7 +46,6 @@ public class DatabaseConfigManager {
         return instance;
     }
 
-
     public Connection getSQLConnection(String dbKey) throws SQLException {
         try {
             JsonObject db = config.getAsJsonObject("db");

@@ -6,7 +6,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
 public abstract class Personnage {
     private String nom; // represente le nom du personnage
     private int vie; // represente le niveau de vie de base du personnage
-    private int degats; // represente le niveau d'attaque de base du personnage
+    private double degats; // represente le niveau d'attaque de base du personnage
     private int resistance; // represente le niveau de defense de base du personnage
     private Arme armeEquipee; // represente l'arme equipee par le personnage
     private Bouclier bouclierEquipee; // represente le bouclier equipee par le personnage
@@ -19,8 +19,6 @@ public abstract class Personnage {
         this.resistance = resistance;
     }
 
-
-
     //Getteur
     public String getNom() {
         return nom;
@@ -28,7 +26,7 @@ public abstract class Personnage {
     public int getVie() {
         return vie;
     }
-    public int getDegats() {
+    public double getDegats() {
         return degats;
     }
     public int getResistance() {
@@ -42,25 +40,23 @@ public abstract class Personnage {
     public void setVie(int vie) {
         this.vie = vie;
     }
-    public void setDegats(int degats) {
+    public void setDegats(double degats) {
         this.degats = degats;
     }
     public void setResistance(int resistance) {
         this.resistance = resistance;
     }
 
-    public int getAttaqueTotale() {
+
+    public double getAttaqueTotale() {
         return degats + (armeEquipee != null ? armeEquipee.getDegats() : 0);
     }
-
-    public int getDefenseTotale() {
+    public double getDefenseTotale() {
         return resistance + (bouclierEquipee != null ? bouclierEquipee.getDefense() : 0);
     }
-
     public void equiperArme(Arme arme) {
         this.armeEquipee = arme;
     }
-
     public void equiperBouclier(Bouclier bouclier) {
         this.bouclierEquipee = bouclier;
     }

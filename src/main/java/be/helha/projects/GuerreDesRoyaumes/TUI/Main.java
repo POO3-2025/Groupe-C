@@ -34,7 +34,7 @@ public class Main {
         }
 
         // Initialiser les DAOs
-        JoueurDAO joueurDAO = new JoueurDAOImpl(connection);
+        JoueurDAO joueurDAO = new JoueurDAOImpl();
         // Initialisez d'autres DAO ici
 
         // Initialiser les services
