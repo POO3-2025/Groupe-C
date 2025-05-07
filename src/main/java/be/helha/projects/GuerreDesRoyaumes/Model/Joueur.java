@@ -28,6 +28,11 @@ public class Joueur {
         this.inventaire = inventaire;
     }
 
+    public Joueur() {
+
+    }
+
+
     //Getteur
     public int getId() {
         return id;
