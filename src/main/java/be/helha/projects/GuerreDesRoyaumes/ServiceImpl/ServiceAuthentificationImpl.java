@@ -19,7 +19,7 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
     }
 
     @Override
-    public void inscrireJoueur(String nom, String prenom, String pseudo, String email, String motDePasse) {
+    public void inscrireJoueur(String nom, String prenom, String pseudo, String motDePasse) {
         // Vérifier si le pseudo existe déjà
         if (joueurDAO.obtenirJoueurParPseudo(pseudo) != null) {
             throw new IllegalArgumentException("Ce pseudo est déjà utilisé");
@@ -30,7 +30,7 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
         Inventaire inventaire = new Inventaire();
 
         // Créer le joueur (sans personnage pour l'instant)
-        Joueur joueur = new Joueur(0, nom, prenom, pseudo, email, motDePasse, 100, royaume, null, inventaire);
+        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasse, 100, royaume, null, inventaire);
 
         // Persister le joueur
         joueurDAO.ajouterJoueur(joueur);
@@ -52,7 +52,7 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
     }
 
     @Override
-    public void gererProfil(int id, String pseudo, String email, String motDePasse) {
+    public void gererProfil(int id, String pseudo, String motDePasse) {
         Joueur joueur = joueurDAO.obtenirJoueurParId(id);
         if (joueur == null) {
             throw new IllegalArgumentException("Joueur non trouvé");
@@ -68,7 +68,6 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
         // Mettre à jour les informations
         joueur.setPseudo(pseudo);
-        joueur.setEmail(email);
         joueur.setMotDePasse(motDePasse);
 
         // Persister les modifications

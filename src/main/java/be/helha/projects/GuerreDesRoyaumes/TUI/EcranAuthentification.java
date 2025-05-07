@@ -83,10 +83,6 @@ public class EcranAuthentification {
         TextBox champPseudo = new TextBox(new TerminalSize(30, 1));
         panel.addComponent(champPseudo);
 
-        panel.addComponent(new Label("Email:"));
-        TextBox champEmail = new TextBox(new TerminalSize(30, 1));
-        panel.addComponent(champEmail);
-
         panel.addComponent(new Label("Mot de passe:"));
         TextBox champMotDePasse = new TextBox(new TerminalSize(30, 1)).setMask('*');
         panel.addComponent(champMotDePasse);
@@ -98,7 +94,6 @@ public class EcranAuthentification {
                         champNom.getText(),
                         champPrenom.getText(),
                         champPseudo.getText(),
-                        champEmail.getText(),
                         champMotDePasse.getText()
                 );
                 fenetre.close();

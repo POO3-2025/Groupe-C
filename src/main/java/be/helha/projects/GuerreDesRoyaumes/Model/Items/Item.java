@@ -6,10 +6,10 @@ public abstract class Item {
     private String nom;
     private int quantiteMax; // quantité max de l'item par slot
     private String type;// type de l'item (ex: arme, bouclier, etc.)
-    private double prix; // prix de l'item en TerraCoin
+    private int prix; // prix de l'item en TerraCoin
 
     //Constructeur
-    public Item(int id, String nom, int quantiteMax, String type, double prix) {
+    public Item(int id, String nom, int quantiteMax, String type, int prix) {
         this.id = id;
         this.nom = nom;
         this.quantiteMax = quantiteMax;
@@ -30,7 +30,7 @@ public abstract class Item {
     public String getType() {
         return type;
     }
-    public double getPrix() {
+    public int getPrix() {
         return prix;
     }
 
@@ -47,7 +47,7 @@ public abstract class Item {
     public void setType(String type) {
         this.type = type;
     }
-    public void setPrix(double prix) {
+    public void setPrix(int prix) {
         this.prix = prix;
     }
 

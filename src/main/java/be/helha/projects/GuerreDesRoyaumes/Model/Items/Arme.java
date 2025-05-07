@@ -4,21 +4,21 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 
 public class Arme extends Item {
 
-    private int degats;// degats supplementaire de l'arme qui s'ajoute aux degats de base du personnage
+    private double degats;// degats supplementaire de l'arme qui s'ajoute aux degats de base du personnage
 
     //Constructeur
-    public Arme(int id, String nom, int quantiteMax, int degats, double prix) {
+    public Arme(int id, String nom, int quantiteMax, int prix, double degats) {
         super(id, nom, quantiteMax, "Arme", prix);
         this.degats = degats;
     }
 
     //Getteur
-    public int getDegats() {
+    public double getDegats() {
         return degats;
     }
 
     //Setteur
-    public void setDegats(int degats) {
+    public void setDegats(double degats) {
         this.degats = degats;
     }
 

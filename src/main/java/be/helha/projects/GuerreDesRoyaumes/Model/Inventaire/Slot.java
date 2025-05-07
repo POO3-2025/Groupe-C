@@ -30,6 +30,7 @@ public class Slot {
         }
     }
 
+
     // Ajouter des quantités d'items
     public int add(int quantityToAdd) {
         if (quantityToAdd > 0) {  // Ajout d'une validation pour une quantité positive
@@ -49,6 +50,7 @@ public class Slot {
         }
         return this.quantity;
     }
+
     // Méthode pour afficher le contenu du slot
     @Override
     public String toString() {

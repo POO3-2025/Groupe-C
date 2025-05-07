@@ -1,6 +1,4 @@
-package be.helha.projects.GuerreDesRoyaumes.Model.Items;
-
-import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Stockage;
+package be.helha.projects.GuerreDesRoyaumes.Model.Inventaire;
 
 public class Coffre extends Stockage {
 
