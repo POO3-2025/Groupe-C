@@ -24,8 +24,8 @@ public class PersonnageDAOImpl implements PersonnageDAO {
         String sql = "INSERT INTO personnages (nom, vie, degats, resistance, type) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, personnage.getNom());
-            statement.setInt(2, personnage.getVie());
-            statement.setInt(3, personnage.getDegats());
+            statement.setDouble(2, personnage.getVie());
+            statement.setDouble(3, (int) personnage.getDegats());
             statement.setInt(4, personnage.getResistance());
             statement.setString(5, determinerTypePersonnage(personnage));
             statement.executeUpdate();
@@ -76,8 +76,8 @@ public class PersonnageDAOImpl implements PersonnageDAO {
         String sql = "UPDATE personnages SET nom = ?, vie = ?, degats = ?, resistance = ?, type = ? WHERE id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, personnage.getNom());
-            statement.setInt(2, personnage.getVie());
-            statement.setInt(3, personnage.getDegats());
+            statement.setDouble(2, personnage.getVie());
+            statement.setDouble(3, personnage.getDegats());
             statement.setInt(4, personnage.getResistance());
             statement.setString(5, determinerTypePersonnage(personnage));
             // Nécessiterait un getter getId() dans la classe Personnage
