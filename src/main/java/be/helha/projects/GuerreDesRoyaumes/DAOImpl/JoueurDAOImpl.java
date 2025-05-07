@@ -27,7 +27,7 @@ public class JoueurDAOImpl implements JoueurDAO {
             statement.setString(3, joueur.getPseudo());
             statement.setString(4, joueur.getEmail());
             statement.setString(5, joueur.getMotDePasse());
-            statement.setInt(6, joueur.getArgent());
+            statement.setDouble(6, joueur.getArgent());
             statement.executeUpdate();
 
             ResultSet generatedKeys = statement.getGeneratedKeys();
@@ -93,7 +93,7 @@ public class JoueurDAOImpl implements JoueurDAO {
             statement.setString(3, joueur.getPseudo());
             statement.setString(4, joueur.getEmail());
             statement.setString(5, joueur.getMotDePasse());
-            statement.setInt(6, joueur.getArgent());
+            statement.setDouble(6, joueur.getArgent());
             statement.setInt(7, joueur.getId());
             statement.executeUpdate();
         } catch (SQLException e) {
