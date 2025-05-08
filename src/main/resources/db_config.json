@@ -1,18 +1,20 @@
 {
   "db": {
     "sqlserver": {
+      "ConnectionType": "DB",
+      "DBType": "SQLServer",
       "BDCredentials": {
-        "DBType": "sqlserver",
         "HostName": "localhost",
         "Port": "1433",
         "DBName": "guerre_des_royaumes",
         "UserName": "sa",
-        "Password": "1234"
+        "Password": "Messadine4013"
       }
     },
     "mongodb": {
+      "ConnectionType": "DB",
+      "DBType": "MongoDB",
       "BDCredentials": {
-        "DBType": "mongodb",
         "HostName": "localhost",
         "Port": "27017",
         "DBName": "guerre_des_royaumes",

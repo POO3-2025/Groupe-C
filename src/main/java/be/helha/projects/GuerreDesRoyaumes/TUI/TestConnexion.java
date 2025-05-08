@@ -1,71 +1,51 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
-import be.helha.projects.GuerreDesRoyaumes.Config.DatabaseConfigManager;
-import com.google.gson.JsonObject;
+import be.helha.projects.GuerreDesRoyaumes.Config.*;
 import com.mongodb.client.MongoDatabase;
 
 import java.sql.Connection;
 
 public class TestConnexion {
     public static void main(String[] args) {
+        // Managers
+        SQLConfigManager sqlManager = SQLConfigManager.getInstance();
+        MongoDBConfigManager mongoManager = MongoDBConfigManager.getInstance();
 
-        // Récupérer l'instance du manager
-        DatabaseConfigManager configManager = DatabaseConfigManager.getInstance();
+        // Test SQL
+        testSQL(sqlManager);
 
-        // --- Tester la récupération des données sqlserver ---
-        System.out.println("===== Test récupération sqlserver =====");
-        JsonObject mysqlConfig = configManager.getConfig()
-                .getAsJsonObject("db")
-                .getAsJsonObject("sqlserver")
-                .getAsJsonObject("BDCredentials");
-        System.out.println("Infos sqlserver :");
-        System.out.println("Host: " + mysqlConfig.get("HostName").getAsString());
-        System.out.println("Port: " + mysqlConfig.get("Port").getAsString());
-        System.out.println("Database: " + mysqlConfig.get("DBName").getAsString());
-        System.out.println("User: " + mysqlConfig.get("UserName").getAsString());
-        System.out.println("Password: " + mysqlConfig.get("Password").getAsString());
+        // Test MongoDB
+        testMongoDB(mongoManager);
+    }
 
-        // --- Tester la connexion sqlserver ---
-        System.out.println("\n===== Test connexion sqlserver =====");
-        try (Connection conn = configManager.getSQLConnection("sqlserver")) {
-            if (conn != null && !conn.isClosed()) {
-                System.out.println("Vous êtes bien connecté à sqlserver !");
-            } else {
-                System.out.println("Connexion sqlserver échouée !");
-            }
+    private static void testSQL(SQLConfigManager manager) {
+        System.out.println("===== TEST SQL =====");
+
+        MySqlConfigurations config = manager.getConfigurations("sqlserver");
+        System.out.println("Configuration SQL:");
+        System.out.println(config);
+
+        try (Connection conn = manager.getConnection("sqlserver")) {
+            System.out.println(conn != null ? "Connexion SQL réussie!" : "Échec connexion SQL");
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Erreur de connexion sqlserver : ");
+            System.err.println("Erreur SQL: " + e.getMessage());
         }
+    }
 
-        // --- Tester la récupération des données MongoDB ---
-        System.out.println("\n===== Test récupération MongoDB =====");
-        JsonObject mongoConfig = configManager.getConfig()
-                .getAsJsonObject("db")
-                .getAsJsonObject("mongodb")
-                .getAsJsonObject("BDCredentials");
-        System.out.println("Infos MongoDB :");
-        System.out.println("Host: " + mongoConfig.get("HostName").getAsString());
-        System.out.println("Port: " + mongoConfig.get("Port").getAsString());
-        System.out.println("Database: " + mongoConfig.get("DBName").getAsString());
-        System.out.println("User: " + mongoConfig.get("UserName").getAsString());
-        System.out.println("Password: " + mongoConfig.get("Password").getAsString());
+    private static void testMongoDB(MongoDBConfigManager manager) {
+        System.out.println("\n===== TEST MongoDB =====");
 
-        // --- Tester la connexion MongoDB ---
-        System.out.println("\n===== Test connexion MongoDB =====");
+        MongoDBConfigurations config = manager.getConfigurations("mongodb");
+        System.out.println("Configuration MongoDB:");
+        System.out.println(config);
+
         try {
-            MongoDatabase mongoDb = configManager.getMongoDatabase("mongodb");
-            if (mongoDb != null) {
-                System.out.println("Vous êtes bien connecté à MongoDB !");
-            } else {
-                System.out.println("Connexion MongoDB échouée !");
-            }
+            MongoDatabase db = manager.getDatabase("mongodb");
+            System.out.println(db != null ? "Connexion MongoDB réussie!" : "Échec connexion MongoDB");
         } catch (Exception e) {
-
-            System.out.println("Erreur de connexion MongoDB : " + e.getMessage());
+            System.err.println("Erreur MongoDB: " + e.getMessage());
+        } finally {
+            manager.closeClient();
         }
-
-        // Fermer le client MongoDB proprement
-        configManager.closeMongoClient();
     }
 }
