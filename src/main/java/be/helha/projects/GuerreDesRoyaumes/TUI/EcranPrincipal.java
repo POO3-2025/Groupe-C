@@ -1,5 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
+import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import com.googlecode.lanterna.TerminalSize;
@@ -12,19 +13,21 @@ import com.googlecode.lanterna.screen.Screen;
 public class EcranPrincipal {
 
     private final ServiceAuthentification serviceAuthentification;
+    private final JoueurDAO joueurDAO;
     private final String pseudo;
     private final Screen screen;
     private final WindowBasedTextGUI textGUI;
 
-    public EcranPrincipal(ServiceAuthentification serviceAuthentification, String pseudo, Screen screen) {
+    public EcranPrincipal(ServiceAuthentification serviceAuthentification, JoueurDAO joueurDAO, String pseudo, Screen screen) {
         this.serviceAuthentification = serviceAuthentification;
+        this.joueurDAO = joueurDAO;
         this.pseudo = pseudo;
         this.screen = screen;
         this.textGUI = new MultiWindowTextGUI(screen);
     }
 
     public void afficher() {
-        Joueur joueur = serviceAuthentification.obtenirJoueurParPseudo(pseudo);
+        Joueur joueur = joueurDAO.obtenirJoueurParPseudo(pseudo);
         if (joueur == null) {
             afficherMessageErreur("Joueur non trouvé");
             return;

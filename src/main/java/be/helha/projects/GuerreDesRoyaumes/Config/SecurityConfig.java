@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
@@ -19,12 +20,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf().disable()
-                .authorizeHttpRequests((requests) -> requests
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(requests -> requests
                         .requestMatchers("/api/inscription", "/api/connexion").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic();
+                .httpBasic(withDefaults());
 
         return http.build();
     }

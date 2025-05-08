@@ -1,5 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
+import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
@@ -10,11 +11,13 @@ import com.googlecode.lanterna.screen.Screen;
 public class EcranAuthentification {
 
     private final ServiceAuthentification serviceAuthentification;
+    private final JoueurDAO joueurDAO;
     private final Screen screen;
     private final WindowBasedTextGUI textGUI;
 
-    public EcranAuthentification(ServiceAuthentification serviceAuthentification, Screen screen) {
+    public EcranAuthentification(ServiceAuthentification serviceAuthentification, JoueurDAO joueurDAO, Screen screen) {
         this.serviceAuthentification = serviceAuthentification;
+        this.joueurDAO = joueurDAO;
         this.screen = screen;
         this.textGUI = new MultiWindowTextGUI(screen);
     }
@@ -89,24 +92,6 @@ public class EcranAuthentification {
 
         panel.addComponent(new EmptySpace(new TerminalSize(0, 0)));
         Button boutonInscrire = new Button("S'inscrire", () -> {
-            // Vérification des champs vides
-            if (champNom.getText().isEmpty() || champPrenom.getText().isEmpty() || champPseudo.getText().isEmpty() || champMotDePasse.getText().isEmpty()) {
-                afficherMessageErreur("Tous les champs doivent être remplis.");
-                return;
-            }
-
-            // Validation du mot de passe
-            if (champMotDePasse.getText().length() < 6) {
-                afficherMessageErreur("Le mot de passe doit contenir au moins 6 caractères.");
-                return;
-            }
-
-            // Validation du pseudo
-            if (!champPseudo.getText().matches("[a-zA-Z0-9_]+")) {
-                afficherMessageErreur("Le pseudo ne peut contenir que des lettres, chiffres et underscores.");
-                return;
-            }
-
             try {
                 serviceAuthentification.inscrireJoueur(
                         champNom.getText(),
@@ -116,13 +101,8 @@ public class EcranAuthentification {
                 );
                 fenetre.close();
                 afficher(); // Retour à l'écran d'authentification
-            } catch (IllegalArgumentException e) {
-                afficherMessageErreur("Erreur : " + e.getMessage());
-            } catch (RuntimeException e) {
-                afficherMessageErreur("Erreur lors de l'inscription : " + e.getMessage());
             } catch (Exception e) {
-                afficherMessageErreur("Erreur inattendue : " + e.getMessage());
-                e.printStackTrace(); // Affiche la stack trace dans la console pour le débogage
+                afficherMessageErreur(e.getMessage());
             }
         });
         panel.addComponent(boutonInscrire);
@@ -132,7 +112,7 @@ public class EcranAuthentification {
     }
 
     private void afficherEcranPrincipal(String pseudo) {
-        EcranPrincipal ecranPrincipal = new EcranPrincipal(serviceAuthentification, pseudo, screen);
+        EcranPrincipal ecranPrincipal = new EcranPrincipal(serviceAuthentification, joueurDAO, pseudo, screen);
         ecranPrincipal.afficher();
     }
 
