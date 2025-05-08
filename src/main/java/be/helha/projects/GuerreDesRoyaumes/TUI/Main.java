@@ -11,6 +11,7 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
+import com.googlecode.lanterna.terminal.swing.SwingTerminalFrame;
 import com.mongodb.client.MongoDatabase;
 
 import java.io.IOException;
@@ -20,17 +21,17 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        try {
+        //try {
             // Step 1: Get the instance of DatabaseConfigManager
             DatabaseConfigManager dbConfigManager = DatabaseConfigManager.getInstance();
 
             // Step 2: Get SQL Connection (replace "yourDbKey" with the actual key)
-            Connection sqlConnection = dbConfigManager.getSQLConnection("yourDbKey");
+            /*Connection sqlConnection = dbConfigManager.getSQLConnection("yourDbKey");
             System.out.println("Connected to SQL database!");
 
             // Step 3: Get MongoDB Database (replace "yourDbKey" with the actual key)
             MongoDatabase mongoDatabase = dbConfigManager.getMongoDatabase("yourDbKey");
-            System.out.println("Connected to MongoDB database!");
+            System.out.println("Connected to MongoDB database!");*/
 
 
             // Initialiser les DAOs
@@ -41,10 +42,20 @@ public class Main {
             ServiceAuthentification serviceAuthentification = new ServiceAuthentificationImpl(joueurDAO, null); // Le PersonnageDAO sera implémenté plus tard
             // Initialisez d'autres services ici
 
-            // Initialiser Lanterna
-            Terminal terminal = new DefaultTerminalFactory().createTerminal();
+            // Utilisation de DefaultTerminalFactory pour créer un terminal Swing
+            DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
+            // Spécifiez les dimensions ici
+            terminalFactory.setInitialTerminalSize(new TerminalSize(80, 24));
+            // Ajout du SwingTerminal dans un SwingTerminalFrame
+            SwingTerminalFrame terminal = terminalFactory.createSwingTerminal();
+            terminal.setVisible(true);
+            terminal.setResizable(true); // Désactiver la redimension
+
+            // Création de l'écran à partir du terminal
             Screen screen = new TerminalScreen(terminal);
-            screen.startScreen();
+
+            screen.startScreen(); // Démarre l'écran du terminal
+
 
             // Afficher l'écran d'authentification
             EcranAuthentification ecranAuthentification = new EcranAuthentification(serviceAuthentification, screen);
@@ -53,13 +64,13 @@ public class Main {
             // Fermer l'écran et terminer l'application
             screen.stopScreen();
 
-            // Don't forget to close connections when you're done
+            /*// Don't forget to close connections when you're done
             sqlConnection.close();
             dbConfigManager.closeMongoClient();
 
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
 
 
         /*// Initialiser la connexion à la base de données
