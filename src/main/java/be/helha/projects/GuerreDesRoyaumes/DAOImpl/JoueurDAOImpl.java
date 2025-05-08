@@ -15,14 +15,24 @@ public class JoueurDAOImpl implements JoueurDAO {
 
     private static JoueurDAOImpl instance;
     private Connection connection;
-    private String tableName = "guerre_des_royaumes"; // Changer à "guerre_des_royaumes" pour la production et guerre_des_royaumes_test pour la table de test
+    private String tableName = "joueur"; // Table principale
 
     public JoueurDAOImpl() {
     }
 
+    /**
+     * Définit la connexion à la base de données
+     * @param connection La connexion à utiliser
+     */
+    public void setConnection(Connection connection) {
+        this.connection = connection;
+        // Créer la table joueur si elle n'existe pas
+        creerTableJoueurSiInexistante();
+    }
+
     @Override
     public int getNextJoueurID() throws SQLException {
-        String query = "SELECT MAX(id) FROM " + tableName;
+        String query = "SELECT MAX(id_joueur) FROM " + tableName;
         if (connection == null || connection.isClosed()) {
             throw new SQLException("La connexion à la base de données est fermée ou inexistante !");
         }
@@ -40,7 +50,7 @@ public class JoueurDAOImpl implements JoueurDAO {
 
     @Override
     public boolean authentifierJoueur(String pseudo, String motDePasse) {
-        String sql = "SELECT * FROM joueurs WHERE pseudo = ? AND motDePasse = ?";
+        String sql = "SELECT * FROM " + tableName + " WHERE pseudo_joueur = ? AND motDePasse_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, pseudo);
             statement.setString(2, motDePasse);
@@ -52,12 +62,12 @@ public class JoueurDAOImpl implements JoueurDAO {
         }
     }
 
-    private void creerTableJoueuroSiInexistante() {
+    private void creerTableJoueurSiInexistante() {
         String createTableQuery = """
         IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='joueur' AND xtype='U')
         BEGIN
-            CREATE TABLE Joueur (
-                id_joueur INT PRIMARY KEY,
+            CREATE TABLE joueur (
+                id_joueur INT PRIMARY KEY IDENTITY(1,1),
                 nom_joueur NVARCHAR(255) NOT NULL,
                 prenom_joueur NVARCHAR(255) NOT NULL,
                 pseudo_joueur NVARCHAR(255) NOT NULL,
@@ -71,14 +81,14 @@ public class JoueurDAOImpl implements JoueurDAO {
             statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
-            throw new RuntimeException("Erreur lors de la création de la table moto");
+            throw new RuntimeException("Erreur lors de la création de la table joueur: " + e.getMessage());
         }
     }
 
     // Create
     @Override
     public void ajouterJoueur(Joueur joueur) {
-        String sql = "INSERT INTO joueurs (nom_joueur, prenom_joueur, pseudo_joueur, motDePasse_joueur, argent_joueur) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO " + tableName + " (nom_joueur, prenom_joueur, pseudo_joueur, motDePasse_joueur, argent_joueur) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, joueur.getNom());
             statement.setString(2, joueur.getPrenom());
@@ -99,7 +109,7 @@ public class JoueurDAOImpl implements JoueurDAO {
     // Read
     @Override
     public Joueur obtenirJoueurParId(int id) {
-        String sql = "SELECT * FROM joueur WHERE id_joueur = ?";
+        String sql = "SELECT * FROM " + tableName + " WHERE id_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
@@ -114,7 +124,7 @@ public class JoueurDAOImpl implements JoueurDAO {
 
     @Override
     public Joueur obtenirJoueurParPseudo(String pseudo) {
-        String sql = "SELECT * FROM joueur WHERE pseudo_joueur = ?";
+        String sql = "SELECT * FROM " + tableName + " WHERE pseudo_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, pseudo);
             ResultSet resultSet = statement.executeQuery();
@@ -130,7 +140,7 @@ public class JoueurDAOImpl implements JoueurDAO {
     @Override
     public List<Joueur> obtenirTousLesJoueurs() {
         List<Joueur> joueurs = new ArrayList<>();
-        String sql = "SELECT * FROM joueur";
+        String sql = "SELECT * FROM " + tableName;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
@@ -145,7 +155,7 @@ public class JoueurDAOImpl implements JoueurDAO {
     // Update
     @Override
     public void mettreAJourJoueur(Joueur joueur) {
-        String sql = "UPDATE joueurs SET nom_joueur = ?, prenom_joueur = ?, pseudo_joueur = ?, motDePasse_joueur = ?, argent_joueur = ? WHERE id_joueur = ?";
+        String sql = "UPDATE " + tableName + " SET nom_joueur = ?, prenom_joueur = ?, pseudo_joueur = ?, motDePasse_joueur = ?, argent_joueur = ? WHERE id_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, joueur.getNom());
             statement.setString(2, joueur.getPrenom());
@@ -162,7 +172,7 @@ public class JoueurDAOImpl implements JoueurDAO {
     // Delete
     @Override
     public void supprimerJoueur(int id) {
-        String sql = "DELETE FROM joueurs WHERE id_joueur = ?";
+        String sql = "DELETE FROM " + tableName + " WHERE id_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             statement.executeUpdate();
@@ -170,7 +180,6 @@ public class JoueurDAOImpl implements JoueurDAO {
             e.printStackTrace();
         }
     }
-
 
     public synchronized static JoueurDAOImpl getInstance() {
         if (instance == null) {

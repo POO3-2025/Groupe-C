@@ -36,7 +36,7 @@ public abstract class ItemDAOImpl implements ItemDAO {
                 Arme arme = (Arme) item;
                 String sqlArme = "INSERT INTO armes (item_id, degats) VALUES (?, ?)";
                 try (PreparedStatement statementArme = connection.prepareStatement(sqlArme)) {
-                    statementArme.setDouble(1, arme.getId());
+                    statementArme.setInt(1, arme.getId());
                     statementArme.setDouble(2, arme.getDegats());
                     statementArme.executeUpdate();
                 }
@@ -135,7 +135,7 @@ public abstract class ItemDAOImpl implements ItemDAO {
                 String sqlArme = "UPDATE armes SET degats = ? WHERE item_id = ?";
                 try (PreparedStatement statementArme = connection.prepareStatement(sqlArme)) {
                     statementArme.setDouble(1, arme.getDegats());
-                    statementArme.setDouble(2, arme.getId());
+                    statementArme.setInt(2, arme.getId());
                     statementArme.executeUpdate();
                 }
             }
