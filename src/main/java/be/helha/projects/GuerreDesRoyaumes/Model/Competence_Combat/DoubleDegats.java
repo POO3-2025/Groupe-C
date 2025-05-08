@@ -4,7 +4,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 
 public class DoubleDegats extends Competence {
     public DoubleDegats() {
-        super("C1", "Puissance Furieuse", 100, "Double les dégâts infligés par le personnage.");
+        super("CompetenceDegats", "Puissance Furieuse", 100, "Double les dégâts infligés par le personnage.");
     }
 
     @Override

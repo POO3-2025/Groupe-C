@@ -4,7 +4,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 
 public class DoubleArgent extends Competence {
     public DoubleArgent() {
-        super("C3", "Avarice Bénie", 100, "Double l'argent gagné après le combat.");
+        super("CompetenceDouble", "Avarice Bénie", 100, "Double l'argent gagné après le combat.");
     }
 
     @Override

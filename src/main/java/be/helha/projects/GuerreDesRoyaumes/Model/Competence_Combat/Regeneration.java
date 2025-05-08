@@ -4,7 +4,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 
 public class Regeneration extends Competence {
     public Regeneration() {
-        super("C4", "Régénération", 120, "Rend 5 points de vie à chaque tour.");
+        super("CompetenceRegen", "Régénération", 120, "Rend 5 points de vie à chaque tour.");
     }
 
     @Override

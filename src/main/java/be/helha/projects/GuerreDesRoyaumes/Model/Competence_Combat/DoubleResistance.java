@@ -4,7 +4,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 
 public class DoubleResistance extends Competence {
     public DoubleResistance() {
-        super("C2", "Peau de Fer", 100, "Double la résistance du personnage.");
+        super("CompetenceResistance", "Peau de Fer", 100, "Double la résistance du personnage.");
     }
 
     @Override
