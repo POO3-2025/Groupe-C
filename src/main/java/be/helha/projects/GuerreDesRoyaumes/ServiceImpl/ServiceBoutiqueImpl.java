@@ -3,12 +3,9 @@ package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
-import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceBoutique;
-
-import java.util.List;
 
 public class ServiceBoutiqueImpl implements ServiceBoutique {
 
@@ -19,21 +16,6 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
     public ServiceBoutiqueImpl() {
         this.itemDAO = itemDAO;
         this.joueurDAO = joueurDAO;
-    }
-
-    @Override
-    public List<Item> obtenirTousLesItems() {
-        return itemDAO.obtenirTousLesItems();
-    }
-
-    @Override
-    public Item obtenirItemParId(int id) {
-        return itemDAO.obtenirItemParId(id);
-    }
-
-    @Override
-    public List<Item> obtenirItemsParType(String type) {
-        return itemDAO.obtenirItemsParType(type);
     }
 
     @Override

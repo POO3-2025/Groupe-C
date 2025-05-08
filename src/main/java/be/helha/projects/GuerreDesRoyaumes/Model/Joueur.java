@@ -213,7 +213,4 @@ public class Joueur {
                 "\nPersonnage = " + personnage +
                 "\nArgent     = " + argent;
     }
-
-
-
 }

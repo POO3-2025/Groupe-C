@@ -9,7 +9,6 @@ import java.util.List;
 public interface JoueurDAO {
 
     int getNextJoueurID() throws SQLException;
-    boolean authentifierJoueur(String pseudo, String motDePasse);
 
     // Create
     void ajouterJoueur(Joueur joueur);

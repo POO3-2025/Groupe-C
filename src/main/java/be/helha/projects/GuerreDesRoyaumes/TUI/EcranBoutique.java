@@ -1,5 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
+import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceBoutique;
@@ -15,12 +16,14 @@ import java.util.List;
 public class EcranBoutique {
 
     private final ServiceBoutique serviceBoutique;
+    private final ItemDAO itemDAO;
     private final Joueur joueur;
     private final Screen screen;
     private final WindowBasedTextGUI textGUI;
 
-    public EcranBoutique(ServiceBoutique serviceBoutique, Joueur joueur, Screen screen) {
+    public EcranBoutique(ServiceBoutique serviceBoutique, ItemDAO itemDAO, Joueur joueur, Screen screen) {
         this.serviceBoutique = serviceBoutique;
+        this.itemDAO = itemDAO;
         this.joueur = joueur;
         this.screen = screen;
         this.textGUI = new MultiWindowTextGUI(screen);
@@ -35,7 +38,7 @@ public class EcranBoutique {
         panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
 
         // Liste des items disponibles
-        List<Item> items = serviceBoutique.obtenirTousLesItems();
+        List<Item> items = itemDAO.obtenirTousLesItems();
         if (items.isEmpty()) {
             panel.addComponent(new Label("Aucun item disponible"));
         } else {

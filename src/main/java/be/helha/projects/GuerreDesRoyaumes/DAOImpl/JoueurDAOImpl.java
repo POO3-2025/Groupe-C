@@ -48,8 +48,14 @@ public class JoueurDAOImpl implements JoueurDAO {
         }
     }
 
-    @Override
-    public boolean authentifierJoueur(String pseudo, String motDePasse) {
+    /**
+     * Vérifie si un joueur avec le pseudo et mot de passe spécifiés existe dans la base de données.
+     * Cette méthode est utilisée par ServiceAuthentificationImpl.
+     * @param pseudo Le pseudo du joueur
+     * @param motDePasse Le mot de passe du joueur
+     * @return true si le joueur existe avec ces identifiants, false sinon
+     */
+    public boolean verifierIdentifiants(String pseudo, String motDePasse) {
         String sql = "SELECT * FROM " + tableName + " WHERE pseudo_joueur = ? AND motDePasse_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, pseudo);
@@ -180,7 +186,6 @@ public class JoueurDAOImpl implements JoueurDAO {
             e.printStackTrace();
         }
     }
-
     public synchronized static JoueurDAOImpl getInstance() {
         if (instance == null) {
             instance = new JoueurDAOImpl();

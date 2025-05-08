@@ -2,6 +2,7 @@ package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
@@ -39,17 +40,11 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
     @Override
     public boolean authentifierJoueur(String pseudo, String motDePasse) {
-        return joueurDAO.authentifierJoueur(pseudo, motDePasse);
-    }
-
-    @Override
-    public Joueur obtenirJoueurParId(int id) {
-        return joueurDAO.obtenirJoueurParId(id);
-    }
-
-    @Override
-    public Joueur obtenirJoueurParPseudo(String pseudo) {
-        return joueurDAO.obtenirJoueurParPseudo(pseudo);
+        // Caster joueurDAO en JoueurDAOImpl pour accéder à la méthode verifierIdentifiants
+        if (joueurDAO instanceof JoueurDAOImpl) {
+            return ((JoueurDAOImpl) joueurDAO).verifierIdentifiants(pseudo, motDePasse);
+        }
+        return false; // Si l'implémentation n'est pas correcte
     }
 
     @Override
