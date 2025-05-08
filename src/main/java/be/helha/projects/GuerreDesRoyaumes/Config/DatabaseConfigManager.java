@@ -12,8 +12,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Objects;
-import lombok.Getter;
 
+import lombok.Getter;
 
 public class DatabaseConfigManager {
 
@@ -22,13 +22,11 @@ public class DatabaseConfigManager {
     @Getter
     private final JsonObject config;
     private MongoClient mongoClient;
+    static final String fileName = "db_config.json";
+
 
     private DatabaseConfigManager() {
-        try (InputStreamReader reader = new InputStreamReader(
-                Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream("db_config.json")),
-                StandardCharsets.UTF_8
-        ))
-        {
+        try (InputStreamReader reader = new InputStreamReader(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(fileName)), StandardCharsets.UTF_8)) {
             config = JsonParser.parseReader(reader).getAsJsonObject();
         } catch (Exception e) {
             throw new RuntimeException("Erreur lors du chargement de config.json", e);
@@ -47,6 +45,7 @@ public class DatabaseConfigManager {
     }
 
     public Connection getSQLConnection(String dbKey) throws SQLException {
+        Connection connection = null;
         try {
             JsonObject db = config.getAsJsonObject("db");
             JsonObject section = db.getAsJsonObject(dbKey);
@@ -59,11 +58,12 @@ public class DatabaseConfigManager {
             String user = creds.get("UserName").getAsString();
             String password = creds.get("Password").getAsString();
 
-            String dbUrl = "jdbc:sqlserver://" + host + ":" + port + ";databaseName=" + dbName + ";encrypt=false";
+            String dbUrl = "jdbc:" + dbType + "://" + host + ":" + port + ";databaseName=" + dbName + ";encrypt=false";
 
-            return DriverManager.getConnection(dbUrl, user, password);
+            connection = DriverManager.getConnection(dbUrl, user, password);
+            return connection;
 
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new SQLException("Erreur de connexion à SQL pour la clé " + dbKey, e);
         }
     }

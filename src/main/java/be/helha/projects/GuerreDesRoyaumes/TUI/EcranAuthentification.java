@@ -89,6 +89,24 @@ public class EcranAuthentification {
 
         panel.addComponent(new EmptySpace(new TerminalSize(0, 0)));
         Button boutonInscrire = new Button("S'inscrire", () -> {
+            // Vérification des champs vides
+            if (champNom.getText().isEmpty() || champPrenom.getText().isEmpty() || champPseudo.getText().isEmpty() || champMotDePasse.getText().isEmpty()) {
+                afficherMessageErreur("Tous les champs doivent être remplis.");
+                return;
+            }
+
+            // Validation du mot de passe
+            if (champMotDePasse.getText().length() < 6) {
+                afficherMessageErreur("Le mot de passe doit contenir au moins 6 caractères.");
+                return;
+            }
+
+            // Validation du pseudo
+            if (!champPseudo.getText().matches("[a-zA-Z0-9_]+")) {
+                afficherMessageErreur("Le pseudo ne peut contenir que des lettres, chiffres et underscores.");
+                return;
+            }
+
             try {
                 serviceAuthentification.inscrireJoueur(
                         champNom.getText(),
@@ -98,8 +116,13 @@ public class EcranAuthentification {
                 );
                 fenetre.close();
                 afficher(); // Retour à l'écran d'authentification
+            } catch (IllegalArgumentException e) {
+                afficherMessageErreur("Erreur : " + e.getMessage());
+            } catch (RuntimeException e) {
+                afficherMessageErreur("Erreur lors de l'inscription : " + e.getMessage());
             } catch (Exception e) {
-                afficherMessageErreur(e.getMessage());
+                afficherMessageErreur("Erreur inattendue : " + e.getMessage());
+                e.printStackTrace(); // Affiche la stack trace dans la console pour le débogage
             }
         });
         panel.addComponent(boutonInscrire);

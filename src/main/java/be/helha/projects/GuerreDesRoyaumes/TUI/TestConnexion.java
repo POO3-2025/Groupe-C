@@ -8,6 +8,7 @@ import java.sql.Connection;
 
 public class TestConnexion {
     public static void main(String[] args) {
+
         // Récupérer l'instance du manager
         DatabaseConfigManager configManager = DatabaseConfigManager.getInstance();
 
