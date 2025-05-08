@@ -54,6 +54,7 @@ public class EcranBoutique {
             }
             panel.addComponent(tableItems);
 
+
             // Ajouter des champs pour acheter un item
             panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
             panel.addComponent(new Label("Acheter un item:"));
