@@ -9,6 +9,9 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
+import org.springframework.security.crypto.bcrypt.BCrypt;
+
+import java.sql.SQLException;
 
 public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
@@ -27,12 +30,18 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
             throw new IllegalArgumentException("Ce pseudo est déjà utilisé");
         }
 
-        // Créer un nouveau royaume et inventaire par défaut
+        // Validation du format du pseudo
+        if (!pseudo.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Le pseudo ne peut contenir que des lettres, chiffres et underscores.");
+        }
+
+        // Créer un nouveau royaume et le coffre par défaut
         Royaume royaume = new Royaume(0, "Royaume de " + pseudo, 1);
         Coffre coffre = new Coffre();
 
-        // Créer le joueur (sans personnage pour l'instant)
-        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasse, 100, royaume, null, coffre);
+        // Créer le joueur avec le mot de passe haché
+        String motDePasseHache = BCrypt.hashpw(motDePasse, BCrypt.gensalt());
+        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasseHache, 100, royaume, null, coffre);
 
         // Persister le joueur
         joueurDAO.ajouterJoueur(joueur);
@@ -64,7 +73,11 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
         // Mettre à jour les informations
         joueur.setPseudo(pseudo);
-        joueur.setMotDePasse(motDePasse);
+
+        // Si le mot de passe est changé, le hacher
+        if (!motDePasse.equals(joueur.getMotDePasse())) {
+            joueur.setMotDePasse(BCrypt.hashpw(motDePasse, BCrypt.gensalt()));
+        }
 
         // Persister les modifications
         joueurDAO.mettreAJourJoueur(joueur);

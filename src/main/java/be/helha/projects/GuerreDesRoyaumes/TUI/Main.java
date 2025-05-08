@@ -1,7 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
 import be.helha.projects.GuerreDesRoyaumes.Config.DatabaseConfigManager;
-import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceAuthentificationImpl;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
