@@ -1,16 +1,16 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
-import be.helha.projects.GuerreDesRoyaumes.Config.DatabaseConfigManager;
+import be.helha.projects.GuerreDesRoyaumes.Config.*;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceAuthentificationImpl;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
+import com.googlecode.lanterna.terminal.swing.SwingTerminalFrame;
 import com.mongodb.client.MongoDatabase;
 
 import java.io.IOException;
@@ -23,13 +23,14 @@ public class Main {
         Screen screen = null;
 
         try {
-            // Étape 1 : Obtenir l'instance du gestionnaire de configuration de la base de données
-            DatabaseConfigManager dbConfigManager = DatabaseConfigManager.getInstance();
-            System.out.println("Gestionnaire de configuration initialisé avec succès!");
+            // Étape 1 : Obtenir les instances des gestionnaires de base de données
+            SQLConfigManager sqlManager = SQLConfigManager.getInstance();
+            MongoDBConfigManager mongoManager = MongoDBConfigManager.getInstance();
+            System.out.println("Gestionnaires de configuration initialisés avec succès!");
 
             try {
                 // Étape 2 : Obtenir la connexion SQL
-                sqlConnection = dbConfigManager.getSQLConnection("sqlserver");
+                sqlConnection = sqlManager.getConnection("sqlserver");
                 System.out.println("Connexion à la base de données SQL réussie!");
             } catch (Exception e) {
                 System.err.println("Erreur lors de la connexion à la base de données SQL: " + e.getMessage());
@@ -39,7 +40,7 @@ public class Main {
 
             try {
                 // Étape 3 : Obtenir la base de données MongoDB
-                MongoDatabase mongoDatabase = dbConfigManager.getMongoDatabase("mongodb");
+                MongoDatabase mongoDatabase = mongoManager.getDatabase("mongodb");
                 System.out.println("Connexion à la base de données MongoDB réussie!");
             } catch (Exception e) {
                 System.err.println("Erreur lors de la connexion à la base de données MongoDB: " + e.getMessage());
@@ -62,10 +63,19 @@ public class Main {
             ServiceAuthentification serviceAuthentification = new ServiceAuthentificationImpl(joueurDAO, null);
             System.out.println("Service d'authentification initialisé avec succès!");
 
-            // Initialiser Lanterna
-            Terminal terminal = new DefaultTerminalFactory().createTerminal();
+            // Utilisation de DefaultTerminalFactory pour créer un terminal Swing
+            DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
+            // Spécifiez les dimensions ici
+            terminalFactory.setInitialTerminalSize(new TerminalSize(80, 24));
+            // Ajout du SwingTerminal dans un SwingTerminalFrame
+            SwingTerminalFrame terminal = terminalFactory.createSwingTerminal();
+            terminal.setVisible(true);
+            terminal.setResizable(false); // Désactiver la redimension
+
+            // Création de l'écran à partir du terminal
             screen = new TerminalScreen(terminal);
-            screen.startScreen();
+
+            screen.startScreen(); // Démarre l'écran du terminal
             System.out.println("Interface Lanterna initialisée avec succès!");
 
             // Afficher l'écran d'authentification
@@ -89,7 +99,7 @@ public class Main {
                 }
 
                 // Fermer le client MongoDB
-                DatabaseConfigManager.getInstance().closeMongoClient();
+                MongoDBConfigManager.getInstance().closeClient();
                 System.out.println("Client MongoDB fermé avec succès!");
 
             } catch (Exception e) {
