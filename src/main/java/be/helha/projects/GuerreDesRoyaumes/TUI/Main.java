@@ -70,7 +70,7 @@ public class Main {
             // Ajout du SwingTerminal dans un SwingTerminalFrame
             SwingTerminalFrame terminal = terminalFactory.createSwingTerminal();
             terminal.setVisible(true);
-            terminal.setResizable(false); // Désactiver la redimension
+            terminal.setResizable(true); // Désactiver la redimension
 
             // Création de l'écran à partir du terminal
             screen = new TerminalScreen(terminal);

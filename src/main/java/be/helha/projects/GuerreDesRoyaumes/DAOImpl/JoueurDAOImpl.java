@@ -202,9 +202,9 @@ public class JoueurDAOImpl implements JoueurDAO {
         int argent = resultSet.getInt("argent_joueur");
 
         // Ces objets seraient normalement récupérés via leurs propres DAOs
-        Royaume royaume = null; // À compléter avec le DAO du royaume
-        Personnage personnage = null; // À compléter avec le DAO du personnage
-        Coffre coffre = null; // À compléter avec le DAO du coffre
+        Royaume royaume = null; // TODO À compléter avec le DAO du royaume
+        Personnage personnage = null; // TODO À compléter avec le DAO du personnage
+        Coffre coffre = null; // TODO À compléter avec le DAO du coffre
 
         return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, royaume, personnage, coffre);
     }
