@@ -209,7 +209,3 @@ public class JoueurDAOImpl implements JoueurDAO {
         return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, royaume, personnage, coffre);
     }
 }
-
-
-
-

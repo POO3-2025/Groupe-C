@@ -1,8 +1,10 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
@@ -17,12 +19,12 @@ public class EcranAuthentification {
 
     public EcranAuthentification(ServiceAuthentification serviceAuthentification, JoueurDAO joueurDAO, Screen screen) {
         this.serviceAuthentification = serviceAuthentification;
-        this.joueurDAO = joueurDAO;
         this.screen = screen;
         this.textGUI = new MultiWindowTextGUI(screen);
+        this.joueurDAO = joueurDAO;
     }
 
-    public void afficher() {
+    public void afficherEcranConnexion() {
         // Création de la fenêtre d'authentification
         Window fenetre = new BasicWindow("Authentification");
         fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
@@ -30,18 +32,27 @@ public class EcranAuthentification {
         // Création d'un panel pour organiser les éléments
         Panel panel = new Panel(new GridLayout(2));
 
-        // Ajout des champs pour la connexion
-        panel.addComponent(new Label("Pseudo:"));
+        // Ajout du Label "Pseudo" avec couleur spécifique
+        Label labelPseudo = new Label("Pseudo :");
+        labelPseudo.setForegroundColor(TextColor.ANSI.BLACK);  // Couleur du texte
+        panel.addComponent(labelPseudo);
+
+        // Champ de texte pour le pseudo
         TextBox champPseudo = new TextBox(new TerminalSize(30, 1));
         panel.addComponent(champPseudo);
 
-        panel.addComponent(new Label("Mot de passe:"));
+        // Ajout du Label "Mot de passe" avec couleur spécifique
+        Label labelMotDePasse = new Label("Mot de passe :");
+        labelMotDePasse.setForegroundColor(TextColor.ANSI.BLACK); // Couleur du texte
+        panel.addComponent(labelMotDePasse);
+
+        // Champ de texte pour le mot de passe
         TextBox champMotDePasse = new TextBox(new TerminalSize(30, 1)).setMask('*');
         panel.addComponent(champMotDePasse);
 
         // Ajout de boutons pour les actions
         Panel boutonsPanel = new Panel(new GridLayout(2));
-        boutonsPanel.addComponent(new Button("Connexion", () -> {
+        boutonsPanel.addComponent(new Button("Se connecter", () -> {
             boolean authentifie = serviceAuthentification.authentifierJoueur(
                     champPseudo.getText(),
                     champMotDePasse.getText()
@@ -55,7 +66,6 @@ public class EcranAuthentification {
                 afficherMessageErreur("Authentification échouée");
             }
         }));
-
         boutonsPanel.addComponent(new Button("Inscription", () -> {
             fenetre.close();
             afficherEcranInscription();
@@ -90,8 +100,27 @@ public class EcranAuthentification {
         TextBox champMotDePasse = new TextBox(new TerminalSize(30, 1)).setMask('*');
         panel.addComponent(champMotDePasse);
 
-        panel.addComponent(new EmptySpace(new TerminalSize(0, 0)));
-        Button boutonInscrire = new Button("S'inscrire", () -> {
+        Panel boutonsPanel = new Panel(new GridLayout(2));
+
+        boutonsPanel.addComponent(new Button("S'inscrire", () -> {
+            // Vérification des champs vides
+            if (champNom.getText().isEmpty() || champPrenom.getText().isEmpty() || champPseudo.getText().isEmpty() || champMotDePasse.getText().isEmpty()) {
+                afficherMessageErreur("Tous les champs doivent être remplis.");
+                return;
+            }
+
+            // Validation du mot de passe
+            if (champMotDePasse.getText().length() < 6) {
+                afficherMessageErreur("Le mot de passe doit contenir au moins 6 caractères.");
+                return;
+            }
+
+            // Validation du pseudo
+            if (!champPseudo.getText().matches("[a-zA-Z0-9_]+")) {
+                afficherMessageErreur("Le pseudo ne peut contenir que des lettres, chiffres et underscores.");
+                return;
+            }
+
             try {
                 serviceAuthentification.inscrireJoueur(
                         champNom.getText(),
@@ -100,12 +129,23 @@ public class EcranAuthentification {
                         champMotDePasse.getText()
                 );
                 fenetre.close();
-                afficher(); // Retour à l'écran d'authentification
+                afficherEcranConnexion(); // Retour à l'écran d'authentification
+            } catch (IllegalArgumentException e) {
+                afficherMessageErreur("Erreur : " + e.getMessage());
+            } catch (RuntimeException e) {
+                afficherMessageErreur("Erreur lors de l'inscription : " + e.getMessage());
             } catch (Exception e) {
-                afficherMessageErreur(e.getMessage());
+                afficherMessageErreur("Erreur inattendue : " + e.getMessage());
+                e.printStackTrace(); // Affiche la stack trace dans la console pour le débogage
             }
-        });
-        panel.addComponent(boutonInscrire);
+        }));
+
+        boutonsPanel.addComponent(new Button("Connexion", () -> {
+            fenetre.close();
+            afficherEcranConnexion();
+        }));
+
+        panel.addComponent(boutonsPanel);
 
         fenetre.setComponent(panel);
         textGUI.addWindowAndWait(fenetre);

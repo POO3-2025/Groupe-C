@@ -80,7 +80,7 @@ public class Main {
 
             // Afficher l'écran d'authentification
             EcranAuthentification ecranAuthentification = new EcranAuthentification(serviceAuthentification, joueurDAO, screen);
-            ecranAuthentification.afficher();
+            ecranAuthentification.afficherEcranConnexion();
 
         } catch (Exception e) {
             System.err.println("Erreur fatale lors de l'initialisation de l'application: " + e.getMessage());
