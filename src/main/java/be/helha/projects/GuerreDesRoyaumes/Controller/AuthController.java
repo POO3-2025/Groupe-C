@@ -2,12 +2,15 @@ package be.helha.projects.GuerreDesRoyaumes.Controller;
 
 import be.helha.projects.GuerreDesRoyaumes.Config.JwtUtils;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.JoueurNotFoundException;
 import be.helha.projects.GuerreDesRoyaumes.Model.AuthResponse;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.LoginRequest;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,13 +21,16 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/joueurs")
 public class AuthController {
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -35,7 +41,8 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    private final JoueurDAOImpl joueurDAO = JoueurDAOImpl.getInstance();
+    @Autowired
+    private JoueurDAO joueurDAO;
 
     @PostMapping
     public ResponseEntity<String> ajouterJoueur(@RequestBody Joueur joueur) {
@@ -47,15 +54,19 @@ public class AuthController {
         }
     }
 
-    @GetMapping
+    @GetMapping("")
     public ResponseEntity<List<Joueur>> getAllJoueurs() {
+        logger.info("Requête GET /joueurs reçue");
         try {
             List<Joueur> joueurs = joueurDAO.obtenirTousLesJoueurs();
+            logger.info("Nombre de joueurs trouvés : {}", joueurs.size());
             if (joueurs.isEmpty()) {
+                logger.warn("Aucun joueur trouvé");
                 return ResponseEntity.noContent().build();
             }
             return ResponseEntity.ok(joueurs);
         } catch (Exception e) {
+            logger.error("Erreur lors de la récupération des joueurs : {}", e.getMessage());
             return ResponseEntity.status(500).build();
         }
     }
