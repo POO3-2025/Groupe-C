@@ -41,7 +41,7 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
         // Créer le joueur avec le mot de passe haché
         String motDePasseHache = BCrypt.hashpw(motDePasse, BCrypt.gensalt());
-        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasseHache, 100, royaume, null, coffre);
+        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasseHache, 100, royaume, null, coffre,0,0);
 
         // Persister le joueur
         joueurDAO.ajouterJoueur(joueur);
