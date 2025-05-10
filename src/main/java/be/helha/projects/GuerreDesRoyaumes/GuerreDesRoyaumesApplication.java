@@ -1,14 +1,21 @@
+
 package be.helha.projects.GuerreDesRoyaumes;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
 
+/**
+ * Classe principale de l'application Guerre des Royaumes.
+ * Configure et lance l'application Spring Boot avec support pour JWT.
+ */
 @SpringBootApplication
+@ComponentScan(basePackages = {"be.helha.projects.GuerreDesRoyaumes"})
 public class GuerreDesRoyaumesApplication {
 
     /** Constructeur par défaut */
-    GuerreDesRoyaumesApplication()
-    {
+    public GuerreDesRoyaumesApplication() {
     }
 
     /**
@@ -17,10 +24,7 @@ public class GuerreDesRoyaumesApplication {
      * @param args Les arguments de ligne de commande.
      */
     public static void main(String[] args) {
-
         // Démarre l'application Spring Boot
         SpringApplication.run(GuerreDesRoyaumesApplication.class, args);
     }
-
-
 }

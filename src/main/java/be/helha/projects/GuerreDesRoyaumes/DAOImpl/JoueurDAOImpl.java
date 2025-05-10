@@ -56,12 +56,19 @@ public class JoueurDAOImpl implements JoueurDAO {
      * @return true si le joueur existe avec ces identifiants, false sinon
      */
     public boolean verifierIdentifiants(String pseudo, String motDePasse) {
-        String sql = "SELECT * FROM " + tableName + " WHERE pseudo_joueur = ? AND motDePasse_joueur = ?";
+        String sql = "SELECT * FROM " + tableName + " WHERE pseudo_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, pseudo);
-            statement.setString(2, motDePasse);
             ResultSet resultSet = statement.executeQuery();
-            return resultSet.next(); // Retourne true si un joueur correspondant est trouvé
+
+            if (resultSet.next()) {
+                // Récupérer le mot de passe haché de la base de données
+                String motDePasseHache = resultSet.getString("motDePasse_joueur");
+
+                // Vérifier si le mot de passe saisi correspond au hash stocké
+                return org.springframework.security.crypto.bcrypt.BCrypt.checkpw(motDePasse, motDePasseHache);
+            }
+            return false; // Aucun utilisateur trouvé avec ce pseudo
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -186,6 +193,8 @@ public class JoueurDAOImpl implements JoueurDAO {
             e.printStackTrace();
         }
     }
+
+
     public synchronized static JoueurDAOImpl getInstance() {
         if (instance == null) {
             instance = new JoueurDAOImpl();
@@ -209,3 +218,7 @@ public class JoueurDAOImpl implements JoueurDAO {
         return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, royaume, personnage, coffre);
     }
 }
+
+
+
+
