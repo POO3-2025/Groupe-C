@@ -11,7 +11,6 @@ import org.springframework.context.annotation.ComponentScan;
  * Configure et lance l'application Spring Boot avec support pour JWT.
  */
 @SpringBootApplication
-@ComponentScan(basePackages = {"be.helha.projects.GuerreDesRoyaumes"})
 public class GuerreDesRoyaumesApplication {
 
     /** Constructeur par défaut */

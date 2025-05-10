@@ -26,7 +26,7 @@ public class Joueur {
 
 
     //Construteur
-    public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent , Royaume royaume, Personnage personnage, Coffre coffre) {
+    public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent, Royaume royaume, Personnage personnage, Coffre coffre) {
         this.id = id;
         this.nom = nom;
         this.prenom = prenom;
@@ -39,8 +39,16 @@ public class Joueur {
         this.competencesAchetees = new HashMap<>(); // Initialisation de la liste des compétences achetées
     }
 
-    public Joueur() {
+    public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent) {
+        this.id = id;
+        this.nom = nom;
+        this.prenom = prenom;
+        this.pseudo = pseudo;
+        this.motDePasse = motDePasse;
+        this.argent = argent;
+    }
 
+    public Joueur() {
     }
 
 
@@ -48,30 +56,39 @@ public class Joueur {
     public int getId() {
         return id;
     }
+
     public String getNom() {
         return nom;
     }
+
     public String getPrenom() {
         return prenom;
     }
+
     public String getPseudo() {
         return pseudo;
     }
+
     public String getMotDePasse() {
         return motDePasse;
     }
+
     public Royaume getRoyaume() {
         return royaume;
     }
+
     public Personnage getPersonnage() {
         return personnage;
     }
+
     public int getArgent() {
         return argent;
     }
+
     public Coffre getCoffre() {
         return coffre;
     }
+
     public Map<String, Competence> getCompetencesAchetees() {
         return competencesAchetees;
     }
@@ -80,30 +97,39 @@ public class Joueur {
     public void setId(int id) {
         this.id = id;
     }
+
     public void setNom(String nom) {
         this.nom = nom;
     }
+
     public void setPrenom(String prenom) {
         this.prenom = prenom;
     }
+
     public void setPseudo(String pseudo) {
         this.pseudo = pseudo;
     }
+
     public void setMotDePasse(String motDePasse) {
         this.motDePasse = motDePasse;
     }
+
     public void setRoyaume(Royaume royaume) {
         this.royaume = royaume;
     }
+
     public void setPersonnage(Personnage personnage) {
         this.personnage = personnage;
     }
+
     public void setArgent(int argent) {
         this.argent = argent;
     }
+
     public void setCoffre(Coffre coffre) {
         this.coffre = coffre;
     }
+
     public void setCompetencesAchetees(Map<String, Competence> competencesAchetees) {
         this.competencesAchetees = competencesAchetees;
     }
@@ -206,7 +232,7 @@ public class Joueur {
 
     @Override
     public String toString() {
-        return  "\nNom        = " + nom +
+        return "\nNom        = " + nom +
                 "\nPrenom     = " + prenom +
                 "\nPseudo     = " + pseudo +
                 "\nRoyaume    = " + royaume +

@@ -1,6 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseOperationException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
@@ -98,6 +99,31 @@ public class JoueurDAOImpl implements JoueurDAO {
         }
     }
 
+    public synchronized static JoueurDAOImpl getInstance() {
+        if (instance == null) {
+            instance = new JoueurDAOImpl();
+        }
+        return instance;
+    }
+
+    private Joueur extraireJoueurDeResultSet(ResultSet resultSet) throws SQLException {
+        int id = resultSet.getInt("id_joueur");
+        String nom = resultSet.getString("nom_joueur");
+        String prenom = resultSet.getString("prenom_joueur");
+        String pseudo = resultSet.getString("pseudo_joueur");
+        String motDePasse = resultSet.getString("motDePasse_joueur");
+        int argent = resultSet.getInt("argent_joueur");
+
+        // Ces objets seraient normalement récupérés via leurs propres DAOs
+        Royaume royaume = null; // TODO À compléter avec le DAO du royaume
+        Personnage personnage = null; // TODO À compléter avec le DAO du personnage
+        Coffre coffre = null; // TODO À compléter avec le DAO du coffre
+
+        return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, royaume, personnage, coffre);
+    }
+
+
+
     // Create
     @Override
     public void ajouterJoueur(Joueur joueur) {
@@ -192,30 +218,6 @@ public class JoueurDAOImpl implements JoueurDAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
-
-
-    public synchronized static JoueurDAOImpl getInstance() {
-        if (instance == null) {
-            instance = new JoueurDAOImpl();
-        }
-        return instance;
-    }
-
-    private Joueur extraireJoueurDeResultSet(ResultSet resultSet) throws SQLException {
-        int id = resultSet.getInt("id_joueur");
-        String nom = resultSet.getString("nom_joueur");
-        String prenom = resultSet.getString("prenom_joueur");
-        String pseudo = resultSet.getString("pseudo_joueur");
-        String motDePasse = resultSet.getString("motDePasse_joueur");
-        int argent = resultSet.getInt("argent_joueur");
-
-        // Ces objets seraient normalement récupérés via leurs propres DAOs
-        Royaume royaume = null; // TODO À compléter avec le DAO du royaume
-        Personnage personnage = null; // TODO À compléter avec le DAO du personnage
-        Coffre coffre = null; // TODO À compléter avec le DAO du coffre
-
-        return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, royaume, personnage, coffre);
     }
 }
 
