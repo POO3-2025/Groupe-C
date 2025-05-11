@@ -1,6 +1,9 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.JoueurNotFoundException;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.AuthentificationException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
@@ -24,6 +27,21 @@ public class JoueurDAOImpl implements JoueurDAO {
     public JoueurDAOImpl() {
     }
 
+    /**
+     * Définit une connexion SQL externe pour ce DAO.
+     * Cette méthode est utilisée lorsque la connexion est gérée manuellement en dehors du contexte Spring.
+     * @param connection La connexion SQL à utiliser
+     */
+    public void setConnection(Connection connection) {
+        this.connection = connection;
+        try {
+            // Créer la table joueur si elle n'existe pas
+            creerTableJoueurSiInexistante();
+        } catch (Exception e) {
+            throw new DatabaseException("Erreur lors de la création de la table joueur", e);
+        }
+    }
+
     @Autowired
     public void setDataSource(DataSource dataSource) {
         try {
@@ -31,25 +49,29 @@ public class JoueurDAOImpl implements JoueurDAO {
             // Créer la table joueur si elle n'existe pas
             creerTableJoueurSiInexistante();
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la connexion à la base de données", e);
+            throw new DatabaseException("Erreur lors de la connexion à la base de données", e);
         }
     }
 
     @Override
-    public int getNextJoueurID() throws SQLException {
+    public int getNextJoueurID() {
         String query = "SELECT MAX(id_joueur) FROM " + tableName;
-        if (connection == null || connection.isClosed()) {
-            throw new SQLException("La connexion à la base de données est fermée ou inexistante !");
-        }
-
-        try (PreparedStatement statement = connection.prepareStatement(query);
-             ResultSet resultSet = statement.executeQuery()) {
-
-            if (resultSet.next()) {
-                return resultSet.getInt(1) + 1;
-            } else {
-                return 1; // Si aucun joueur n'existe, l'ID suivant est 1
+        try {
+            if (connection == null || connection.isClosed()) {
+                throw new DatabaseException("La connexion à la base de données est fermée ou inexistante !");
             }
+
+            try (PreparedStatement statement = connection.prepareStatement(query);
+                 ResultSet resultSet = statement.executeQuery()) {
+
+                if (resultSet.next()) {
+                    return resultSet.getInt(1) + 1;
+                } else {
+                    return 1; // Si aucun joueur n'existe, l'ID suivant est 1
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("Erreur lors de la récupération du prochain ID de joueur", e);
         }
     }
 
@@ -75,8 +97,7 @@ public class JoueurDAOImpl implements JoueurDAO {
             }
             return false; // Aucun utilisateur trouvé avec ce pseudo
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new AuthentificationException("Erreur lors de la vérification des identifiants", e);
         }
     }
 
@@ -98,8 +119,7 @@ public class JoueurDAOImpl implements JoueurDAO {
         try (PreparedStatement statement = connection.prepareStatement(createTableQuery)) {
             statement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Erreur lors de la création de la table joueur: " + e.getMessage());
+            throw new DatabaseException("Erreur lors de la création de la table joueur", e);
         }
     }
 
@@ -145,7 +165,7 @@ public class JoueurDAOImpl implements JoueurDAO {
                 joueur.setId(generatedKeys.getInt(1));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DatabaseException("Erreur lors de l'ajout du joueur: " + joueur.getPseudo(), e);
         }
     }
 
@@ -158,11 +178,12 @@ public class JoueurDAOImpl implements JoueurDAO {
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 return extraireJoueurDeResultSet(resultSet);
+            } else {
+                throw new JoueurNotFoundException(id);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DatabaseException("Erreur lors de la récupération du joueur avec l'ID: " + id, e);
         }
-        return null;
     }
 
     @Override
@@ -175,7 +196,7 @@ public class JoueurDAOImpl implements JoueurDAO {
                 return extraireJoueurDeResultSet(resultSet);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DatabaseException("Erreur lors de la récupération du joueur avec le pseudo: " + pseudo, e);
         }
         return null;
     }
@@ -190,7 +211,7 @@ public class JoueurDAOImpl implements JoueurDAO {
                 joueurs.add(extraireJoueurDeResultSet(resultSet));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DatabaseException("Erreur lors de la récupération de tous les joueurs", e);
         }
         return joueurs;
     }
@@ -206,9 +227,13 @@ public class JoueurDAOImpl implements JoueurDAO {
             statement.setString(4, joueur.getMotDePasse());
             statement.setInt(5, joueur.getArgent());
             statement.setInt(6, joueur.getId());
-            statement.executeUpdate();
+            int rowsAffected = statement.executeUpdate();
+
+            if (rowsAffected == 0) {
+                throw new JoueurNotFoundException(joueur.getId());
+            }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DatabaseException("Erreur lors de la mise à jour du joueur avec l'ID: " + joueur.getId(), e);
         }
     }
 
@@ -218,12 +243,15 @@ public class JoueurDAOImpl implements JoueurDAO {
         String sql = "DELETE FROM " + tableName + " WHERE id_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
-            statement.executeUpdate();
+            int rowsAffected = statement.executeUpdate();
+
+            if (rowsAffected == 0) {
+                throw new JoueurNotFoundException(id);
+            }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DatabaseException("Erreur lors de la suppression du joueur avec l'ID: " + id, e);
         }
     }
-
 }
 
 

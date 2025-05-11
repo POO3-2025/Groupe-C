@@ -1,8 +1,7 @@
-
-
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.JoueurUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +10,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -20,13 +19,13 @@ import java.util.List;
 @Service
 public class JoueurUserDetailsServiceImpl implements UserDetailsService, JoueurUserDetailsService {
 
-    private final JoueurDAOImpl joueurDAO;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final JoueurDAO joueurDAO;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public JoueurUserDetailsServiceImpl() {
-        this.joueurDAO = JoueurDAOImpl.getInstance();
-        this.passwordEncoder = new BCryptPasswordEncoder();
+    public JoueurUserDetailsServiceImpl(JoueurDAO joueurDAO, PasswordEncoder passwordEncoder) {
+        this.joueurDAO = joueurDAO;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
