@@ -34,7 +34,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers("/joueurs/inscription", "/joueurs/connexion", "/joueurs",
-                                "/auth/inscription", "/auth/connexion").permitAll()
+                                "/auth/inscription", "/auth/connexion",
+                                "/boutique/items", "/boutique/items/type/*", "/boutique/items/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
