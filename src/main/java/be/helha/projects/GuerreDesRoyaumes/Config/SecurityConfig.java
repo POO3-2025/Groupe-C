@@ -33,7 +33,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/joueurs/inscription", "/joueurs/connexion", "/joueurs").permitAll()
+                        .requestMatchers("/joueurs/inscription", "/joueurs/connexion", "/joueurs",
+                                "/auth/inscription", "/auth/connexion").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

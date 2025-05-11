@@ -11,13 +11,24 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+import javax.sql.DataSource;
 
+@Repository
 public class PersonnageDAOImpl implements PersonnageDAO {
 
     private Connection connection;
 
-    public PersonnageDAOImpl(Connection connection) {
-        this.connection = connection;
+    @Autowired
+    public void setDataSource(DataSource dataSource) {
+        try {
+            this.connection = dataSource.getConnection();
+            // Créer la table si elle n'existe pas
+            creerTablePersonnageSiInexistante();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la connexion à la base de données", e);
+        }
     }
 
     @Override

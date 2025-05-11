@@ -5,12 +5,16 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
 import java.io.ObjectInputFilter;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@Repository
 public class JoueurDAOImpl implements JoueurDAO {
 
     private static JoueurDAOImpl instance;
@@ -20,14 +24,15 @@ public class JoueurDAOImpl implements JoueurDAO {
     public JoueurDAOImpl() {
     }
 
-    /**
-     * Définit la connexion à la base de données
-     * @param connection La connexion à utiliser
-     */
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-        // Créer la table joueur si elle n'existe pas
-        creerTableJoueurSiInexistante();
+    @Autowired
+    public void setDataSource(DataSource dataSource) {
+        try {
+            this.connection = dataSource.getConnection();
+            // Créer la table joueur si elle n'existe pas
+            creerTableJoueurSiInexistante();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la connexion à la base de données", e);
+        }
     }
 
     @Override

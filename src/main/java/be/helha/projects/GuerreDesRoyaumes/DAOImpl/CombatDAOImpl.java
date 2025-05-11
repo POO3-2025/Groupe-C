@@ -3,17 +3,31 @@ package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Combat;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@Repository
 public class CombatDAOImpl implements CombatDAO {
 
     private Connection connection;
 
-    public CombatDAOImpl(Connection connection) {
-        this.connection = connection;
+    @Autowired
+    public void setDataSource(DataSource dataSource) {
+        try {
+            this.connection = dataSource.getConnection();
+            // Ici on pourrait ajouter une méthode pour créer la table si elle n'existe pas
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la connexion à la base de données", e);
+        }
+    }
+
+    // Constructeur par défaut requis par Spring
+    public CombatDAOImpl() {
     }
 
     @Override

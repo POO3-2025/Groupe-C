@@ -9,15 +9,19 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
 
+@Service
 public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
     private JoueurDAO joueurDAO;
     private PersonnageDAO personnageDAO;
 
+    @Autowired
     public ServiceAuthentificationImpl(JoueurDAO joueurDAO, PersonnageDAO personnageDAO) {
         this.joueurDAO = joueurDAO;
         this.personnageDAO = personnageDAO;
@@ -41,7 +45,7 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
         // Créer le joueur avec le mot de passe haché
         String motDePasseHache = BCrypt.hashpw(motDePasse, BCrypt.gensalt());
-        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasseHache, 100, royaume, null, coffre,0,0);
+        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasseHache, 100, royaume, null, coffre);
 
         // Persister le joueur
         joueurDAO.ajouterJoueur(joueur);
