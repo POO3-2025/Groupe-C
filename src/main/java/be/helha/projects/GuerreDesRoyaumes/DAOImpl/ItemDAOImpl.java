@@ -11,29 +11,50 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implémentation de l'interface ItemDAO pour la gestion des items en base de données.
+ * Cette classe gère les opérations CRUD pour les entités Item et leurs sous-types (Arme, Bouclier, Potion).
+ * Elle utilise un pattern Singleton pour assurer une instance unique.
+ */
 @Repository
 public class ItemDAOImpl implements ItemDAO {
 
     private Connection connection;
     private static ItemDAOImpl instance;
 
-    // Constructeur par défaut pour Spring
+    /**
+     * Constructeur par défaut pour Spring.
+     */
     public ItemDAOImpl() {
     }
 
-    // Constructeur avec connection
+    /**
+     * Constructeur avec connexion à la base de données.
+     * Crée également la table des compétences si elle n'existe pas.
+     *
+     * @param connection La connexion à la base de données à utiliser
+     */
     public ItemDAOImpl(Connection connection) {
         this.connection = connection;
         creerTableCompetenceSiInexistante();
     }
 
+    /**
+     * Configure la connexion à la base de données.
+     * Crée également la table des compétences si elle n'existe pas.
+     *
+     * @param connection La connexion à la base de données à utiliser
+     */
     public void setConnection(Connection connection) {
         this.connection = connection;
         creerTableCompetenceSiInexistante();
     }
 
     /**
-     * Crée la table des compétences si elle n'existe pas déjà
+     * Crée la table des compétences si elle n'existe pas déjà.
+     * Vérifie d'abord si la connexion est établie.
+     *
+     * @throws RuntimeException Si une erreur survient lors de la création de la table
      */
     private void creerTableCompetenceSiInexistante() {
         if (connection == null) {
@@ -60,6 +81,11 @@ public class ItemDAOImpl implements ItemDAO {
         }
     }
 
+    /**
+     * Retourne l'instance unique de ItemDAOImpl (pattern Singleton).
+     *
+     * @return L'instance unique de ItemDAOImpl
+     */
     public synchronized static ItemDAOImpl getInstance() {
         if (instance == null) {
             instance = new ItemDAOImpl();
@@ -67,6 +93,13 @@ public class ItemDAOImpl implements ItemDAO {
         return instance;
     }
 
+    /**
+     * Ajoute un nouvel item dans la base de données.
+     * Gère également l'insertion des propriétés spécifiques selon le type d'item (Arme, Bouclier, Potion).
+     *
+     * @param item L'item à ajouter
+     * @throws RuntimeException Si la connexion n'est pas établie ou si une erreur survient lors de l'ajout
+     */
     @Override
     public void ajouterItem(Item item) {
         // Si la connexion n'est pas établie, on ne peut pas ajouter d'item
@@ -125,6 +158,12 @@ public class ItemDAOImpl implements ItemDAO {
         }
     }
 
+    /**
+     * Détermine le type d'item sous forme de chaîne de caractères.
+     *
+     * @param item L'item dont on veut déterminer le type
+     * @return Une chaîne de caractères représentant le type de l'item
+     */
     private String obtenirTypeItem(Item item) {
         if (item instanceof Arme) {
             return "arme";
@@ -139,6 +178,12 @@ public class ItemDAOImpl implements ItemDAO {
         return "item";
     }
 
+    /**
+     * Récupère un item par son identifiant.
+     *
+     * @param id L'identifiant de l'item à récupérer
+     * @return L'item correspondant à l'identifiant ou null si aucun item n'est trouvé ou si la connexion n'est pas établie
+     */
     @Override
     public Item obtenirItemParId(int id) {
         // Si la connexion n'est pas établie, on retourne null
@@ -159,6 +204,13 @@ public class ItemDAOImpl implements ItemDAO {
         return null;
     }
 
+    /**
+     * Extrait les données d'un item à partir d'un ResultSet et crée l'instance appropriée selon le type.
+     *
+     * @param resultSet Le ResultSet contenant les données de l'item
+     * @return Un objet Item (ou une de ses sous-classes) créé à partir des données du ResultSet
+     * @throws SQLException Si une erreur survient lors de l'extraction des données
+     */
     private Item extraireItemDeResultSet(ResultSet resultSet) throws SQLException {
         int id = resultSet.getInt("id");
         String nom = resultSet.getString("nom");
@@ -215,6 +267,11 @@ public class ItemDAOImpl implements ItemDAO {
         }
     }
 
+    /**
+     * Récupère tous les items enregistrés dans la base de données.
+     *
+     * @return Une liste de tous les items ou une liste vide si la connexion n'est pas établie
+     */
     @Override
     public List<Item> obtenirTousLesItems() {
         // Si la connexion n'est pas établie, on retourne une liste vide
@@ -235,6 +292,12 @@ public class ItemDAOImpl implements ItemDAO {
         return items;
     }
 
+    /**
+     * Récupère tous les items d'un type spécifique.
+     *
+     * @param type Le type d'item à récupérer (arme, bouclier, potion, etc.)
+     * @return Une liste des items du type spécifié ou une liste vide si la connexion n'est pas établie
+     */
     @Override
     public List<Item> obtenirItemsParType(String type) {
         // Si la connexion n'est pas établie, on retourne une liste vide
@@ -256,6 +319,13 @@ public class ItemDAOImpl implements ItemDAO {
         return items;
     }
 
+    /**
+     * Met à jour les informations d'un item existant.
+     * Gère également la mise à jour des propriétés spécifiques selon le type d'item.
+     *
+     * @param item L'item avec les nouvelles informations
+     * @throws RuntimeException Si la connexion n'est pas établie ou si une erreur survient lors de la mise à jour
+     */
     @Override
     public void mettreAJourItem(Item item) {
         // Si la connexion n'est pas établie, on ne peut pas mettre à jour d'item
@@ -309,6 +379,13 @@ public class ItemDAOImpl implements ItemDAO {
         }
     }
 
+    /**
+     * Supprime un item de la base de données.
+     * Supprime également les propriétés spécifiques associées (arme, bouclier, potion).
+     *
+     * @param id L'identifiant de l'item à supprimer
+     * @throws RuntimeException Si la connexion n'est pas établie ou si une erreur survient lors de la suppression
+     */
     @Override
     public void supprimerItem(int id) {
         // Si la connexion n'est pas établie, on ne peut pas supprimer d'item

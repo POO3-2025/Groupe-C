@@ -12,6 +12,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+/**
+ * Classe représentant un joueur dans le jeu Guerre des Royaumes.
+ * Un joueur possède un royaume, un personnage, un coffre et des compétences.
+ * Il peut effectuer diverses actions comme acheter des items, gagner de l'argent, etc.
+ */
 public class Joueur {
     private int id;
     private String nom;
@@ -25,7 +30,19 @@ public class Joueur {
     private Map<String, Competence> competencesAchetees; // Stocke les compétences achetées
 
 
-    //Construteur
+    /**
+     * Constructeur complet pour créer un joueur avec toutes ses propriétés.
+     *
+     * @param id Identifiant unique du joueur
+     * @param nom Nom du joueur
+     * @param prenom Prénom du joueur
+     * @param pseudo Pseudonyme du joueur (utilisé pour la connexion)
+     * @param motDePasse Mot de passe du joueur (utilisé pour la connexion)
+     * @param argent Montant d'argent initial du joueur
+     * @param royaume Royaume associé au joueur
+     * @param personnage Personnage associé au joueur
+     * @param coffre Coffre du joueur pour stocker ses items
+     */
     public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent , Royaume royaume, Personnage personnage, Coffre coffre) {
         this.id = id;
         this.nom = nom;
@@ -39,12 +56,15 @@ public class Joueur {
         this.competencesAchetees = new HashMap<>(); // Initialisation de la liste des compétences achetées
     }
 
+    /**
+     * Constructeur par défaut.
+     */
     public Joueur() {
 
     }
 
 
-    //Getteur
+    // Getters
     public int getId() {
         return id;
     }
@@ -76,7 +96,7 @@ public class Joueur {
         return competencesAchetees;
     }
 
-    //Setteur
+    // Setters
     public void setId(int id) {
         this.id = id;
     }
@@ -108,7 +128,12 @@ public class Joueur {
         this.competencesAchetees = competencesAchetees;
     }
 
-    // Méthode pour ajouter de l'argent
+    /**
+     * Ajoute un montant d'argent au joueur.
+     * Le montant doit être positif.
+     *
+     * @param montant Le montant d'argent à ajouter
+     */
     public void ajouterArgent(int montant) {
         if (montant > 0) {
             this.argent += montant;
@@ -118,7 +143,12 @@ public class Joueur {
     }
 
 
-    // Méthode pour retirer de l'argent
+    /**
+     * Retire un montant d'argent au joueur.
+     * Le joueur doit avoir suffisamment d'argent.
+     *
+     * @param montant Le montant d'argent à retirer
+     */
     public void retirerArgent(int montant) {
         if (montant <= this.argent) {
             this.argent -= montant;
@@ -127,7 +157,12 @@ public class Joueur {
         }
     }
 
-    // Méthode pour gagner de l'argent avec vérification des compétences actives (comme DoubleArgent)
+    /**
+     * Fait gagner de l'argent au joueur avec application éventuelle de bonus.
+     * Si le joueur possède la compétence "Double Argent", le montant est doublé.
+     *
+     * @param montant Le montant d'argent à gagner
+     */
     public void gagnerArgent(int montant) {
         // Vérifier si la compétence "DoubleArgent" est active
         Competence doubleArgent = competencesAchetees.get("C3"); // C3 correspond à l'ID de DoubleArgent
@@ -139,6 +174,12 @@ public class Joueur {
         System.out.println("Le joueur gagne " + montant + " TerraCoin.");
     }
 
+    /**
+     * Permet au joueur d'acheter un item.
+     * Le joueur doit avoir suffisamment d'argent et l'item est ajouté à son coffre.
+     *
+     * @param item L'item à acheter
+     */
     public void acheterItem(Item item) {
         if (this.argent >= item.getPrix()) {
             // Déduit le prix de l'item du solde du joueur
@@ -155,7 +196,12 @@ public class Joueur {
         }
     }
 
-    // Méthode pour acheter une compétence
+    /**
+     * Permet au joueur d'acheter une compétence.
+     * Le joueur doit avoir suffisamment d'argent et la compétence est immédiatement appliquée.
+     *
+     * @param competence La compétence à acheter
+     */
     public void acheterCompetence(Competence competence) {
         if (this.argent >= competence.getPrix()) {
             this.argent -= competence.getPrix();  // Déduit l'argent du joueur
@@ -168,7 +214,10 @@ public class Joueur {
         }
     }
 
-    // Méthode pour permettre au joueur de choisir une compétence avant chaque tour
+    /**
+     * Permet au joueur de choisir une compétence à utiliser avant un combat.
+     * Affiche les compétences disponibles et applique celle choisie par le joueur.
+     */
     public void choisirCompetenceAvantCombat() {
         // Afficher toutes les compétences disponibles
         if (competencesAchetees.isEmpty()) {
