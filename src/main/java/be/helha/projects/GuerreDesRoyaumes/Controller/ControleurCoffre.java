@@ -3,6 +3,7 @@ package be.helha.projects.GuerreDesRoyaumes.Controller;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
@@ -45,12 +46,12 @@ public class ControleurCoffre {
     public ResponseEntity<?> getContenuCoffre(@PathVariable int joueurId) {
         try {
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
-            if (joueur == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "Joueur non trouvé"));
-            }
 
             Coffre coffre = joueur.getCoffre();
+            if (coffre == null) {
+                throw new CoffreException("Le joueur n'a pas de coffre initialisé");
+            }
+
             List<Map<String, Object>> contenu = coffre.getSlots().stream()
                     .filter(slot -> slot != null && slot.getQuantity() > 0)
                     .map(slot -> {
@@ -69,6 +70,14 @@ public class ControleurCoffre {
             response.put("items", contenu);
 
             return ResponseEntity.ok(response);
+        } catch (JoueurNotFoundException e) {
+            logger.error("Joueur non trouvé: ", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (CoffreException e) {
+            logger.error("Erreur de coffre: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             logger.error("Erreur lors de la récupération du contenu du coffre: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -93,23 +102,21 @@ public class ControleurCoffre {
             int quantite = request.get("quantite");
 
             if (quantite <= 0) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", "La quantité doit être positive"));
+                throw new IllegalArgumentException("La quantité doit être positive");
             }
 
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
-            if (joueur == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "Joueur non trouvé"));
-            }
 
             Item item = itemDAO.obtenirItemParId(itemId);
             if (item == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "Item non trouvé"));
+                throw new ItemNotFoundException(itemId);
             }
 
             Coffre coffre = joueur.getCoffre();
+            if (coffre == null) {
+                throw new CoffreException("Le joueur n'a pas de coffre initialisé");
+            }
+
             boolean ajoutReussi = coffre.ajouterItem(item, quantite);
 
             if (ajoutReussi) {
@@ -122,9 +129,20 @@ public class ControleurCoffre {
                         "quantite", quantite
                 ));
             } else {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", "Impossible d'ajouter l'item au coffre (coffre plein ou quantité trop importante)"));
+                throw new CoffreException("Impossible d'ajouter l'item au coffre (coffre plein ou quantité trop importante)");
             }
+        } catch (JoueurNotFoundException | ItemNotFoundException e) {
+            logger.error("Entité non trouvée: ", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (CoffreException e) {
+            logger.error("Erreur de coffre: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            logger.error("Argument invalide: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             logger.error("Erreur lors de l'ajout d'un item au coffre: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -149,23 +167,21 @@ public class ControleurCoffre {
             int quantite = request.get("quantite");
 
             if (quantite <= 0) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", "La quantité doit être positive"));
+                throw new IllegalArgumentException("La quantité doit être positive");
             }
 
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
-            if (joueur == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "Joueur non trouvé"));
-            }
 
             Item item = itemDAO.obtenirItemParId(itemId);
             if (item == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "Item non trouvé"));
+                throw new ItemNotFoundException(itemId);
             }
 
             Coffre coffre = joueur.getCoffre();
+            if (coffre == null) {
+                throw new CoffreException("Le joueur n'a pas de coffre initialisé");
+            }
+
             boolean retraitReussi = coffre.enleverItem(item, quantite);
 
             if (retraitReussi) {
@@ -178,9 +194,20 @@ public class ControleurCoffre {
                         "quantite", quantite
                 ));
             } else {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", "Impossible de retirer l'item du coffre (quantité insuffisante ou item non présent)"));
+                throw new CoffreException("Impossible de retirer l'item du coffre (quantité insuffisante ou item non présent)");
             }
+        } catch (JoueurNotFoundException | ItemNotFoundException e) {
+            logger.error("Entité non trouvée: ", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (CoffreException e) {
+            logger.error("Erreur de coffre: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            logger.error("Argument invalide: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             logger.error("Erreur lors du retrait d'un item du coffre: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -202,18 +229,16 @@ public class ControleurCoffre {
 
         try {
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
-            if (joueur == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "Joueur non trouvé"));
-            }
 
             Item item = itemDAO.obtenirItemParId(itemId);
             if (item == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "Item non trouvé"));
+                throw new ItemNotFoundException(itemId);
             }
 
             Coffre coffre = joueur.getCoffre();
+            if (coffre == null) {
+                throw new CoffreException("Le joueur n'a pas de coffre initialisé");
+            }
 
             // Vérifier si l'item est présent dans le coffre
             boolean itemPresent = false;
@@ -225,12 +250,15 @@ public class ControleurCoffre {
             }
 
             if (!itemPresent) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", "Cet item n'est pas disponible dans le coffre"));
+                throw new CoffreException("Cet item n'est pas disponible dans le coffre");
             }
 
             // Utiliser l'item
-            item.use();
+            try {
+                item.use();
+            } catch (Exception e) {
+                throw new ItemException("Erreur lors de l'utilisation de l'item: " + e.getMessage(), e);
+            }
 
             // Retirer un exemplaire de l'item du coffre
             boolean retraitReussi = coffre.enleverItem(item, 1);
@@ -244,9 +272,16 @@ public class ControleurCoffre {
                         "itemNom", item.getNom()
                 ));
             } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Map.of("message", "Erreur lors de l'utilisation de l'item"));
+                throw new CoffreException("Erreur lors du retrait de l'item après utilisation");
             }
+        } catch (JoueurNotFoundException | ItemNotFoundException e) {
+            logger.error("Entité non trouvée: ", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (CoffreException | ItemException e) {
+            logger.error("Erreur spécifique: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             logger.error("Erreur lors de l'utilisation d'un item: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -270,17 +305,16 @@ public class ControleurCoffre {
             int nouvelleCapacite = request.get("capacite");
 
             if (nouvelleCapacite <= 0) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", "La capacité doit être positive"));
+                throw new IllegalArgumentException("La capacité doit être positive");
             }
 
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
-            if (joueur == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "Joueur non trouvé"));
-            }
 
             Coffre coffre = joueur.getCoffre();
+            if (coffre == null) {
+                throw new CoffreException("Le joueur n'a pas de coffre initialisé");
+            }
+
             coffre.setMaxSlots(nouvelleCapacite);
 
             // Mettre à jour le joueur dans la base de données
@@ -290,6 +324,18 @@ public class ControleurCoffre {
                     "message", "Capacité du coffre mise à jour avec succès",
                     "nouvelleCpacite", nouvelleCapacite
             ));
+        } catch (JoueurNotFoundException e) {
+            logger.error("Joueur non trouvé: ", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (CoffreException e) {
+            logger.error("Erreur de coffre: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            logger.error("Argument invalide: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             logger.error("Erreur lors de la mise à jour de la capacité du coffre: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

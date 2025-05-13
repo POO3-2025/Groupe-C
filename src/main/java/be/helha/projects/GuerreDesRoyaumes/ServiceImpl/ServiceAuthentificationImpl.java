@@ -3,6 +3,9 @@ package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.AuthentificationException;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.JoueurNotFoundException;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.PersonnageNotFoundException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
@@ -31,12 +34,12 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
     public void inscrireJoueur(String nom, String prenom, String pseudo, String motDePasse) {
         // Vérifier si le pseudo existe déjà
         if (joueurDAO.obtenirJoueurParPseudo(pseudo) != null) {
-            throw new IllegalArgumentException("Ce pseudo est déjà utilisé");
+            throw new AuthentificationException("Ce pseudo est déjà utilisé");
         }
 
         // Validation du format du pseudo
         if (!pseudo.matches("[a-zA-Z0-9_]+")) {
-            throw new IllegalArgumentException("Le pseudo ne peut contenir que des lettres, chiffres et underscores.");
+            throw new AuthentificationException("Le pseudo ne peut contenir que des lettres, chiffres et underscores.");
         }
 
         // Créer un nouveau royaume et le coffre par défaut
@@ -53,56 +56,74 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
     @Override
     public boolean authentifierJoueur(String pseudo, String motDePasse) {
+        if (pseudo == null || pseudo.trim().isEmpty()) {
+            throw new AuthentificationException("Le pseudo ne peut pas être vide");
+        }
+
+        if (motDePasse == null || motDePasse.trim().isEmpty()) {
+            throw new AuthentificationException("Le mot de passe ne peut pas être vide");
+        }
+
         // Caster joueurDAO en JoueurDAOImpl pour accéder à la méthode verifierIdentifiants
         if (joueurDAO instanceof JoueurDAOImpl) {
-            return ((JoueurDAOImpl) joueurDAO).verifierIdentifiants(pseudo, motDePasse);
+            try {
+                return ((JoueurDAOImpl) joueurDAO).verifierIdentifiants(pseudo, motDePasse);
+            } catch (Exception e) {
+                throw new AuthentificationException("Erreur lors de l'authentification", e);
+            }
         }
-        return false; // Si l'implémentation n'est pas correcte
+        throw new AuthentificationException("Service d'authentification mal configuré");
     }
 
     @Override
     public void gererProfil(int id, String pseudo, String motDePasse) {
-        Joueur joueur = joueurDAO.obtenirJoueurParId(id);
-        if (joueur == null) {
-            throw new IllegalArgumentException("Joueur non trouvé");
-        }
+        try {
+            Joueur joueur = joueurDAO.obtenirJoueurParId(id);
 
-        // Vérifier si le nouveau pseudo est disponible (si changé)
-        if (!joueur.getPseudo().equals(pseudo)) {
-            Joueur existant = joueurDAO.obtenirJoueurParPseudo(pseudo);
-            if (existant != null) {
-                throw new IllegalArgumentException("Ce pseudo est déjà utilisé");
+            // Vérifier si le nouveau pseudo est disponible (si changé)
+            if (!joueur.getPseudo().equals(pseudo)) {
+                Joueur existant = joueurDAO.obtenirJoueurParPseudo(pseudo);
+                if (existant != null) {
+                    throw new AuthentificationException("Ce pseudo est déjà utilisé");
+                }
             }
+
+            // Mettre à jour les informations
+            joueur.setPseudo(pseudo);
+
+            // Si le mot de passe est changé, le hacher
+            if (!motDePasse.equals(joueur.getMotDePasse())) {
+                joueur.setMotDePasse(BCrypt.hashpw(motDePasse, BCrypt.gensalt()));
+            }
+
+            // Persister les modifications
+            joueurDAO.mettreAJourJoueur(joueur);
+        } catch (JoueurNotFoundException e) {
+            throw e; // Relance l'exception si c'est déjà une JoueurNotFoundException
+        } catch (Exception e) {
+            throw new AuthentificationException("Erreur lors de la mise à jour du profil", e);
         }
-
-        // Mettre à jour les informations
-        joueur.setPseudo(pseudo);
-
-        // Si le mot de passe est changé, le hacher
-        if (!motDePasse.equals(joueur.getMotDePasse())) {
-            joueur.setMotDePasse(BCrypt.hashpw(motDePasse, BCrypt.gensalt()));
-        }
-
-        // Persister les modifications
-        joueurDAO.mettreAJourJoueur(joueur);
     }
 
     @Override
     public void choisirPersonnage(int joueurId, int personnageId) {
-        Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
-        if (joueur == null) {
-            throw new IllegalArgumentException("Joueur non trouvé");
+        try {
+            Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
+
+            Personnage personnage = personnageDAO.obtenirPersonnageParId(personnageId);
+            if (personnage == null) {
+                throw new PersonnageNotFoundException(personnageId);
+            }
+
+            // Associer le personnage au joueur
+            joueur.setPersonnage(personnage);
+
+            // Persister les modifications
+            joueurDAO.mettreAJourJoueur(joueur);
+        } catch (JoueurNotFoundException | PersonnageNotFoundException e) {
+            throw e; // Relance l'exception
+        } catch (Exception e) {
+            throw new AuthentificationException("Erreur lors du choix de personnage", e);
         }
-
-        Personnage personnage = personnageDAO.obtenirPersonnageParId(personnageId);
-        if (personnage == null) {
-            throw new IllegalArgumentException("Personnage non trouvé");
-        }
-
-        // Associer le personnage au joueur
-        joueur.setPersonnage(personnage);
-
-        // Persister les modifications
-        joueurDAO.mettreAJourJoueur(joueur);
     }
 }
