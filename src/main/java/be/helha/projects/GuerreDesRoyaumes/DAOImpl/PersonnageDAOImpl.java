@@ -1,6 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageDAO;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
@@ -11,13 +12,49 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+import javax.sql.DataSource;
 
+@Repository
 public class PersonnageDAOImpl implements PersonnageDAO {
 
     private Connection connection;
 
-    public PersonnageDAOImpl(Connection connection) {
-        this.connection = connection;
+    @Autowired
+    public void setDataSource(DataSource dataSource) {
+        try {
+            this.connection = dataSource.getConnection();
+            // Créer la table si elle n'existe pas
+            creerTablePersonnageSiInexistante();
+        } catch (SQLException e) {
+            throw new DatabaseException("Erreur lors de la connexion à la base de données", e);
+        }
+    }
+
+    /**
+     * Crée la table des personnages si elle n'existe pas déjà
+     */
+    private void creerTablePersonnageSiInexistante() {
+        String createTableQuery = """
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='personnage' AND xtype='U')
+        BEGIN
+            CREATE TABLE personnage (
+                id_personnage INT PRIMARY KEY IDENTITY(1,1),
+                nom_personnage NVARCHAR(255) NOT NULL,
+                vie_personnage FLOAT NOT NULL,
+                degats_personnage FLOAT NOT NULL,
+                resistance_personnage FLOAT NOT NULL,
+                type_personnage NVARCHAR(50) NOT NULL
+            )
+        END
+        """;
+
+        try (PreparedStatement statement = connection.prepareStatement(createTableQuery)) {
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new DatabaseException("Erreur lors de la création de la table personnage", e);
+        }
     }
 
     @Override

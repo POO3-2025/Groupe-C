@@ -13,6 +13,31 @@ public class RoyaumeDAOImpl implements RoyaumeDAO {
 
     public RoyaumeDAOImpl(Connection connection) {
         this.connection = connection;
+        creerTableCompetenceSiInexistante();
+    }
+
+    /**
+     * Crée la table des compétences si elle n'existe pas déjà
+     */
+    private void creerTableCompetenceSiInexistante() {
+        String createTableQuery = """
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='competence' AND xtype='U')
+        BEGIN
+            CREATE TABLE competence (
+                id_competence VARCHAR(50) PRIMARY KEY,
+                nom_competence NVARCHAR(100) NOT NULL,
+                prix_competence INT NOT NULL,
+                description_competence NVARCHAR(255) NOT NULL,
+                type_competence VARCHAR(50) NOT NULL
+            )
+        END
+        """;
+
+        try (PreparedStatement statement = connection.prepareStatement(createTableQuery)) {
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la création de la table competence: " + e.getMessage());
+        }
     }
 
     @Override
