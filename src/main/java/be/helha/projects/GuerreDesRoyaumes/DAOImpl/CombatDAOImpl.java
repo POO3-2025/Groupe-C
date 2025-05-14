@@ -17,9 +17,8 @@ public class CombatDAOImpl implements CombatDAO {
 
     private Connection connection;
 
-    // Constructeur par défaut requis par Spring
-    public CombatDAOImpl(Connection connection) {
-        this.connection = connection;
+    public CombatDAOImpl() {
+        // Constructeur par défaut
     }
 
     @Autowired
