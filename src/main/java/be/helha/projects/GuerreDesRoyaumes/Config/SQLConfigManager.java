@@ -4,6 +4,8 @@ import com.google.gson.JsonObject;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import javax.sql.DataSource;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 public class SQLConfigManager {
     private static SQLConfigManager instance;
@@ -48,5 +50,17 @@ public class SQLConfigManager {
         String url = String.format("jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=false",
                 creds.DB_HOST, creds.DB_PORT, creds.DB_NAME);
         return DriverManager.getConnection(url, creds.DB_USER, creds.DB_PASSWORD);
+    }
+
+    public DataSource getDataSource(String dbKey) {
+        MySqlConfigurations config = getConfigurations(dbKey);
+        MySqlCredentials creds = config.getMySqlCredentials();
+
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setUrl(String.format("jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=false",
+                creds.DB_HOST, creds.DB_PORT, creds.DB_NAME));
+        dataSource.setUsername(creds.DB_USER);
+        dataSource.setPassword(creds.DB_PASSWORD);
+        return dataSource;
     }
 }

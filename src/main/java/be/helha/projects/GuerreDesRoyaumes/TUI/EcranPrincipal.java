@@ -150,37 +150,37 @@ public class EcranPrincipal {
     }
 
     private void demarrerCombat(Joueur joueur, Joueur adversaire) {
+        // Initialisation du service de combat
+        ServiceCombat serviceCombat = new ServiceCombatImpl();
+
+        // Création et configuration du DAO
+        CombatDAOImpl combatDAO = new CombatDAOImpl();
+        combatDAO.setDataSource(SQLConfigManager.getInstance().getDataSource("sqlserver"));
+
+        // Initialisation du CombatController avec les deux joueurs
+        CombatController combatController = new CombatController(
+                serviceCombat,
+                combatDAO,
+                joueur,
+                adversaire
+        );
+
         try {
-            // Initialisation du service de combat
-            ServiceCombat serviceCombat = new ServiceCombatImpl();
-
-            // Initialisation du CombatController avec les deux joueurs
-            CombatController combatController = new CombatController(
-                    serviceCombat,
-                    new CombatDAOImpl(SQLConfigManager.getInstance().getConnection("sqlserver")),
-                    joueur,
-                    adversaire
-            );
-
-            try {
-                combatController.initialiserCombat();
-            } catch (IllegalStateException e) {
-                afficherMessageErreur("Erreur lors de l'initialisation du combat : " + e.getMessage());
-                return;
-            }
-
-            // Vérifier si le combat est correctement initialisé
-            if (combatController.getCombatEnCours() == null) {
-                afficherMessageErreur("Erreur lors de l'initialisation du combat");
-                return;
-            }
-
-            // Afficher l'écran de préparation au combat
-            EcranPreparationCombat ecranPreparationCombat = new EcranPreparationCombat(combatController, textGUI);
-            ecranPreparationCombat.afficher();
-        } catch (SQLException e) {
-            afficherMessageErreur("Erreur lors de la connexion à la base de données : " + e.getMessage());
+            combatController.initialiserCombat();
+        } catch (IllegalStateException e) {
+            afficherMessageErreur("Erreur lors de l'initialisation du combat : " + e.getMessage());
+            return;
         }
+
+        // Vérifier si le combat est correctement initialisé
+        if (combatController.getCombatEnCours() == null) {
+            afficherMessageErreur("Erreur lors de l'initialisation du combat");
+            return;
+        }
+
+        // Afficher l'écran de préparation au combat
+        EcranPreparationCombat ecranPreparationCombat = new EcranPreparationCombat(combatController, textGUI);
+        ecranPreparationCombat.afficher();
     }
 
     private void afficherMessageErreur(String message) {

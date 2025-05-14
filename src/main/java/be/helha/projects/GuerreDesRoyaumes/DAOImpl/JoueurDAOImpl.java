@@ -359,6 +359,56 @@ public class JoueurDAOImpl implements JoueurDAO {
             throw new DatabaseException("Erreur lors de la suppression du joueur avec l'ID: " + id, e);
         }
     }
+
+    public synchronized static JoueurDAOImpl getInstance() {
+        if (instance == null) {
+            instance = new JoueurDAOImpl();
+        }
+        return instance;
+    }
+
+    private Joueur extraireJoueurDeResultSet(ResultSet resultSet) throws SQLException {
+        int id = resultSet.getInt("id_joueur");
+        String nom = resultSet.getString("nom_joueur");
+        String prenom = resultSet.getString("prenom_joueur");
+        String pseudo = resultSet.getString("pseudo_joueur");
+        String motDePasse = resultSet.getString("motDePasse_joueur");
+        int argent = resultSet.getInt("argent_joueur");
+        int victoires = resultSet.getInt("victoires_joueur");
+        int defaites = resultSet.getInt("defaites_joueur");
+
+        // Récupérer le personnage associé au joueur
+        String sqlPersonnage = "SELECT * FROM personnage_joueur WHERE id_joueur = ?";
+        Personnage personnage = null;
+        try (PreparedStatement stmtPersonnage = connection.prepareStatement(sqlPersonnage)) {
+            stmtPersonnage.setInt(1, id);
+            ResultSet rsPersonnage = stmtPersonnage.executeQuery();
+            if (rsPersonnage.next()) {
+                String typePersonnage = rsPersonnage.getString("type_personnage");
+                switch (typePersonnage.toLowerCase()) {
+                    case "guerrier":
+                        personnage = new Guerrier();
+                        break;
+                    case "voleur":
+                        personnage = new Voleur();
+                        break;
+                    case "golem":
+                        personnage = new Golem();
+                        break;
+                    default:
+                        personnage = new Guerrier(); // Personnage par défaut
+                }
+            }
+        }
+
+        // Créer le coffre
+        Coffre coffre = new Coffre();
+
+        // Créer le royaume (à implémenter plus tard)
+        Royaume royaume = null;
+
+        return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, royaume, personnage, coffre, victoires, defaites);
+    }
 }
 
 

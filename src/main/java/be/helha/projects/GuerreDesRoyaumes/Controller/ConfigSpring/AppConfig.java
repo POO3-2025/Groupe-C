@@ -1,6 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.Controller.ConfigSpring;
 
-import be.helha.projects.GuerreDesRoyaumes.Model.Combat;
+import be.helha.projects.GuerreDesRoyaumes.Model.Combat.Combat;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
@@ -49,16 +49,16 @@ public class AppConfig {
 
     @Bean
     public Combat combat(Joueur joueur1, Joueur joueur2) {
-        return new Combat(01, 2, true, joueur1);
+        return new Combat(0, joueur1, joueur2, null, 0, java.time.LocalDateTime.now());
     }
 
     @Bean
     public Joueur joueur1() {
-        return new Joueur(001,"nom1","prenom1","pseudo1","1234",10000, new Royaume(001,"nomRoyaume1",15),new Guerrier(),new Coffre());
+        return new Joueur(001,"nom1","prenom1","pseudo1","1234",10000, new Royaume(001,"nomRoyaume1",15),new Guerrier(),new Coffre(),10, 15);
     }
 
     @Bean
     public Joueur joueur2() {
-        return new Joueur(002,"nom2","prenom2","pseudo2","1234",10000, new Royaume(002,"nomRoyaume2",15),new Guerrier(),new Coffre());
+        return new Joueur(002,"nom2","prenom2","pseudo2","1234",10000, new Royaume(002,"nomRoyaume2",15),new Guerrier(),new Coffre(),19, 16);
     }
 }

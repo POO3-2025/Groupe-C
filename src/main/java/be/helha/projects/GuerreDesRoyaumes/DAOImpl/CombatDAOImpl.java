@@ -14,7 +14,7 @@ import java.sql.*;
 @Repository
 public class CombatDAOImpl implements CombatDAO {
 
-    private final Connection connection;
+    private Connection connection;
 
     @Autowired
     public void setDataSource(DataSource dataSource) {
