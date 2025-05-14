@@ -1,14 +1,25 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
+import be.helha.projects.GuerreDesRoyaumes.Config.SQLConfigManager;
+import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
+import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
+import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
+import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceCombatImpl;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.screen.Screen;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
 
 public class EcranPrincipal {
 
@@ -67,7 +78,11 @@ public class EcranPrincipal {
 
         panel.addComponent(new Button("Combattre", () -> {
             fenetre.close();
-            afficherEcranCombat(joueur);
+            try {
+                afficherEcranCombat(joueur);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }));
 
         panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
@@ -97,8 +112,75 @@ public class EcranPrincipal {
         // Implémentation à venir pour la gestion du royaume
     }
 
-    private void afficherEcranCombat(Joueur joueur) {
-        // Implémentation à venir pour le combat
+    private void afficherEcranCombat(Joueur joueur) throws SQLException {
+        // Vérifier si le joueur a un personnage
+        if (joueur.getPersonnage() == null) {
+            afficherMessageErreur("Vous devez d'abord choisir un personnage avant de combattre.");
+            return;
+        }
+
+        // Obtenir la liste des joueurs disponibles pour le combat
+        List<Joueur> adversairesPotentiels = joueurDAO.obtenirTousLesJoueurs();
+        adversairesPotentiels.removeIf(j -> 
+            j.getPseudo().equals(joueur.getPseudo()) || // Enlever le joueur actuel
+            j.getPersonnage() == null // Enlever les joueurs sans personnage
+        );
+
+        if (adversairesPotentiels.isEmpty()) {
+            afficherMessageErreur("Aucun adversaire disponible pour le combat. Assurez-vous qu'il y a au moins un autre joueur avec un personnage.");
+            return;
+        }
+
+        // Créer une fenêtre pour choisir l'adversaire
+        Window fenetreAdversaire = new BasicWindow("Choisir un adversaire");
+        Panel panelAdversaire = new Panel(new GridLayout(1));
+        panelAdversaire.addComponent(new Label("Choisissez votre adversaire :"));
+
+        // Ajouter un bouton pour chaque adversaire potentiel
+        for (Joueur adversaire : adversairesPotentiels) {
+            Button boutonAdversaire = new Button(adversaire.getPseudo() + " (" + adversaire.getPersonnage().getNom() + ")", () -> {
+                fenetreAdversaire.close();
+                demarrerCombat(joueur, adversaire);
+            });
+            panelAdversaire.addComponent(boutonAdversaire);
+        }
+
+        fenetreAdversaire.setComponent(panelAdversaire);
+        textGUI.addWindowAndWait(fenetreAdversaire);
+    }
+
+    private void demarrerCombat(Joueur joueur, Joueur adversaire) {
+        try {
+            // Initialisation du service de combat
+            ServiceCombat serviceCombat = new ServiceCombatImpl();
+
+            // Initialisation du CombatController avec les deux joueurs
+            CombatController combatController = new CombatController(
+                    serviceCombat,
+                    new CombatDAOImpl(SQLConfigManager.getInstance().getConnection("sqlserver")),
+                    joueur,
+                    adversaire
+            );
+
+            try {
+                combatController.initialiserCombat();
+            } catch (IllegalStateException e) {
+                afficherMessageErreur("Erreur lors de l'initialisation du combat : " + e.getMessage());
+                return;
+            }
+
+            // Vérifier si le combat est correctement initialisé
+            if (combatController.getCombatEnCours() == null) {
+                afficherMessageErreur("Erreur lors de l'initialisation du combat");
+                return;
+            }
+
+            // Afficher l'écran de préparation au combat
+            EcranPreparationCombat ecranPreparationCombat = new EcranPreparationCombat(combatController, textGUI);
+            ecranPreparationCombat.afficher();
+        } catch (SQLException e) {
+            afficherMessageErreur("Erreur lors de la connexion à la base de données : " + e.getMessage());
+        }
     }
 
     private void afficherMessageErreur(String message) {
@@ -108,4 +190,5 @@ public class EcranPrincipal {
                 .addButton(MessageDialogButton.OK);
         dialogBuilder.build().showDialog(textGUI);
     }
+
 }

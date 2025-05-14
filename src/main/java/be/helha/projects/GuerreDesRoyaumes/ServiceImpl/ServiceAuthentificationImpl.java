@@ -126,4 +126,24 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
             throw new AuthentificationException("Erreur lors du choix de personnage", e);
         }
     }
+
+    @Override
+    public void initialiserJoueur(String pseudo, Royaume royaume, Personnage personnage) {
+        Joueur joueur = joueurDAO.obtenirJoueurParPseudo(pseudo);
+        if (joueur == null) {
+            throw new IllegalArgumentException("Joueur non trouvé");
+        }
+
+        // Vérifier si le joueur a déjà un royaume ou un personnage
+        if (joueur.getRoyaume() != null || joueur.getPersonnage() != null) {
+            throw new IllegalStateException("Le joueur est déjà initialisé");
+        }
+
+        // Mettre à jour le joueur avec le royaume et le personnage
+        joueur.setRoyaume(royaume);
+        joueur.setPersonnage(personnage);
+
+        // Persister les modifications
+        joueurDAO.mettreAJourJoueur(joueur);
+    }
 }

@@ -1,20 +1,20 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
-import be.helha.projects.GuerreDesRoyaumes.Model.Combat;
+import be.helha.projects.GuerreDesRoyaumes.Model.Combat.Combat;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
+import java.sql.*;
 
 @Repository
 public class CombatDAOImpl implements CombatDAO {
 
-    private Connection connection;
+    private final Connection connection;
 
     @Autowired
     public void setDataSource(DataSource dataSource) {
@@ -31,36 +31,47 @@ public class CombatDAOImpl implements CombatDAO {
     }
 
     @Override
-    public void ajouterCombat(Combat combat) {
-        String sql = "INSERT INTO combats (nbrTour, victoire, joueur_id) VALUES (?, ?, ?)";
-        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setInt(1, combat.getNbrTour());
-            statement.setBoolean(2, combat.isVictoire());
-            statement.setInt(3, combat.getJoueur().getId());
-            statement.executeUpdate();
-
-            ResultSet generatedKeys = statement.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                combat.setId(generatedKeys.getInt(1));
-            }
+    public void enregistrerCombat(Combat combat) {
+        // Insérer le combat dans la base de données
+        String sql = "INSERT INTO combats (id_combat, joueur1_id, joueur2_id, gagnant, tours_final) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, combat.getId());
+            stmt.setInt(2, combat.getJoueur1().getId());
+            stmt.setInt(3, combat.getJoueur2().getId());
+            stmt.setObject(4, combat.getVainqueur() != null ? combat.getVainqueur().getId() : null);
+            stmt.setInt(5, combat.getNombreTours());
+            stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
     @Override
+    public void enregistrerVictoire(Joueur joueur) {
+        // Enregistrer une victoire du joueur dans la base de données
+        String sql = "UPDATE joueurs SET victoires = victoires + 1 WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, joueur.getId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+
+        }
+    }
+
+    @Override
     public Combat obtenirCombatParId(int id) {
-        String sql = "SELECT c.*, j.id as joueur_id FROM combats c LEFT JOIN joueurs j ON c.joueur_id = j.id WHERE c.id = ?";
+        Combat combat = null;
+        String sql = "SELECT * FROM combats WHERE id_combat = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
-                return extraireCombatDeResultSet(resultSet);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
+        return combat;
     }
 
     @Override
@@ -70,7 +81,6 @@ public class CombatDAOImpl implements CombatDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                combats.add(extraireCombatDeResultSet(resultSet));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -86,7 +96,6 @@ public class CombatDAOImpl implements CombatDAO {
             statement.setInt(1, joueurId);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                combats.add(extraireCombatDeResultSet(resultSet));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -95,40 +104,61 @@ public class CombatDAOImpl implements CombatDAO {
     }
 
     @Override
-    public void mettreAJourCombat(Combat combat) {
-        String sql = "UPDATE combats SET nbrTour = ?, victoire = ?, joueur_id = ? WHERE id = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, combat.getNbrTour());
-            statement.setBoolean(2, combat.isVictoire());
-            statement.setInt(3, combat.getJoueur().getId());
-            statement.setInt(4, combat.getId());
-            statement.executeUpdate();
+    public void enregistrerDefaite(Joueur joueur) {
+        // Enregistrer une défaite du joueur dans la base de données
+        String sql = "UPDATE joueurs SET defaites = defaites + 1 WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, joueur.getId());
+            stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
     }
 
     @Override
-    public void supprimerCombat(int id) {
-        String sql = "DELETE FROM combats WHERE id = ?";
+    public List<Joueur> getClassementParVictoires() {
+        // Implémentation de la méthode pour obtenir le classement par victoires
+        String sql = "SELECT * FROM joueurs ORDER BY victoires DESC";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, id);
-            statement.executeUpdate();
+            ResultSet resultSet = statement.executeQuery();
+            List<Joueur> classement = new ArrayList<>();
+            while (resultSet.next()) {
+                Joueur joueur = new Joueur();
+                joueur.setId(resultSet.getInt("id"));
+                joueur.setPseudo(resultSet.getString("pseudo"));
+                joueur.setVictoires(resultSet.getInt("victoires"));
+                classement.add(joueur);
+            }
+            return classement;
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return List.of();
     }
 
-    private Combat extraireCombatDeResultSet(ResultSet resultSet) throws SQLException {
-        int id = resultSet.getInt("id");
-        int nbrTour = resultSet.getInt("nbrTour");
-        boolean victoire = resultSet.getBoolean("victoire");
-
-        // Créer un joueur avec juste l'ID (à compléter plus tard)
-        int joueurId = resultSet.getInt("joueur_id");
-        Joueur joueur = new Joueur();
-        joueur.setId(joueurId);
-
-        return new Combat(id, nbrTour, victoire, joueur);
+    @Override
+    public List<Joueur> getClassementParDefaites() {
+        // Implémentation de la méthode pour obtenir le classement par défaites
+        String sql = "SELECT * FROM joueurs ORDER BY defaites DESC";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            ResultSet resultSet = statement.executeQuery();
+            List<Joueur> classement = new ArrayList<>();
+            while (resultSet.next()) {
+                Joueur joueur = new Joueur();
+                joueur.setId(resultSet.getInt("id"));
+                joueur.setPseudo(resultSet.getString("pseudo"));
+                joueur.setDefaites(resultSet.getInt("defaites"));
+                classement.add(joueur);
+            }
+            return classement;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return List.of();
     }
+
+
 }
+
+

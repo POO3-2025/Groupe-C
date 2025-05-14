@@ -5,8 +5,12 @@ import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.JoueurNotFoundException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.AuthentificationException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
+import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Golem;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -102,7 +106,8 @@ public class JoueurDAOImpl implements JoueurDAO {
     }
 
     private void creerTableJoueurSiInexistante() {
-        String createTableQuery = """
+        // Créer la table joueur
+        String createTableJoueur = """
         IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='joueur' AND xtype='U')
         BEGIN
             CREATE TABLE joueur (
@@ -111,42 +116,55 @@ public class JoueurDAOImpl implements JoueurDAO {
                 prenom_joueur NVARCHAR(255) NOT NULL,
                 pseudo_joueur NVARCHAR(255) NOT NULL,
                 motDePasse_joueur NVARCHAR(255) NOT NULL,
-                argent_joueur INT NOT NULL
+                argent_joueur INT NOT NULL DEFAULT 100,
+                victoires_joueur INT NOT NULL DEFAULT 0,
+                defaites_joueur INT NOT NULL DEFAULT 0
             )
         END
         """;
 
-        try (PreparedStatement statement = connection.prepareStatement(createTableQuery)) {
-            statement.executeUpdate();
+        // Créer la table royaume
+        String createTableRoyaume = """
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='royaume' AND xtype='U')
+        BEGIN
+            CREATE TABLE royaume (
+                id_royaume INT PRIMARY KEY IDENTITY(1,1),
+                nom_royaume NVARCHAR(255) NOT NULL,
+                niveau_royaume INT NOT NULL DEFAULT 1,
+                id_joueur INT NOT NULL,
+                FOREIGN KEY (id_joueur) REFERENCES joueur(id_joueur)
+            )
+        END
+        """;
+
+        // Créer la table personnage_joueur
+        String createTablePersonnage = """
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='personnage_joueur' AND xtype='U')
+        BEGIN
+            CREATE TABLE personnage_joueur (
+                id_personnage INT PRIMARY KEY IDENTITY(1,1),
+                type_personnage NVARCHAR(50) NOT NULL,
+                id_joueur INT NOT NULL,
+                FOREIGN KEY (id_joueur) REFERENCES joueur(id_joueur)
+            )
+        END
+        """;
+
+        try {
+            // Exécuter les créations de tables
+            try (PreparedStatement stmtJoueur = connection.prepareStatement(createTableJoueur);
+                 PreparedStatement stmtRoyaume = connection.prepareStatement(createTableRoyaume);
+                 PreparedStatement stmtPersonnage = connection.prepareStatement(createTablePersonnage)) {
+                
+                stmtJoueur.executeUpdate();
+                stmtRoyaume.executeUpdate();
+                stmtPersonnage.executeUpdate();
+            }
         } catch (SQLException e) {
-            throw new DatabaseException("Erreur lors de la création de la table joueur", e);
+            e.printStackTrace();
+            throw new RuntimeException("Erreur lors de la création des tables : " + e.getMessage());
         }
     }
-
-    public synchronized static JoueurDAOImpl getInstance() {
-        if (instance == null) {
-            instance = new JoueurDAOImpl();
-        }
-        return instance;
-    }
-
-    private Joueur extraireJoueurDeResultSet(ResultSet resultSet) throws SQLException {
-        int id = resultSet.getInt("id_joueur");
-        String nom = resultSet.getString("nom_joueur");
-        String prenom = resultSet.getString("prenom_joueur");
-        String pseudo = resultSet.getString("pseudo_joueur");
-        String motDePasse = resultSet.getString("motDePasse_joueur");
-        int argent = resultSet.getInt("argent_joueur");
-
-        // Ces objets seraient normalement récupérés via leurs propres DAOs
-        Royaume royaume = null; // TODO À compléter avec le DAO du royaume
-        Personnage personnage = null; // TODO À compléter avec le DAO du personnage
-        Coffre coffre = null; // TODO À compléter avec le DAO du coffre
-
-        return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, royaume, personnage, coffre);
-    }
-
-
 
     // Create
     @Override
@@ -219,21 +237,110 @@ public class JoueurDAOImpl implements JoueurDAO {
     // Update
     @Override
     public void mettreAJourJoueur(Joueur joueur) {
-        String sql = "UPDATE " + tableName + " SET nom_joueur = ?, prenom_joueur = ?, pseudo_joueur = ?, motDePasse_joueur = ?, argent_joueur = ? WHERE id_joueur = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, joueur.getNom());
-            statement.setString(2, joueur.getPrenom());
-            statement.setString(3, joueur.getPseudo());
-            statement.setString(4, joueur.getMotDePasse());
-            statement.setInt(5, joueur.getArgent());
-            statement.setInt(6, joueur.getId());
-            int rowsAffected = statement.executeUpdate();
+        // Mettre à jour les informations de base du joueur
+        String sqlJoueur = "UPDATE joueur SET nom_joueur = ?, prenom_joueur = ?, pseudo_joueur = ?, motDePasse_joueur = ?, argent_joueur = ?, victoires_joueur = ?, defaites_joueur = ? WHERE id_joueur = ?";
+        
+        // Vérifier si le royaume existe
+        String sqlCheckRoyaume = "SELECT COUNT(*) FROM royaume WHERE id_joueur = ?";
+        String sqlInsertRoyaume = "INSERT INTO royaume (nom_royaume, niveau_royaume, id_joueur) VALUES (?, ?, ?)";
+        String sqlUpdateRoyaume = "UPDATE royaume SET nom_royaume = ?, niveau_royaume = ? WHERE id_joueur = ?";
+        
+        // Vérifier si le personnage existe
+        String sqlCheckPersonnage = "SELECT COUNT(*) FROM personnage_joueur WHERE id_joueur = ?";
+        String sqlInsertPersonnage = "INSERT INTO personnage_joueur (type_personnage, id_joueur) VALUES (?, ?)";
+        String sqlUpdatePersonnage = "UPDATE personnage_joueur SET type_personnage = ? WHERE id_joueur = ?";
 
-            if (rowsAffected == 0) {
-                throw new JoueurNotFoundException(joueur.getId());
+        try {
+            connection.setAutoCommit(false); // Démarrer une transaction
+
+            // Mise à jour du joueur
+            try (PreparedStatement stmtJoueur = connection.prepareStatement(sqlJoueur)) {
+                stmtJoueur.setString(1, joueur.getNom());
+                stmtJoueur.setString(2, joueur.getPrenom());
+                stmtJoueur.setString(3, joueur.getPseudo());
+                stmtJoueur.setString(4, joueur.getMotDePasse());
+                stmtJoueur.setInt(5, joueur.getArgent());
+                stmtJoueur.setInt(6, joueur.getVictoires());
+                stmtJoueur.setInt(7, joueur.getDefaites());
+                stmtJoueur.setInt(8, joueur.getId());
+                stmtJoueur.executeUpdate();
             }
+
+            // Gestion du royaume
+            if (joueur.getRoyaume() != null) {
+                // Vérifier si le royaume existe déjà
+                boolean royaumeExiste = false;
+                try (PreparedStatement stmtCheck = connection.prepareStatement(sqlCheckRoyaume)) {
+                    stmtCheck.setInt(1, joueur.getId());
+                    ResultSet rs = stmtCheck.executeQuery();
+                    if (rs.next()) {
+                        royaumeExiste = rs.getInt(1) > 0;
+                    }
+                }
+
+                if (royaumeExiste) {
+                    // Mise à jour du royaume existant
+                    try (PreparedStatement stmtRoyaume = connection.prepareStatement(sqlUpdateRoyaume)) {
+                        stmtRoyaume.setString(1, joueur.getRoyaume().getNom());
+                        stmtRoyaume.setInt(2, joueur.getRoyaume().getNiveau());
+                        stmtRoyaume.setInt(3, joueur.getId());
+                        stmtRoyaume.executeUpdate();
+                    }
+                } else {
+                    // Insertion d'un nouveau royaume
+                    try (PreparedStatement stmtRoyaume = connection.prepareStatement(sqlInsertRoyaume)) {
+                        stmtRoyaume.setString(1, joueur.getRoyaume().getNom());
+                        stmtRoyaume.setInt(2, joueur.getRoyaume().getNiveau());
+                        stmtRoyaume.setInt(3, joueur.getId());
+                        stmtRoyaume.executeUpdate();
+                    }
+                }
+            }
+
+            // Gestion du personnage
+            if (joueur.getPersonnage() != null) {
+                // Vérifier si le personnage existe déjà
+                boolean personnageExiste = false;
+                try (PreparedStatement stmtCheck = connection.prepareStatement(sqlCheckPersonnage)) {
+                    stmtCheck.setInt(1, joueur.getId());
+                    ResultSet rs = stmtCheck.executeQuery();
+                    if (rs.next()) {
+                        personnageExiste = rs.getInt(1) > 0;
+                    }
+                }
+
+                if (personnageExiste) {
+                    // Mise à jour du personnage existant
+                    try (PreparedStatement stmtPersonnage = connection.prepareStatement(sqlUpdatePersonnage)) {
+                        stmtPersonnage.setString(1, joueur.getPersonnage().getClass().getSimpleName().toLowerCase());
+                        stmtPersonnage.setInt(2, joueur.getId());
+                        stmtPersonnage.executeUpdate();
+                    }
+                } else {
+                    // Insertion d'un nouveau personnage
+                    try (PreparedStatement stmtPersonnage = connection.prepareStatement(sqlInsertPersonnage)) {
+                        stmtPersonnage.setString(1, joueur.getPersonnage().getClass().getSimpleName().toLowerCase());
+                        stmtPersonnage.setInt(2, joueur.getId());
+                        stmtPersonnage.executeUpdate();
+                    }
+                }
+            }
+
+            connection.commit(); // Valider la transaction
         } catch (SQLException e) {
-            throw new DatabaseException("Erreur lors de la mise à jour du joueur avec l'ID: " + joueur.getId(), e);
+            try {
+                connection.rollback(); // Annuler la transaction en cas d'erreur
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            e.printStackTrace();
+            throw new RuntimeException("Erreur lors de la mise à jour du joueur : " + e.getMessage());
+        } finally {
+            try {
+                connection.setAutoCommit(true); // Réactiver l'auto-commit
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 

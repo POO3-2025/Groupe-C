@@ -63,4 +63,6 @@ public interface JoueurDAO {
      * @param id L'identifiant du joueur à supprimer
      */
     void supprimerJoueur(int id);
+
+    boolean verifierIdentifiants(String pseudo, String motDePasse);
 }

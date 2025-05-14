@@ -5,8 +5,6 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
-import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
-import ch.qos.logback.classic.util.LogbackMDCAdapter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +24,8 @@ public class Joueur {
     private int argent;
     private Royaume royaume;
     private Personnage personnage;
+    private int victoires;
+    private int defaites;
     private Coffre coffre;
     private Map<String, Competence> competencesAchetees; // Stocke les compétences achetées
 
@@ -43,7 +43,7 @@ public class Joueur {
      * @param personnage Personnage associé au joueur
      * @param coffre Coffre du joueur pour stocker ses items
      */
-    public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent , Royaume royaume, Personnage personnage, Coffre coffre) {
+    public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent , Royaume royaume, Personnage personnage, Coffre coffre , int victoires, int defaites) {
         this.id = id;
         this.nom = nom;
         this.prenom = prenom;
@@ -52,6 +52,8 @@ public class Joueur {
         this.argent = argent;
         this.royaume = royaume;
         this.personnage = personnage;
+        this.victoires = victoires;
+        this.defaites = defaites;
         this.coffre = coffre;
         this.competencesAchetees = new HashMap<>(); // Initialisation de la liste des compétences achetées
     }
@@ -86,8 +88,15 @@ public class Joueur {
     public Personnage getPersonnage() {
         return personnage;
     }
+
     public int getArgent() {
         return argent;
+    }
+    public int getVictoires() {
+        return victoires;
+    }
+    public int getDefaites() {
+        return defaites;
     }
     public Coffre getCoffre() {
         return coffre;
@@ -118,14 +127,29 @@ public class Joueur {
     public void setPersonnage(Personnage personnage) {
         this.personnage = personnage;
     }
+
     public void setArgent(int argent) {
         this.argent = argent;
+    }
+    public void setVictoires(int victoires) {
+        this.victoires = victoires;
+    }
+    public void setDefaites(int defaites) {
+        this.defaites = defaites;
     }
     public void setCoffre(Coffre coffre) {
         this.coffre = coffre;
     }
     public void setCompetencesAchetees(Map<String, Competence> competencesAchetees) {
         this.competencesAchetees = competencesAchetees;
+    }
+
+    //Méthodes
+    public void ajouterVictoire() {
+        this.victoires++;
+    }
+    public void ajouterDefaite() {
+        this.defaites++;
     }
 
     /**
