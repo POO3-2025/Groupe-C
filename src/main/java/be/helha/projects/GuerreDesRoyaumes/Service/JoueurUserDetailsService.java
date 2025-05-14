@@ -1,6 +1,4 @@
-
-
- package be.helha.projects.GuerreDesRoyaumes.Service;
+package be.helha.projects.GuerreDesRoyaumes.Service;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

@@ -93,9 +93,7 @@ public class BoutiqueController {
      */
     @PostMapping("/acheter")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> acheterItem(@RequestParam int joueurId,
-                                         @RequestParam int itemId,
-                                         @RequestParam int quantite) {
+    public ResponseEntity<?> acheterItem(@RequestParam int joueurId, @RequestParam int itemId, @RequestParam int quantite) {
         try {
             // Vérifier si le joueur existe
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);

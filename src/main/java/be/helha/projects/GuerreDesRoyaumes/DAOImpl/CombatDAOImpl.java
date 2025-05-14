@@ -1,6 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Combat.Combat;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,11 @@ public class CombatDAOImpl implements CombatDAO {
 
     private Connection connection;
 
+    // Constructeur par défaut requis par Spring
+    public CombatDAOImpl(Connection connection) {
+        this.connection = connection;
+    }
+
     @Autowired
     public void setDataSource(DataSource dataSource) {
         try {
@@ -26,10 +32,7 @@ public class CombatDAOImpl implements CombatDAO {
         }
     }
 
-    // Constructeur par défaut requis par Spring
-    public CombatDAOImpl() {
-    }
-
+    // Create
     @Override
     public void enregistrerCombat(Combat combat) {
         // Insérer le combat dans la base de données
@@ -57,50 +60,6 @@ public class CombatDAOImpl implements CombatDAO {
             e.printStackTrace();
 
         }
-    }
-
-    @Override
-    public Combat obtenirCombatParId(int id) {
-        Combat combat = null;
-        String sql = "SELECT * FROM combats WHERE id_combat = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, id);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return combat;
-    }
-
-    @Override
-    public List<Combat> obtenirTousLesCombats() {
-        List<Combat> combats = new ArrayList<>();
-        String sql = "SELECT c.*, j.id as joueur_id FROM combats c LEFT JOIN joueurs j ON c.joueur_id = j.id";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return combats;
-    }
-
-    @Override
-    public List<Combat> obtenirCombatsParJoueurId(int joueurId) {
-        List<Combat> combats = new ArrayList<>();
-        String sql = "SELECT c.*, j.id as joueur_id FROM combats c LEFT JOIN joueurs j ON c.joueur_id = j.id WHERE j.id = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, joueurId);
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return combats;
     }
 
     @Override
@@ -158,6 +117,51 @@ public class CombatDAOImpl implements CombatDAO {
         return List.of();
     }
 
+
+    // Read
+    @Override
+    public Combat obtenirCombatParId(int id) {
+        Combat combat = null;
+        String sql = "SELECT * FROM combats WHERE id_combat = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return combat;
+    }
+
+    @Override
+    public List<Combat> obtenirTousLesCombats() {
+        List<Combat> combats = new ArrayList<>();
+        String sql = "SELECT c.*, j.id as joueur_id FROM combats c LEFT JOIN joueurs j ON c.joueur_id = j.id";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return combats;
+    }
+
+    @Override
+    public List<Combat> obtenirCombatsParJoueurId(int joueurId) {
+        List<Combat> combats = new ArrayList<>();
+        String sql = "SELECT c.*, j.id as joueur_id FROM combats c LEFT JOIN joueurs j ON c.joueur_id = j.id WHERE j.id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, joueurId);
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return combats;
+    }
 
 }
 
