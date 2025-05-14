@@ -1,23 +1,19 @@
-package be.helha.projects.GuerreDesRoyaumes.TUI;
+package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
 import be.helha.projects.GuerreDesRoyaumes.Config.SQLConfigManager;
 import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
-import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceCombatImpl;
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.screen.Screen;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 

@@ -1,26 +1,19 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
 import be.helha.projects.GuerreDesRoyaumes.Config.*;
-import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
-import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
-import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceAuthentificationImpl;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
-import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceCombatImpl;
+import be.helha.projects.GuerreDesRoyaumes.TUI.Ecran.EcranAuthentification;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
-import com.googlecode.lanterna.terminal.Terminal;
 import com.googlecode.lanterna.terminal.swing.SwingTerminalFrame;
 import com.mongodb.client.MongoDatabase;
 
-import java.io.IOException;
 import java.sql.Connection;
 
 public class Main {

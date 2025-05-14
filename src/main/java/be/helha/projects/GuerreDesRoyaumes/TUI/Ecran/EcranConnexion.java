@@ -1,4 +1,4 @@
-package be.helha.projects.GuerreDesRoyaumes.TUI;
+package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;

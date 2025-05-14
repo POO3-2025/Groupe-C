@@ -1,4 +1,4 @@
-package be.helha.projects.GuerreDesRoyaumes.TUI;
+package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;

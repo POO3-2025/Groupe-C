@@ -1,6 +1,5 @@
-package be.helha.projects.GuerreDesRoyaumes.TUI;
+package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
-import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Golem;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;

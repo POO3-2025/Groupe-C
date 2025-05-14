@@ -1,14 +1,13 @@
-package be.helha.projects.GuerreDesRoyaumes.TUI;
+package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
 import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.Competence;
 import com.googlecode.lanterna.gui2.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
-import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
-import com.googlecode.lanterna.screen.Screen;
+
 import java.util.ArrayList;
 import java.util.List;
 
