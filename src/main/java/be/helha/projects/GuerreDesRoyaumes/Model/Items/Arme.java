@@ -6,9 +6,15 @@ public class Arme extends Item {
 
     private double degats;
 
-    //Constructeur
+    //Constructeur avec ID
     public Arme(int id, String nom, int quantiteMax, int prix, double degats) {
         super(id, nom, quantiteMax, "Arme", prix);
+        this.degats = degats;
+    }
+
+    //Constructeur sans ID (pour création initiale)
+    public Arme(String nom, int quantiteMax, double degats, int prix) {
+        super(0, nom, quantiteMax, "Arme", prix);
         this.degats = degats;
     }
 

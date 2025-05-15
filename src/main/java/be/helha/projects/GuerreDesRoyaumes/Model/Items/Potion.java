@@ -6,9 +6,16 @@ public class Potion extends Item {
     private double degats;
     private double soin;
 
-    //Constructeur
+    // Constructeur avec ID
     public Potion(int id, String nom, int quantiteMax, int prix, double degats, double soin) {
         super(id, nom, quantiteMax, "Potion", prix);
+        this.degats = degats;
+        this.soin = soin;
+    }
+
+    // Constructeur sans ID (pour création initiale)
+    public Potion(String nom, int quantiteMax, int prix, double degats, double soin) {
+        super(0, nom, quantiteMax, "Potion", prix);
         this.degats = degats;
         this.soin = soin;
     }

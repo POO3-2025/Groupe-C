@@ -3,11 +3,17 @@ package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionManager;
 import be.helha.projects.GuerreDesRoyaumes.Config.SQLConfigManager;
 import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
+import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import be.helha.projects.GuerreDesRoyaumes.Service.CoffreService;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
+import be.helha.projects.GuerreDesRoyaumes.Service.ServiceBoutique;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
+import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CoffreServiceImpl;
+import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceBoutiqueImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceCombatImpl;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
@@ -103,7 +109,28 @@ public class EcranPrincipal {
     }
 
     private void afficherEcranBoutique(Joueur joueur) {
-        // Implémentation à venir pour la boutique
+        // Assurer que les données du coffre sont chargées avant d'afficher l'écran boutique
+        CoffreServiceImpl coffreService = CoffreServiceImpl.getInstance();
+
+        try {
+            // Obtenir une connexion si nécessaire
+            if (coffreService.getConnection() == null) {
+                Connection connection = ConnexionManager.getInstance().getSQLConnection();
+                coffreService.setConnection(connection);
+            }
+
+            // Charger le contenu du coffre depuis la base de données
+            coffreService.chargerCoffre(joueur);
+
+            // Initialiser et afficher l'écran boutique
+            ServiceBoutique serviceBoutique = ServiceBoutiqueImpl.getInstance();
+            ItemDAO itemDAO = ItemDAOImpl.getInstance();
+            EcranBoutique ecranBoutique = new EcranBoutique(serviceBoutique, itemDAO, joueur, screen);
+            ecranBoutique.afficher();
+
+        } catch (SQLException e) {
+            afficherMessageErreur("Erreur lors du chargement du coffre : " + e.getMessage());
+        }
     }
 
     private void afficherEcranGestionRoyaume(Joueur joueur) {

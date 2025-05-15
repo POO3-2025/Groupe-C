@@ -57,22 +57,32 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
     @Override
     public boolean authentifierJoueur(String pseudo, String motDePasse) {
         if (pseudo == null || pseudo.trim().isEmpty()) {
-            throw new AuthentificationException("Le pseudo ne peut pas être vide");
+            System.err.println("Le pseudo ne peut pas être vide");
+            return false;
         }
 
         if (motDePasse == null || motDePasse.trim().isEmpty()) {
-            throw new AuthentificationException("Le mot de passe ne peut pas être vide");
+            System.err.println("Le mot de passe ne peut pas être vide");
+            return false;
         }
 
         // Caster joueurDAO en JoueurDAOImpl pour accéder à la méthode verifierIdentifiants
         if (joueurDAO instanceof JoueurDAOImpl) {
             try {
-                return ((JoueurDAOImpl) joueurDAO).verifierIdentifiants(pseudo, motDePasse);
+                boolean resultat = ((JoueurDAOImpl) joueurDAO).verifierIdentifiants(pseudo, motDePasse);
+                if (!resultat) {
+                    System.err.println("Échec d'authentification pour l'utilisateur " + pseudo);
+                }
+                return resultat;
             } catch (Exception e) {
-                throw new AuthentificationException("Erreur lors de l'authentification", e);
+                System.err.println("Erreur lors de l'authentification de l'utilisateur " + pseudo + ": " + e.getMessage());
+                e.printStackTrace();
+                return false;
             }
+        } else {
+            System.err.println("Service d'authentification mal configuré: le DAO n'est pas du type attendu");
+            return false;
         }
-        throw new AuthentificationException("Service d'authentification mal configuré");
     }
 
     @Override
