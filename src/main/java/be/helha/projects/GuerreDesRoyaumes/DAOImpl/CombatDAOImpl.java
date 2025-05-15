@@ -21,19 +21,36 @@ public class CombatDAOImpl implements CombatDAO {
         // Constructeur par défaut
     }
 
-    @Autowired
+    @Autowired(required = false)
     public void setDataSource(DataSource dataSource) {
+        if (dataSource == null) {
+            System.out.println("DataSource est null dans CombatDAOImpl.setDataSource");
+            return;
+        }
+
         try {
             this.connection = dataSource.getConnection();
-            // Ici on pourrait ajouter une méthode pour créer la table si elle n'existe pas
+            System.out.println("Connexion établie via DataSource dans CombatDAOImpl");
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la connexion à la base de données", e);
+            throw new RuntimeException("Erreur lors de la connexion à la base de données via DataSource", e);
         }
+    }
+
+    /**
+     * Méthode alternative pour définir directement la connexion
+     */
+    public void setConnection(Connection connection) {
+        this.connection = connection;
+        System.out.println("Connexion SQL définie directement dans CombatDAOImpl");
     }
 
     // Create
     @Override
     public void enregistrerCombat(Combat combat) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+
         // Insérer le combat dans la base de données
         String sql = "INSERT INTO combats (id_combat, joueur1_id, joueur2_id, gagnant, tours_final) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -50,6 +67,10 @@ public class CombatDAOImpl implements CombatDAO {
 
     @Override
     public void enregistrerVictoire(Joueur joueur) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+
         // Enregistrer une victoire du joueur dans la base de données
         String sql = "UPDATE joueurs SET victoires = victoires + 1 WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -63,6 +84,10 @@ public class CombatDAOImpl implements CombatDAO {
 
     @Override
     public void enregistrerDefaite(Joueur joueur) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+
         // Enregistrer une défaite du joueur dans la base de données
         String sql = "UPDATE joueurs SET defaites = defaites + 1 WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -76,6 +101,10 @@ public class CombatDAOImpl implements CombatDAO {
 
     @Override
     public List<Joueur> getClassementParVictoires() {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+
         // Implémentation de la méthode pour obtenir le classement par victoires
         String sql = "SELECT * FROM joueurs ORDER BY victoires DESC";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -97,6 +126,10 @@ public class CombatDAOImpl implements CombatDAO {
 
     @Override
     public List<Joueur> getClassementParDefaites() {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+
         // Implémentation de la méthode pour obtenir le classement par défaites
         String sql = "SELECT * FROM joueurs ORDER BY defaites DESC";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -120,6 +153,10 @@ public class CombatDAOImpl implements CombatDAO {
     // Read
     @Override
     public Combat obtenirCombatParId(int id) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+
         Combat combat = null;
         String sql = "SELECT * FROM combats WHERE id_combat = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -135,6 +172,10 @@ public class CombatDAOImpl implements CombatDAO {
 
     @Override
     public List<Combat> obtenirTousLesCombats() {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+
         List<Combat> combats = new ArrayList<>();
         String sql = "SELECT c.*, j.id as joueur_id FROM combats c LEFT JOIN joueurs j ON c.joueur_id = j.id";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -149,6 +190,10 @@ public class CombatDAOImpl implements CombatDAO {
 
     @Override
     public List<Combat> obtenirCombatsParJoueurId(int joueurId) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+
         List<Combat> combats = new ArrayList<>();
         String sql = "SELECT c.*, j.id as joueur_id FROM combats c LEFT JOIN joueurs j ON c.joueur_id = j.id WHERE j.id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -161,7 +206,6 @@ public class CombatDAOImpl implements CombatDAO {
         }
         return combats;
     }
-
 }
 
 

@@ -1,5 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
+import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionManager;
 import be.helha.projects.GuerreDesRoyaumes.Config.SQLConfigManager;
 import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
@@ -14,6 +15,7 @@ import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.screen.Screen;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -117,9 +119,9 @@ public class EcranPrincipal {
 
         // Obtenir la liste des joueurs disponibles pour le combat
         List<Joueur> adversairesPotentiels = joueurDAO.obtenirTousLesJoueurs();
-        adversairesPotentiels.removeIf(j -> 
-            j.getPseudo().equals(joueur.getPseudo()) || // Enlever le joueur actuel
-            j.getPersonnage() == null // Enlever les joueurs sans personnage
+        adversairesPotentiels.removeIf(j ->
+                j.getPseudo().equals(joueur.getPseudo()) || // Enlever le joueur actuel
+                        j.getPersonnage() == null // Enlever les joueurs sans personnage
         );
 
         if (adversairesPotentiels.isEmpty()) {
@@ -151,7 +153,16 @@ public class EcranPrincipal {
 
         // Création et configuration du DAO
         CombatDAOImpl combatDAO = new CombatDAOImpl();
-        combatDAO.setDataSource(SQLConfigManager.getInstance().getDataSource("sqlserver"));
+
+        try {
+            // Obtenir une connexion directe via ConnexionManager
+            Connection connection = ConnexionManager.getInstance().getSQLConnection();
+            combatDAO.setConnection(connection);
+            System.out.println("Connexion SQL établie pour le combat via ConnexionManager");
+        } catch (SQLException e) {
+            afficherMessageErreur("Erreur de connexion à la base de données: " + e.getMessage());
+            return;
+        }
 
         // Initialisation du CombatController avec les deux joueurs
         CombatController combatController = new CombatController(
