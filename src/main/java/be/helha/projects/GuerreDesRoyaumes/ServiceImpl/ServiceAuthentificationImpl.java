@@ -46,7 +46,7 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
         // Créer un nouveau royaume et le coffre par défaut
         Royaume royaume = new Royaume(0, "Royaume de " + pseudo, 1);
         Coffre coffre = new Coffre();
-        coffre.initialiser();
+
 
         // Initialiser les slots du coffre avec une arme et un bouclier par défaut
         if (coffre.getSlots().size() >= 2) {
