@@ -1,6 +1,8 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Items;
 
 
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
+
 public class Potion extends Item {
 
     private double degats;
@@ -18,6 +20,7 @@ public class Potion extends Item {
     public double getDegats() {
         return degats;
     }
+
     public double getSoin() {
         return soin;
     }
@@ -26,13 +29,45 @@ public class Potion extends Item {
     public void setDegats(double degats) {
         this.degats = degats;
     }
+
     public void setSoin(double soin) {
         this.soin = soin;
     }
 
+
+
     @Override
-    public void use() {
-        System.out.println("Vous utilisez " + getNom());
-        // TODO Logique d'utilisation de la potion
+    public void use(Personnage personnage) {
+        // Si la potion inflige des dégâts
+        if (degats > 0) {
+            double viePersonnage = personnage.getVie();
+            double nouvelleVie = viePersonnage - degats;
+            personnage.setVie(nouvelleVie);
+            System.out.println(personnage.getNom() + " subit " + degats + " dégâts de la potion. Vie restante : " + personnage.getVie());
+        }
+
+        // Si la potion soigne
+        if (soin > 0) {
+            double viePersonnage = personnage.getVie();
+            double nouvelleVie = viePersonnage + soin;
+            personnage.setVie(nouvelleVie);
+            System.out.println(personnage.getNom() + " récupère " + soin + " points de vie grâce à la potion. Vie actuelle : " + personnage.getVie());
+        }
     }
+
+//    @Override
+//    public String toString() {
+//        String effet = "Effet : ";
+//        if (degats > 0) {
+//            effet += "Inflige " + degats + " dégâts.";
+//        }
+//        if (soin > 0) {
+//            if (degats > 0) {
+//                effet += " | ";
+//            }
+//            effet += "Soigne " + soin + " points de vie.";
+//        }
+//
+//        return super.toString() + "\n" + effet;
+//    }
 }

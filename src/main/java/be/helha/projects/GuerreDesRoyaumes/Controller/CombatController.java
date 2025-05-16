@@ -197,7 +197,7 @@ public class CombatController {
 
     private int calculerDegats(Personnage attaquant, Personnage defenseur) {
         double degatsAttaquant = attaquant.getDegats();
-        double resistanceDefenseur = defenseur.getResistance();
+        double resistanceDefenseur = defenseur.getDefense();
 
         // Récupérer l'arme dans l'inventaire
         Arme arme = null;

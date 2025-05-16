@@ -1,5 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Items;
 
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
+
 public abstract class Item {
 
     private int id;
@@ -51,8 +53,8 @@ public abstract class Item {
         this.prix = prix;
     }
 
-    // Méthode abstraite 'use()' à implémenter dans les classes dérivées
-    public abstract void use();
+
+    public abstract void use(Personnage personnage);
 
     @Override
     public String toString() {

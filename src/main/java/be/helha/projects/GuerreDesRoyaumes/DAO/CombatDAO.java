@@ -16,6 +16,8 @@ public interface CombatDAO {
     List<Combat> obtenirCombatsParJoueurId(int joueurId);
 
     void enregistrerDefaite(Joueur joueur);
+
     List<Joueur> getClassementParVictoires();
+
     List<Joueur> getClassementParDefaites();
 }

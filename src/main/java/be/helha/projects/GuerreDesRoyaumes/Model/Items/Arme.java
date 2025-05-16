@@ -1,6 +1,8 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Items;
 
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
+import be.helha.projects.GuerreDesRoyaumes.Outils.GsonObjectIdAdapter;
+import com.google.gson.Gson;
 
 public class Arme extends Item {
 
@@ -22,16 +24,24 @@ public class Arme extends Item {
         this.degats = degats;
     }
 
-    public void use() {
-        System.out.println("Vous utilisez " + getNom());
-        // TODO Logique d'utilisation de l'arme
-        // TODO Il faut l'appliquer au personnage
-        // TODO personnage.setDegats(personnage.getDegats() + degats);
-    }
+
 
     @Override
-    public String toString() {
-        return getNom() + " – Dégâts : " + degats;
+    public void use(Personnage personnage) {
+        System.out.println(personnage.getNom() + " équipe l'arme " + getNom() + " qui ajoute " + degats + " dégâts.");
+        personnage.setDegats(personnage.getDegats() + degats);
     }
+
+//    @Override
+//    public String toString() {
+//        return getNom() + " – Dégâts : " + degats;
+//    }
+
+//    @Override
+//    public String toString() {
+//        Gson gson = GsonObjectIdAdapter.getGson();
+//        String json = gson.toJson(this);
+//        return "\"Sword\": " + json;
+//    }
 
 }

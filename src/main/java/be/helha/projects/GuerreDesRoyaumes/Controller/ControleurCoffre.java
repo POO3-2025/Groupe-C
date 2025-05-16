@@ -1,13 +1,16 @@
 package be.helha.projects.GuerreDesRoyaumes.Controller;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,16 +31,21 @@ public class ControleurCoffre {
     private static final Logger logger = LoggerFactory.getLogger(ControleurCoffre.class);
 
     private final JoueurDAO joueurDAO;
+    private final PersonnageDAO personnageDAO;
     private final ItemDAOImpl itemDAO;
+    private final PersonnageDAOImpl personnageDAOImpl;
 
     @Autowired
-    public ControleurCoffre(JoueurDAO joueurDAO) {
+    public ControleurCoffre(JoueurDAO joueurDAO, PersonnageDAO personnageDAO, PersonnageDAOImpl personnageDAOImpl) {
         this.joueurDAO = joueurDAO;
+        this.personnageDAO = personnageDAO;
         this.itemDAO = ItemDAOImpl.getInstance();
+        this.personnageDAOImpl = personnageDAOImpl;
     }
 
     /**
      * Récupère les items dans le coffre d'un joueur
+     *
      * @param joueurId L'ID du joueur
      * @return Le contenu du coffre du joueur
      */
@@ -87,15 +95,14 @@ public class ControleurCoffre {
 
     /**
      * Ajoute un item au coffre d'un joueur
+     *
      * @param joueurId L'ID du joueur
-     * @param request Données de l'item à ajouter (ID et quantité)
+     * @param request  Données de l'item à ajouter (ID et quantité)
      * @return Confirmation de l'ajout
      */
     @PostMapping("/{joueurId}/ajouter")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> ajouterItemAuCoffre(
-            @PathVariable int joueurId,
-            @RequestBody Map<String, Integer> request) {
+    public ResponseEntity<?> ajouterItemAuCoffre(@PathVariable int joueurId, @RequestBody Map<String, Integer> request) {
 
         try {
             int itemId = request.get("itemId");
@@ -152,15 +159,14 @@ public class ControleurCoffre {
 
     /**
      * Retire un item du coffre d'un joueur
+     *
      * @param joueurId L'ID du joueur
-     * @param request Données de l'item à retirer (ID et quantité)
+     * @param request  Données de l'item à retirer (ID et quantité)
      * @return Confirmation du retrait
      */
     @PostMapping("/{joueurId}/retirer")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> retirerItemDuCoffre(
-            @PathVariable int joueurId,
-            @RequestBody Map<String, Integer> request) {
+    public ResponseEntity<?> retirerItemDuCoffre(@PathVariable int joueurId, @RequestBody Map<String, Integer> request) {
 
         try {
             int itemId = request.get("itemId");
@@ -217,18 +223,18 @@ public class ControleurCoffre {
 
     /**
      * Utilise un item du coffre
+     *
      * @param joueurId L'ID du joueur
-     * @param itemId L'ID de l'item à utiliser
+     * @param itemId   L'ID de l'item à utiliser
      * @return Résultat de l'utilisation de l'item
      */
     @PostMapping("/{joueurId}/utiliser/{itemId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> utiliserItem(
-            @PathVariable int joueurId,
-            @PathVariable int itemId) {
+    public ResponseEntity<?> utiliserItem(@PathVariable int joueurId, @PathVariable int itemId) {
 
         try {
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
+            Personnage personnage = personnageDAO.obtenirPersonnageParId(joueurId);
 
             Item item = itemDAO.obtenirItemParId(itemId);
             if (item == null) {
@@ -255,7 +261,7 @@ public class ControleurCoffre {
 
             // Utiliser l'item
             try {
-                item.use();
+                item.use(personnage);
             } catch (Exception e) {
                 throw new ItemException("Erreur lors de l'utilisation de l'item: " + e.getMessage(), e);
             }
@@ -291,15 +297,14 @@ public class ControleurCoffre {
 
     /**
      * Met à jour la capacité du coffre d'un joueur (réservé aux administrateurs)
+     *
      * @param joueurId L'ID du joueur
-     * @param request Données de mise à jour (nouvelle capacité)
+     * @param request  Données de mise à jour (nouvelle capacité)
      * @return Confirmation de la mise à jour
      */
     @PutMapping("/{joueurId}/capacite")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<?> mettreAJourCapaciteCoffre(
-            @PathVariable int joueurId,
-            @RequestBody Map<String, Integer> request) {
+    public ResponseEntity<?> mettreAJourCapaciteCoffre(@PathVariable int joueurId, @RequestBody Map<String, Integer> request) {
 
         try {
             int nouvelleCapacite = request.get("capacite");

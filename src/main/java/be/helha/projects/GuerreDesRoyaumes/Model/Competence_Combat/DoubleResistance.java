@@ -9,6 +9,6 @@ public class DoubleResistance extends Competence {
 
     @Override
     public void appliquerEffet(Personnage personnage) {
-        personnage.setResistance(personnage.getResistance() * 2);
+        personnage.setDefense(personnage.getDefense() * 2);
     }
 }

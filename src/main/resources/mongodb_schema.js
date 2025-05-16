@@ -5,15 +5,15 @@ db.createCollection('items', {
             bsonType: "object",
             required: ["id_item", "nom", "type"],
             properties: {
-                id_item: { bsonType: "int" },
-                nom: { bsonType: "string" },
-                type: { bsonType: "string" },
-                description: { bsonType: "string" },
-                prix: { bsonType: "int" },
-                effet: { bsonType: "object" },
-                proprietes: { bsonType: "object" },
-                stackable: { bsonType: "bool" },
-                quantite_max: { bsonType: "int" }
+                id_item: {bsonType: "int"},
+                nom: {bsonType: "string"},
+                type: {bsonType: "string"},
+                description: {bsonType: "string"},
+                prix: {bsonType: "int"},
+                effet: {bsonType: "object"},
+                proprietes: {bsonType: "object"},
+                stackable: {bsonType: "bool"},
+                quantite_max: {bsonType: "int"}
             }
         }
     }
@@ -26,16 +26,16 @@ db.createCollection('inventaires', {
             bsonType: "object",
             required: ["id_joueur", "items"],
             properties: {
-                id_joueur: { bsonType: "int" },
+                id_joueur: {bsonType: "int"},
                 items: {
                     bsonType: "array",
                     items: {
                         bsonType: "object",
                         required: ["id_item", "quantite"],
                         properties: {
-                            id_item: { bsonType: "int" },
-                            quantite: { bsonType: "int" },
-                            position: { bsonType: "int" }
+                            id_item: {bsonType: "int"},
+                            quantite: {bsonType: "int"},
+                            position: {bsonType: "int"}
                         }
                     }
                 }
@@ -51,16 +51,16 @@ db.createCollection('coffres', {
             bsonType: "object",
             required: ["id_joueur", "items"],
             properties: {
-                id_joueur: { bsonType: "int" },
+                id_joueur: {bsonType: "int"},
                 items: {
                     bsonType: "array",
                     items: {
                         bsonType: "object",
                         required: ["id_item", "quantite"],
                         properties: {
-                            id_item: { bsonType: "int" },
-                            quantite: { bsonType: "int" },
-                            position: { bsonType: "int" }
+                            id_item: {bsonType: "int"},
+                            quantite: {bsonType: "int"},
+                            position: {bsonType: "int"}
                         }
                     }
                 }
@@ -76,17 +76,17 @@ db.createCollection('equipements', {
             bsonType: "object",
             required: ["id_personnage", "equipements"],
             properties: {
-                id_personnage: { bsonType: "int" },
+                id_personnage: {bsonType: "int"},
                 equipements: {
                     bsonType: "object",
                     properties: {
-                        arme: { bsonType: "int" },
-                        armure: { bsonType: "int" },
-                        casque: { bsonType: "int" },
-                        bottes: { bsonType: "int" },
-                        gants: { bsonType: "int" },
-                        accessoire1: { bsonType: "int" },
-                        accessoire2: { bsonType: "int" }
+                        arme: {bsonType: "int"},
+                        armure: {bsonType: "int"},
+                        casque: {bsonType: "int"},
+                        bottes: {bsonType: "int"},
+                        gants: {bsonType: "int"},
+                        accessoire1: {bsonType: "int"},
+                        accessoire2: {bsonType: "int"}
                     }
                 }
             }
@@ -95,8 +95,8 @@ db.createCollection('equipements', {
 });
 
 // Index essentiels
-db.items.createIndex({ "id_item": 1 }, { unique: true });
-db.inventaires.createIndex({ "id_joueur": 1 });
-db.coffres.createIndex({ "id_joueur": 1 });
-db.equipements.createIndex({ "id_personnage": 1 });
+db.items.createIndex({"id_item": 1}, {unique: true});
+db.inventaires.createIndex({"id_joueur": 1});
+db.coffres.createIndex({"id_joueur": 1});
+db.equipements.createIndex({"id_personnage": 1});
 

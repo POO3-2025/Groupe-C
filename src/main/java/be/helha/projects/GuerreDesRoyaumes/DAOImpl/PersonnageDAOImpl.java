@@ -2,7 +2,6 @@ package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageDAO;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
-import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Golem;
@@ -64,7 +63,7 @@ public class PersonnageDAOImpl implements PersonnageDAO {
             statement.setString(1, personnage.getNom());
             statement.setDouble(2, personnage.getVie());
             statement.setDouble(3, personnage.getDegats());
-            statement.setDouble(4, personnage.getResistance());
+            statement.setDouble(4, personnage.getDefense());
             statement.executeUpdate();
 
             ResultSet generatedKeys = statement.getGeneratedKeys();
@@ -115,7 +114,7 @@ public class PersonnageDAOImpl implements PersonnageDAO {
             statement.setString(1, personnage.getNom());
             statement.setDouble(2, personnage.getVie());
             statement.setDouble(3, personnage.getDegats());
-            statement.setDouble(4, personnage.getResistance());
+            statement.setDouble(4, personnage.getDefense());
             statement.setString(5, determinerTypePersonnage(personnage));
             // Nécessiterait un getter getId() dans la classe Personnage
             // statement.setInt(6, personnage.getId());

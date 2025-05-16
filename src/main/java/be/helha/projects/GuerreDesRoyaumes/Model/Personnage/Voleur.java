@@ -6,40 +6,6 @@ public class Voleur extends Personnage {
     public Voleur() {
         super("Voleur",90, 0, 15, new Inventaire());
     }
-
-    @Override
-    public void attaquer() {
-        System.out.println(getNom() + " fait une attaque");
-    }
-
-    @Override
-    public void attaquerSpecial() {
-        System.out.println(getNom() + " fait une attaque spécial !");
-    }
-
-    @Override
-    public void defense() {
-        System.out.println(getNom() + " se défend");
-    }
-
-    @Override
-    public void UtilisationObjet() {
-        System.out.println(getNom() + " utilise un objet");
-    }
-
-    @Override
-    public void subirDegats(double degatsSubis) {
-        double degatsReels = degatsSubis / (100 / getResistance());
-        //    double degatsReels = degatsSubis * (1 - (getResistance() / 100.0));
-        setVie(getVie() - degatsReels);
-        System.out.println(getNom() + " subit " + degatsReels + " points de dégâts. Vie restante : " + getVie());
-    }
-
-    @Override
-    public void soigner(double pointsSoin) {
-        setVie(getVie() + pointsSoin);
-        System.out.println(getNom() + " se soigne de " + pointsSoin + " points de vie. Vie actuelle : " + getVie());
-    }
 }
 
 // TODO Le voleur doit gagner 2x plus d'argent à la fin d'un combat
