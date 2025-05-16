@@ -30,54 +30,172 @@ public class ItemDAOImpl implements ItemDAO {
 
     /**
      * Constructeur avec connexion à la base de données.
-     * Crée également la table des compétences si elle n'existe pas.
      *
      * @param connection La connexion à la base de données à utiliser
      */
     public ItemDAOImpl(Connection connection) {
         this.connection = connection;
-        creerTableCompetenceSiInexistante();
+        creerTablesItemsSiInexistantes();
     }
 
     /**
      * Configure la connexion à la base de données.
-     * Crée également la table des compétences si elle n'existe pas.
      *
      * @param connection La connexion à la base de données à utiliser
      */
     public void setConnection(Connection connection) {
+        System.out.println("ItemDAOImpl: Configuration de la connexion à la base de données");
         this.connection = connection;
-        creerTableCompetenceSiInexistante();
+
+        if (connection != null) {
+            System.out.println("ItemDAOImpl: Connexion valide, création des tables si nécessaire");
+            creerTablesItemsSiInexistantes();
+        } else {
+            System.err.println("ItemDAOImpl: ATTENTION - La connexion est null!");
+        }
     }
 
     /**
-     * Crée la table des compétences si elle n'existe pas déjà.
-     * Vérifie d'abord si la connexion est établie.
-     *
-     * @throws RuntimeException Si une erreur survient lors de la création de la table
+     * Crée les tables nécessaires pour les items si elles n'existent pas déjà.
      */
-    private void creerTableCompetenceSiInexistante() {
+    private void creerTablesItemsSiInexistantes() {
         if (connection == null) {
             return;
         }
 
-        String createTableQuery = """
-        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='competence' AND xtype='U')
+        // Création de la table items
+        String createTableItems = """
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='items' AND xtype='U')
         BEGIN
-            CREATE TABLE competence (
-                id_competence VARCHAR(50) PRIMARY KEY,
-                nom_competence NVARCHAR(100) NOT NULL,
-                prix_competence INT NOT NULL,
-                description_competence NVARCHAR(255) NOT NULL,
-                type_competence VARCHAR(50) NOT NULL
+            CREATE TABLE items (
+                id INT PRIMARY KEY IDENTITY(1,1),
+                nom NVARCHAR(255) NOT NULL,
+                quantiteMax INT NOT NULL,
+                type NVARCHAR(50) NOT NULL,
+                prix INT NOT NULL
             )
         END
         """;
 
-        try (PreparedStatement statement = connection.prepareStatement(createTableQuery)) {
-            statement.executeUpdate();
+        // Création de la table armes
+        String createTableArmes = """
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='armes' AND xtype='U')
+        BEGIN
+            CREATE TABLE armes (
+                item_id INT PRIMARY KEY,
+                degats FLOAT NOT NULL,
+                FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+            )
+        END
+        """;
+
+        // Création de la table boucliers
+        String createTableBoucliers = """
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='boucliers' AND xtype='U')
+        BEGIN
+            CREATE TABLE boucliers (
+                item_id INT PRIMARY KEY,
+                defense FLOAT NOT NULL,
+                FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+            )
+        END
+        """;
+
+        // Création de la table potions
+        String createTablePotions = """
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='potions' AND xtype='U')
+        BEGIN
+            CREATE TABLE potions (
+                item_id INT PRIMARY KEY,
+                degats FLOAT NOT NULL,
+                soin FLOAT NOT NULL,
+                FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+            )
+        END
+        """;
+
+        try {
+            // Exécuter les créations de tables
+            try (PreparedStatement stmtItems = connection.prepareStatement(createTableItems)) {
+                stmtItems.executeUpdate();
+                System.out.println("Table items créée ou déjà existante");
+            }
+
+            try (PreparedStatement stmtArmes = connection.prepareStatement(createTableArmes)) {
+                stmtArmes.executeUpdate();
+                System.out.println("Table armes créée ou déjà existante");
+            }
+
+            try (PreparedStatement stmtBoucliers = connection.prepareStatement(createTableBoucliers)) {
+                stmtBoucliers.executeUpdate();
+                System.out.println("Table boucliers créée ou déjà existante");
+            }
+
+            try (PreparedStatement stmtPotions = connection.prepareStatement(createTablePotions)) {
+                stmtPotions.executeUpdate();
+                System.out.println("Table potions créée ou déjà existante");
+            }
+
+            // Ajouter des items par défaut si la table est vide
+            ajouterItemsParDefaut();
+
         } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la création de la table competence: " + e.getMessage());
+            e.printStackTrace();
+            System.err.println("Erreur lors de la création des tables pour les items: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Ajoute des items par défaut dans la boutique si aucun item n'existe.
+     */
+    private void ajouterItemsParDefaut() {
+        try {
+            // Vérifier si la table items est vide
+            String countQuery = "SELECT COUNT(*) FROM items";
+            int itemCount = 0;
+
+            try (PreparedStatement stmt = connection.prepareStatement(countQuery);
+                 ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    itemCount = rs.getInt(1);
+                }
+            }
+
+            // Si des items existent déjà, ne pas en ajouter d'autres
+            if (itemCount > 0) {
+                System.out.println("Des items existent déjà dans la base de données, pas d'initialisation nécessaire");
+                return;
+            }
+
+            System.out.println("Initialisation de la boutique avec des items par défaut...");
+
+            // Ajouter des armes par défaut
+            Arme epee = new Arme("Épée en fer", 5, 10.0, 50);
+            Arme hache = new Arme("Hache de bataille", 5, 15.0, 100);
+            Arme lance = new Arme("Lance en acier", 3, 12.0, 75);
+
+            // Ajouter des boucliers par défaut (nom, quantiteMax, prix, defense)
+            Bouclier bouclierBois = new Bouclier("Bouclier en bois", 2, 20, 5.0);
+            Bouclier bouclierAcier = new Bouclier("Bouclier en acier", 1, 100, 15.0);
+
+            // Ajouter des potions par défaut (nom, quantiteMax, prix, degats, soin)
+            Potion potionSoin = new Potion("Potion de soin", 10, 30, 0.0, 20.0);
+            Potion potionForce = new Potion("Potion de force", 5, 70, 10.0, 0.0);
+
+            // Ajouter tous les items dans la base de données
+            ajouterItem(epee);
+            ajouterItem(hache);
+            ajouterItem(lance);
+            ajouterItem(bouclierBois);
+            ajouterItem(bouclierAcier);
+            ajouterItem(potionSoin);
+            ajouterItem(potionForce);
+
+            System.out.println("Boutique initialisée avec succès avec des items par défaut!");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.err.println("Erreur lors de l'initialisation des items par défaut: " + e.getMessage());
         }
     }
 
@@ -221,11 +339,25 @@ public class ItemDAOImpl implements ItemDAO {
         // Créer l'item en fonction de son type
         switch (type) {
             case "arme":
-                int degats = resultSet.getInt("degats");
-                return new Arme(id, nom, quantiteMax, degats, prix);
+                double degats = 0.0;
+                // Récupérer les dégats de l'arme depuis la table armes
+                try {
+                    String sqlArme = "SELECT degats FROM armes WHERE item_id = ?";
+                    try (PreparedStatement stmtArme = connection.prepareStatement(sqlArme)) {
+                        stmtArme.setInt(1, id);
+                        ResultSet rsArme = stmtArme.executeQuery();
+                        if (rsArme.next()) {
+                            degats = rsArme.getDouble("degats");
+                        }
+                    }
+                } catch (SQLException e) {
+                    System.err.println("Erreur lors de la récupération des dégâts de l'arme: " + e.getMessage());
+                    // Si la table n'existe pas encore ou s'il y a un autre problème, on utilise une valeur par défaut
+                    degats = 10.0;
+                }
+                return new Arme(id, nom, quantiteMax, prix, degats);
             case "bouclier":
                 // Récupérer la défense du bouclier depuis la base de données
-                // On utilise une requête séparée ou on ajoute un LEFT JOIN dans les requêtes originales
                 double defense = 0;
                 try {
                     String sqlBouclier = "SELECT defense FROM boucliers WHERE item_id = ?";
@@ -237,6 +369,7 @@ public class ItemDAOImpl implements ItemDAO {
                         }
                     }
                 } catch (SQLException e) {
+                    System.err.println("Erreur lors de la récupération de la défense du bouclier: " + e.getMessage());
                     // Si la table n'existe pas encore ou s'il y a un autre problème, on utilise une valeur par défaut
                     defense = 10.0; // Valeur par défaut pour la défense
                 }
@@ -256,6 +389,7 @@ public class ItemDAOImpl implements ItemDAO {
                         }
                     }
                 } catch (SQLException e) {
+                    System.err.println("Erreur lors de la récupération des propriétés de la potion: " + e.getMessage());
                     // Si la table n'existe pas encore ou s'il y a un autre problème, on utilise des valeurs par défaut
                     potionDegats = 0.0; // Valeur par défaut pour les dégâts
                     potionSoin = 20.0;  // Valeur par défaut pour les soins
@@ -280,14 +414,21 @@ public class ItemDAOImpl implements ItemDAO {
         }
 
         List<Item> items = new ArrayList<>();
-        String sql = "SELECT i.*, a.degats FROM items i LEFT JOIN armes a ON i.id = a.item_id";
+        // Requête complète qui récupère tous les items avec leurs propriétés spécifiques
+        String sql = "SELECT i.* FROM items i";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                items.add(extraireItemDeResultSet(resultSet));
+                try {
+                    Item item = extraireItemDeResultSet(resultSet);
+                    items.add(item);
+                } catch (SQLException e) {
+                    System.err.println("Erreur lors de l'extraction d'un item: " + e.getMessage());
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            System.err.println("Erreur lors de la récupération des items: " + e.getMessage());
         }
         return items;
     }
@@ -306,15 +447,22 @@ public class ItemDAOImpl implements ItemDAO {
         }
 
         List<Item> items = new ArrayList<>();
-        String sql = "SELECT i.*, a.degats FROM items i LEFT JOIN armes a ON i.id = a.item_id WHERE i.type = ?";
+        // Requête qui récupère les items d'un type spécifique
+        String sql = "SELECT i.* FROM items i WHERE i.type = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, type);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                items.add(extraireItemDeResultSet(resultSet));
+                try {
+                    Item item = extraireItemDeResultSet(resultSet);
+                    items.add(item);
+                } catch (SQLException e) {
+                    System.err.println("Erreur lors de l'extraction d'un item: " + e.getMessage());
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            System.err.println("Erreur lors de la récupération des items par type: " + e.getMessage());
         }
         return items;
     }

@@ -2,6 +2,7 @@ package be.helha.projects.GuerreDesRoyaumes.TUI;
 
 import be.helha.projects.GuerreDesRoyaumes.Config.*;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceAuthentificationImpl;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import be.helha.projects.GuerreDesRoyaumes.TUI.Ecran.EcranAuthentification;
@@ -87,13 +88,19 @@ public class Main {
 
             // Initialiser les DAOs
             JoueurDAOImpl joueurDAO = JoueurDAOImpl.getInstance();
+            // Initialiser également ItemDAOImpl
+            ItemDAOImpl itemDAO = ItemDAOImpl.getInstance();
 
-            // Définir la connexion pour le DAO si disponible
+            // Définir la connexion pour les DAOs si disponible
             if (sqlConnection != null) {
                 joueurDAO.setConnection(sqlConnection);
                 System.out.println("DAO Joueur initialisé avec succès!");
+
+                // Connecter également ItemDAO
+                itemDAO.setConnection(sqlConnection);
+                System.out.println("DAO Item initialisé avec succès!");
             } else {
-                System.err.println("Attention: DAO Joueur initialisé sans connexion à la base de données!");
+                System.err.println("Attention: DAOs initialisés sans connexion à la base de données!");
             }
 
             // Initialiser les services

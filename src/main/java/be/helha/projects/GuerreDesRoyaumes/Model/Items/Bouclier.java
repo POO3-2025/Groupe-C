@@ -4,8 +4,15 @@ public class Bouclier extends Item {
 
     private double defense;
 
+    // Constructeur avec ID
     public Bouclier(int id, String nom, int quantiteMax, int prix, double defense) {
         super(id, nom, quantiteMax, "Bouclier", prix);
+        this.defense = defense;
+    }
+
+    // Constructeur sans ID (pour création initiale)
+    public Bouclier(String nom, int quantiteMax, int prix, double defense) {
+        super(0, nom, quantiteMax, "Bouclier", prix);
         this.defense = defense;
     }
 

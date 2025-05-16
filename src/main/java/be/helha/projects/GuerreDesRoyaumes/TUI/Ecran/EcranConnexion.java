@@ -1,6 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
@@ -27,7 +28,7 @@ public class EcranConnexion {
         fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
 
         Panel panel = new Panel(new GridLayout(2));
-        
+
         // Champs de connexion
         panel.addComponent(new Label("Pseudo :"));
         TextBox pseudoBox = new TextBox();
@@ -49,8 +50,19 @@ public class EcranConnexion {
 
             try {
                 if (serviceAuthentification.authentifierJoueur(pseudo, motDePasse)) {
-                    fenetre.close();
-                    new EcranPrincipal(serviceAuthentification, joueurDAO, pseudo, screen).afficher();
+                    // L'authentification a réussi, maintenant vérifier si le joueur existe
+                    try {
+                        // Vérifier directement si l'utilisateur existe dans la base de données
+                        Joueur joueur = joueurDAO.obtenirJoueurParPseudo(pseudo);
+                        if (joueur != null) {
+                            fenetre.close();
+                            new EcranPrincipal(serviceAuthentification, joueurDAO, pseudo, screen).afficher();
+                        } else {
+                            afficherMessageErreur("Le joueur avec le pseudo " + pseudo + " existe mais impossible de récupérer ses données.");
+                        }
+                    } catch (Exception e) {
+                        afficherMessageErreur("Erreur lors de la récupération des données du joueur : " + e.getMessage());
+                    }
                 } else {
                     afficherMessageErreur("Pseudo ou mot de passe incorrect");
                 }
@@ -71,10 +83,10 @@ public class EcranConnexion {
 
     private void afficherMessageErreur(String message) {
         new MessageDialogBuilder()
-            .setTitle("Erreur")
-            .setText(message)
-            .addButton(MessageDialogButton.OK)
-            .build()
-            .showDialog(textGUI);
+                .setTitle("Erreur")
+                .setText(message)
+                .addButton(MessageDialogButton.OK)
+                .build()
+                .showDialog(textGUI);
     }
-} 
+}
