@@ -1,7 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.Controller;
 
-import be.helha.projects.GuerreDesRoyaumes.Config.JwtUtils;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.Config.SecuriteJWT.JwtUtils;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.JoueurNotFoundException;
 import be.helha.projects.GuerreDesRoyaumes.Model.AuthResponse;
@@ -21,9 +20,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 

@@ -1,4 +1,4 @@
-package be.helha.projects.GuerreDesRoyaumes.Config;
+package be.helha.projects.GuerreDesRoyaumes.Config.SecuriteJWT;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

@@ -1,4 +1,4 @@
-package be.helha.projects.GuerreDesRoyaumes.Config;
+package be.helha.projects.GuerreDesRoyaumes.Config.SecuriteJWT;
 
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.JoueurUserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;

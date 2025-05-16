@@ -1,4 +1,4 @@
-package be.helha.projects.GuerreDesRoyaumes.Config;
+package be.helha.projects.GuerreDesRoyaumes.Config.SecuriteJWT;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

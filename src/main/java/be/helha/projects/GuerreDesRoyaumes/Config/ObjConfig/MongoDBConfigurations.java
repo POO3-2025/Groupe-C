@@ -1,4 +1,4 @@
-package be.helha.projects.GuerreDesRoyaumes.Config;
+package be.helha.projects.GuerreDesRoyaumes.Config.ObjConfig;
 
 /**
  * La classe Configuration représente la configuration d'une connexion à une base de données,

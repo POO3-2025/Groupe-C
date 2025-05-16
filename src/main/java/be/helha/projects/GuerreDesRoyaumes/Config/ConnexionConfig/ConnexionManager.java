@@ -1,4 +1,4 @@
-package be.helha.projects.GuerreDesRoyaumes.Config;
+package be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig;
 
 import com.mongodb.client.MongoDatabase;
 import java.sql.Connection;

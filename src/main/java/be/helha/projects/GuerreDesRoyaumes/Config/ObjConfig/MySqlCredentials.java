@@ -1,10 +1,10 @@
-package be.helha.projects.GuerreDesRoyaumes.Config;
+package be.helha.projects.GuerreDesRoyaumes.Config.ObjConfig;
 
 /**
  * La classe Credentials contient les informations d'identification nécessaires pour accéder à une base de données,
  * y compris le nom d'hôte, le nom d'utilisateur, le mot de passe, le nom de la base de données et le port.
  */
-public class MongoDBCredentials {
+public class MySqlCredentials {
 
     /**
      * Nom d'hôte ou adresse IP du serveur de base de données.
@@ -30,7 +30,7 @@ public class MongoDBCredentials {
      */
     public String DB_PASSWORD;
 
-    public MongoDBCredentials(String DB_HOST, String DB_PORT, String DB_NAME, String DB_USER, String DB_PASSWORD) {
+    public MySqlCredentials(String DB_HOST, String DB_PORT, String DB_NAME, String DB_USER, String DB_PASSWORD) {
         this.DB_HOST = DB_HOST;
         this.DB_PORT = DB_PORT;
         this.DB_NAME = DB_NAME;

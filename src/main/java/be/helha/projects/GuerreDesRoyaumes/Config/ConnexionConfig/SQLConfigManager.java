@@ -1,9 +1,12 @@
-package be.helha.projects.GuerreDesRoyaumes.Config;
+package be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import javax.sql.DataSource;
+
+import be.helha.projects.GuerreDesRoyaumes.Config.ObjConfig.MySqlConfigurations;
+import be.helha.projects.GuerreDesRoyaumes.Config.ObjConfig.MySqlCredentials;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.stereotype.Component;
 
