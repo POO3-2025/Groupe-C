@@ -3,9 +3,6 @@ package be.helha.projects.GuerreDesRoyaumes.Config;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -19,36 +16,11 @@ public class MongoDBConfigManager {
     private String username;
     private String password;
 
-    // Template MongoDB injecté par Spring
-    private MongoTemplate mongoTemplate;
-
     // Client MongoDB pour la connexion manuelle
     private MongoClient mongoClient;
 
-    // Indicateur du mode de fonctionnement
-    private boolean useSpringTemplate;
-
-    @Autowired(required = false)
-    public MongoDBConfigManager(
-            @Value("${spring.data.mongodb.host:}") String host,
-            @Value("${spring.data.mongodb.port:}") String port,
-            @Value("${spring.data.mongodb.database:}") String dbName,
-            @Value("${spring.data.mongodb.username:}") String username,
-            @Value("${spring.data.mongodb.password:}") String password,
-            MongoTemplate mongoTemplate) {
-
-        this.host = host;
-        this.port = port;
-        this.dbName = dbName;
-        this.username = username;
-        this.password = password;
-        this.mongoTemplate = mongoTemplate;
-        this.useSpringTemplate = (mongoTemplate != null);
-
-        // Singleton update
-        instance = this;
-        System.out.println("MongoDBConfigManager initialisé via Spring");
-    }
+    // Indique si nous utilisons Spring ou non
+    private boolean useSpring;
 
     // Constructeur privé - pas d'initialisation par défaut
     private MongoDBConfigManager() {
@@ -62,7 +34,7 @@ public class MongoDBConfigManager {
         this.dbName = dbName;
         this.username = username;
         this.password = password;
-        this.useSpringTemplate = false;
+        this.useSpring = false;
 
         // Singleton update
         instance = this;
@@ -109,38 +81,21 @@ public class MongoDBConfigManager {
     }
 
     public MongoDatabase getDatabase() {
-        if (useSpringTemplate) {
-            try {
-                // On utilise directement le template MongoDB
-                MongoDatabase database = mongoTemplate.getDb();
-                System.out.println("MongoDB obtenu via template Spring: " + database.getName());
-                return database;
-            } catch (Exception e) {
-                System.err.println("Erreur lors de l'accès à MongoDB via template Spring: " + e.getMessage());
-                e.printStackTrace();
-                // Fallback au mode manuel si Spring échoue
-            }
-        }
-
-        // Connexion directe en cas d'absence de Spring ou d'échec du template
+        // Connexion directe à MongoDB
         if (host == null || port == null || dbName == null) {
             throw new IllegalStateException("Paramètres de connexion MongoDB non initialisés");
         }
 
         try {
             System.out.println("Tentative de connexion directe à MongoDB...");
-            int portNumber;
-            try {
-                portNumber = Integer.parseInt(port.trim());
-            } catch (NumberFormatException e) {
-                throw new IllegalStateException("Port MongoDB invalide: " + port);
-            }
 
-            String uri = String.format("mongodb://%s:%d/%s", host, portNumber, dbName);
-            System.out.println("URI de connexion: " + uri);
+            // Utiliser une connexion simple avec connectionString pour éviter les problèmes de dépendances
+            String connectionString = "mongodb://" + host + ":" + port;
+            System.out.println("URI de connexion: " + connectionString);
 
             if (mongoClient == null) {
-                mongoClient = MongoClients.create(uri);
+                // Utiliser la surcharge plus simple qui ne dépend pas de StreamFactory
+                mongoClient = MongoClients.create(connectionString);
             }
             return mongoClient.getDatabase(dbName);
         } catch (Exception e) {
@@ -148,10 +103,6 @@ public class MongoDBConfigManager {
             e.printStackTrace();
             throw new RuntimeException("Impossible de se connecter à MongoDB", e);
         }
-    }
-
-    public MongoTemplate getMongoTemplate() {
-        return mongoTemplate;
     }
 
     /**
@@ -169,7 +120,7 @@ public class MongoDBConfigManager {
      * Ferme les ressources MongoDB si nécessaire.
      */
     public void closeClient() {
-        if (!useSpringTemplate && mongoClient != null) {
+        if (mongoClient != null) {
             try {
                 mongoClient.close();
                 System.out.println("Client MongoDB fermé avec succès");

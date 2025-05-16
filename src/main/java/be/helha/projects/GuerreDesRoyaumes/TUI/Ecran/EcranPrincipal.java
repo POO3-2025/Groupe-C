@@ -6,7 +6,7 @@ import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.CoffreService;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
@@ -105,31 +105,27 @@ public class EcranPrincipal {
     }
 
     private void afficherEcranGestionInventaire(Joueur joueur) {
-        // Implémentation à venir pour la gestion de l'inventaire
+        try {
+            EcranGestionInventaire ecranGestionInventaire = new EcranGestionInventaire(joueur, screen);
+            ecranGestionInventaire.afficher();
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'affichage de l'écran de gestion d'inventaire: " + e.getMessage());
+            e.printStackTrace();
+            afficherMessageErreur("Erreur lors de l'affichage de l'écran de gestion d'inventaire");
+        }
     }
 
-    private void afficherEcranBoutique(Joueur joueur) {
-        // Assurer que les données du coffre sont chargées avant d'afficher l'écran boutique
-        CoffreServiceImpl coffreService = CoffreServiceImpl.getInstance();
-
+    public void afficherEcranBoutique(Joueur joueur) {
         try {
-            // Obtenir une connexion si nécessaire
-            if (coffreService.getConnection() == null) {
-                Connection connection = ConnexionManager.getInstance().getSQLConnection();
-                coffreService.setConnection(connection);
-            }
-
-            // Charger le contenu du coffre depuis la base de données
-            coffreService.chargerCoffre(joueur);
-
-            // Initialiser et afficher l'écran boutique
+            // Utiliser ItemMongoDAOImpl pour la gestion des items
+            ItemDAO itemDAO = ItemMongoDAOImpl.getInstance();
             ServiceBoutique serviceBoutique = ServiceBoutiqueImpl.getInstance();
-            ItemDAO itemDAO = ItemDAOImpl.getInstance();
+
             EcranBoutique ecranBoutique = new EcranBoutique(serviceBoutique, itemDAO, joueur, screen);
             ecranBoutique.afficher();
-
-        } catch (SQLException e) {
-            afficherMessageErreur("Erreur lors du chargement du coffre : " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'affichage de l'écran boutique: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

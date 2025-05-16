@@ -1,8 +1,10 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
 import be.helha.projects.GuerreDesRoyaumes.Config.*;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CoffreMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.InventaireMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceAuthentificationImpl;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import be.helha.projects.GuerreDesRoyaumes.TUI.Ecran.EcranAuthentification;
@@ -88,19 +90,26 @@ public class Main {
 
             // Initialiser les DAOs
             JoueurDAOImpl joueurDAO = JoueurDAOImpl.getInstance();
-            // Initialiser également ItemDAOImpl
-            ItemDAOImpl itemDAO = ItemDAOImpl.getInstance();
 
-            // Définir la connexion pour les DAOs si disponible
+            // Initialiser les DAOs MongoDB
+            ItemMongoDAOImpl itemDAO = ItemMongoDAOImpl.getInstance();
+            CoffreMongoDAOImpl coffreDAO = CoffreMongoDAOImpl.getInstance();
+            InventaireMongoDAOImpl inventaireDAO = InventaireMongoDAOImpl.getInstance();
+
+            // Vérifier si des items existent déjà dans MongoDB, sinon initialiser les données de base
+            if (itemDAO.obtenirTousLesItems().isEmpty()) {
+                System.out.println("Aucun item trouvé dans la base de données MongoDB, initialisation des items par défaut...");
+                itemDAO.initialiserItemsParDefaut();
+            } else {
+                System.out.println("Items déjà présents dans la base de données MongoDB!");
+            }
+
+            // Définir la connexion pour les DAOs SQL si disponible
             if (sqlConnection != null) {
                 joueurDAO.setConnection(sqlConnection);
                 System.out.println("DAO Joueur initialisé avec succès!");
-
-                // Connecter également ItemDAO
-                itemDAO.setConnection(sqlConnection);
-                System.out.println("DAO Item initialisé avec succès!");
             } else {
-                System.err.println("Attention: DAOs initialisés sans connexion à la base de données!");
+                System.err.println("Attention: DAOs SQL initialisés sans connexion à la base de données!");
             }
 
             // Initialiser les services

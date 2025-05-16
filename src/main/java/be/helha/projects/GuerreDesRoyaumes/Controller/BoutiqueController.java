@@ -1,7 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Controller;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
@@ -26,7 +26,7 @@ public class BoutiqueController {
 
     @Autowired
     public BoutiqueController(ServiceBoutique serviceBoutique) {
-        this.itemDAO = ItemDAOImpl.getInstance();
+        this.itemDAO = ItemMongoDAOImpl.getInstance();
         this.joueurDAO = JoueurDAOImpl.getInstance();
         this.serviceBoutique = serviceBoutique;
     }
