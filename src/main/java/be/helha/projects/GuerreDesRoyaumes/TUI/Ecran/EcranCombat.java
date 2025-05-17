@@ -2,8 +2,6 @@ package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
-import be.helha.projects.GuerreDesRoyaumes.Reseau.GestionnaireReseau;
-import be.helha.projects.GuerreDesRoyaumes.Reseau.MessageCombat;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
@@ -12,12 +10,6 @@ import com.googlecode.lanterna.screen.Screen;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.Random;
-import java.lang.reflect.Method;
 
 public class EcranCombat {
     private final JoueurDAO joueurDAO;
@@ -28,7 +20,6 @@ public class EcranCombat {
     private final ServiceCombat serviceCombat;
     private int tourActuel = 1;
     private final int MAX_TOURS = 5;
-    private GestionnaireReseau gestionnaireReseau;
     private boolean actionAdversaireRecue = false;
     private String actionAdversaire = null;
     private int compteurVerifications = 0;
@@ -41,7 +32,6 @@ public class EcranCombat {
         this.joueur = joueur;
         this.adversaire = adversaire;
         this.serviceCombat = serviceCombat;
-        this.gestionnaireReseau = new GestionnaireReseau();
     }
 
     public void afficher() {
@@ -266,10 +256,7 @@ public class EcranCombat {
         fenetre.setComponent(panel);
         textGUI.addWindow(fenetre);
 
-        // Fermer la connexion réseau
-        if (gestionnaireReseau != null) {
-            gestionnaireReseau.fermer();
-        }
+
 
         // Compte à rebours de 5 secondes
         new Timer().schedule(new TimerTask() {

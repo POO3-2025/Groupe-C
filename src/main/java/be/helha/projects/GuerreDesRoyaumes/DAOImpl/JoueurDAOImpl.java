@@ -233,7 +233,8 @@ public class JoueurDAOImpl implements JoueurDAO {
                 motDePasse_joueur NVARCHAR(255) NOT NULL,
                 argent_joueur INT NOT NULL DEFAULT 100,
                 victoires_joueur INT NOT NULL DEFAULT 0,
-                defaites_joueur INT NOT NULL DEFAULT 0
+                defaites_joueur INT NOT NULL DEFAULT 0,
+                actif_joueur BIT NOT NULL DEFAULT 0
             )
         END
         """;
