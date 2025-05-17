@@ -26,7 +26,7 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
     private final MongoCollection<Document> itemCollection;
     MongoDatabase mongoDB = null;
     private final Gson gson;
-    
+
     private ItemMongoDAOImpl() {
         try {
              mongoDB = InitialiserAPP.getMongoConnexion();
@@ -179,5 +179,15 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
                 .first();
 
         return (maxDoc != null) ? maxDoc.getInteger("id") + 1 : 1;
+    }
+
+    public void supprimerTousLesItems() {
+        try {
+            itemCollection.deleteMany(new Document()); // supprime tous les documents
+            System.out.println("Tous les items ont été supprimés de la collection.");
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la suppression de tous les items : " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

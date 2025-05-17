@@ -15,5 +15,7 @@ public interface ItemMongoDAO {
 
     void supprimerItem(int id);
 
+    void supprimerTousLesItems();
+
     List<Item> obtenirTousLesItems();
 }
