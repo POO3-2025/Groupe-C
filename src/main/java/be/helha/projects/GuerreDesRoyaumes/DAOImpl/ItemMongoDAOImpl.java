@@ -7,6 +7,8 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Potion;
+import be.helha.projects.GuerreDesRoyaumes.Outils.GsonObjectIdAdapter;
+import com.google.gson.Gson;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -23,10 +25,13 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
     private static ItemMongoDAOImpl instance;
     private final MongoCollection<Document> itemCollection;
     MongoDatabase mongoDB = null;
+    private final Gson gson;
+    
     private ItemMongoDAOImpl() {
         try {
              mongoDB = InitialiserAPP.getMongoConnexion();
             this.itemCollection = mongoDB.getCollection("items");
+            this.gson = GsonObjectIdAdapter.getGson();
         } catch (MongoDBConnectionException ex) {
             throw new RuntimeException(ex);
         }
@@ -66,7 +71,21 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
     }
 
     private Item convertirDocumentEnItem(Document doc) {
-        return fromDocument(doc);
+        try {
+            // Récupération du Gson configuré avec les adapters
+            Gson gson = GsonObjectIdAdapter.getGson();
+
+            //Conversion Document → JSON
+            String json = doc.toJson();
+
+            //Désérialisation avec gestion du polymorphisme
+            return gson.fromJson(json, Item.class);
+        } catch (Exception e) {
+            //Gestion robuste des erreurs
+            System.err.println("Erreur lors de la conversion du document en item. Document: " + doc.toJson());
+            e.printStackTrace();
+            throw new RuntimeException("Échec critique de la désérialisation", e);
+        }
     }
 
     private static double getAsDouble(Document doc, String key) {
@@ -119,30 +138,15 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
     }
 
     private Document convertirItemEnDocument(Item item) {
-        Document doc = new Document()
-            .append("id", item.getId())
-            .append("nom", item.getNom())
-            .append("quantiteMax", item.getQuantiteMax())
-            .append("type", item.getType())
-            .append("prix", item.getPrix());
-
-        // Ajouter des champs spécifiques selon le type d'item
-        if (item instanceof Arme) {
-            Arme arme = (Arme) item;
-            doc.append("degats", arme.getDegats());
-            doc.append("itemClass", "Arme");
-        } else if (item instanceof Bouclier) {
-            Bouclier bouclier = (Bouclier) item;
-            doc.append("defense", bouclier.getDefense());
-            doc.append("itemClass", "Bouclier");
-        } else if (item instanceof Potion) {
-            Potion potion = (Potion) item;
-            doc.append("soin", potion.getSoin());
-            doc.append("degats", potion.getDegats());
-            doc.append("itemClass", "Potion");
+        try {
+            Gson gson = GsonObjectIdAdapter.getGson();
+            String json = gson.toJson(item);
+            return Document.parse(json);
+        } catch (Exception e) {
+            System.err.println("Erreur critique lors de la conversion de l'item en document: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Échec de la sérialisation Gson", e);
         }
-
-        return doc;
     }
 
     @Override
@@ -176,81 +180,4 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
 
         return (maxDoc != null) ? maxDoc.getInteger("id") + 1 : 1;
     }
-
-    private static Item fromDocument(org.bson.Document doc) {
-        try {
-            int id = doc.getInteger("id", 0);
-            String nom = doc.getString("nom");
-            int quantiteMax = doc.getInteger("quantiteMax", 1);
-            int prix = doc.getInteger("prix", 0);
-            
-            // Utiliser itemClass en priorité, puis type comme fallback
-            String itemClass = doc.getString("itemClass");
-            String type = doc.getString("type");
-            
-            // Si itemClass est présent, l'utiliser pour déterminer le type
-            if (itemClass != null && !itemClass.isEmpty()) {
-                if (itemClass.equals("Arme")) {
-                    double degats = getAsDouble(doc, "degats");
-                    return new Arme(id, nom, quantiteMax, prix, degats);
-                } else if (itemClass.equals("Bouclier")) {
-                    double defense = getAsDouble(doc, "defense");
-                    return new Bouclier(id, nom, quantiteMax, prix, defense);
-                } else if (itemClass.equals("Potion")) {
-                    double degats = getAsDouble(doc, "degats");
-                    double soin = getAsDouble(doc, "soin");
-                    return new Potion(id, nom, quantiteMax, prix, degats, soin);
-                }
-            }
-            
-            // Fallback sur le champ type
-            if (type == null) type = "item";
-            type = type.toLowerCase();
-    
-            if (type.contains("arme")) {
-                double degats = getAsDouble(doc, "degats");
-                return new Arme(id, nom, quantiteMax, prix, degats);
-            } else if (type.contains("bouclier")) {
-                double defense = getAsDouble(doc, "defense");
-                return new Bouclier(id, nom, quantiteMax, prix, defense);
-            } else if (type.contains("potion")) {
-                double degats = getAsDouble(doc, "degats");
-                double soin = getAsDouble(doc, "soin");
-                return new Potion(id, nom, quantiteMax, prix, degats, soin);
-            } else {
-                // Item générique si le type n'est pas reconnu
-                return new Item(id, nom, quantiteMax, type, prix) {
-                    @Override
-                    public void use() {
-                        System.out.println("Utilisation de l'item générique : " + getNom());
-                    }
-                };
-            }
-        } catch (Exception e) {
-            System.err.println("Erreur lors de la conversion du document en item: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private static Document toDocument(Item item) {
-        Document doc = new Document();
-        doc.append("nom", item.getNom());
-        doc.append("quantiteMax", item.getQuantiteMax());
-        doc.append("type", item.getType());
-        doc.append("prix", item.getPrix());
-
-        // Selon le type, ajouter les champs spécifiques
-        if (item instanceof Arme) {
-            doc.append("degats", ((Arme) item).getDegats());
-        } else if (item instanceof Bouclier) {
-            doc.append("defense", ((Bouclier) item).getDefense());
-        } else if (item instanceof Potion) {
-            Potion potion = (Potion) item;
-            doc.append("degats", potion.getDegats());
-            doc.append("soin", potion.getSoin());
-        }
-        return doc;
-    }
-
 }
