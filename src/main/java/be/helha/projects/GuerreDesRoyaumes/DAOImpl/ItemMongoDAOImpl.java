@@ -30,6 +30,11 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
         return instance;
     }
 
+    public void ajouterItem(Item item) {
+        Document doc = toDocument(item);
+        collection.insertOne(doc);
+    }
+
     public List<Item> obtenirTousLesItems() {
         List<Item> items = new ArrayList<>();
         for (Document doc : collection.find()) {
@@ -76,4 +81,25 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
             };
         }
     }
+
+    private static Document toDocument(Item item) {
+        Document doc = new Document();
+        doc.append("nom", item.getNom());
+        doc.append("quantiteMax", item.getQuantiteMax());
+        doc.append("type", item.getType());
+        doc.append("prix", item.getPrix());
+
+        // Selon le type, ajouter les champs spécifiques
+        if (item instanceof Arme) {
+            doc.append("degats", ((Arme) item).getDegats());
+        } else if (item instanceof Bouclier) {
+            doc.append("defense", ((Bouclier) item).getDefense());
+        } else if (item instanceof Potion) {
+            Potion potion = (Potion) item;
+            doc.append("degats", potion.getDegats());
+            doc.append("soin", potion.getSoin());
+        }
+        return doc;
+    }
+
 }
