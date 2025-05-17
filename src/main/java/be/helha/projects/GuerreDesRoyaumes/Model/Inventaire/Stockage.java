@@ -1,6 +1,9 @@
 package be.helha.projects.GuerreDesRoyaumes.Model.Inventaire;
 
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Potion;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,33 +55,51 @@ public abstract class Stockage {
             }
         }
 
-        // Vérifier si l'item existe déjà dans le stockage
-        for (int i = 0; i < slots.size(); i++) {
-            Slot slot = slots.get(i);
-            if (slot != null && slot.getItem() != null && slot.getItem().getId() == item.getId()) {
-                int quantitePossible = item.getQuantiteMax() - slot.getQuantity();
-                if (quantitePossible <= 0) {
-                    continue; // Slot plein, essayer le suivant
+        // Vérifier si c'est une arme ou un bouclier (ne s'empile pas)
+        boolean estArmeOuBouclier = (item instanceof Arme || item instanceof Bouclier);
+
+        // Si c'est une potion, essayer d'ajouter à un slot existant avec le même item
+        if (!estArmeOuBouclier) {
+            for (int i = 0; i < slots.size(); i++) {
+                Slot slot = slots.get(i);
+                if (slot != null && slot.getItem() != null && slot.getItem().getId() == item.getId()) {
+                    int quantitePossible = item.getQuantiteMax() - slot.getQuantity();
+                    if (quantitePossible <= 0) {
+                        continue; // Slot plein, essayer le suivant
+                    }
+                    int aAjouter = Math.min(quantitePossible, quantite);
+                    slot.add(aAjouter);  // Ajouter la quantité à ce slot
+                    quantite -= aAjouter;
+                    if (quantite == 0) return true;
                 }
-                int aAjouter = Math.min(quantitePossible, quantite);
-                slot.add(aAjouter);  // Ajouter la quantité à ce slot
-                quantite -= aAjouter;
-                if (quantite == 0) return true;
             }
         }
 
-        // Si l'item n'est pas trouvé ou s'il reste de la quantité à ajouter, utiliser des slots vides
+        // Pour le reste de la quantité ou si c'est une arme/bouclier, utiliser des slots vides
         for (int i = 0; i < slots.size(); i++) {
             if (slots.get(i) == null) {
-                int aMettre = Math.min(item.getQuantiteMax(), quantite);
-                slots.set(i, new Slot(item, aMettre));  // Ajouter un nouvel item dans le slot
-                quantite -= aMettre;
-                if (quantite == 0) return true;
+                if (estArmeOuBouclier) {
+                    // Pour armes et boucliers, limiter à 1 par slot
+                    slots.set(i, new Slot(item, 1));
+                    quantite--;
+                    if (quantite == 0) return true;
+                } else {
+                    // Pour les potions et autres items empilables
+                    int aMettre = Math.min(item.getQuantiteMax(), quantite);
+                    slots.set(i, new Slot(item, aMettre));
+                    quantite -= aMettre;
+                    if (quantite == 0) return true;
+                }
             }
         }
 
-        System.out.println("Stockage plein ou quantité trop élevée.");
-        return false;
+        // Si on arrive ici avec quantite > 0, c'est qu'on n'a pas pu tout stocker
+        if (quantite > 0) {
+            System.out.println("Impossible de stocker tous les items. " + quantite + " items n'ont pas pu être ajoutés.");
+            return false;
+        }
+
+        return true;
     }
 
     // Méthode pour afficher le contenu du stockage

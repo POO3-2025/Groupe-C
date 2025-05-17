@@ -1,9 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
-import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Golem;
-import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
-import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
-import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
+import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import com.googlecode.lanterna.gui2.*;
@@ -79,100 +77,155 @@ public class EcranInscription {
     }
 
     private void afficherInitialisation(String pseudo) {
-        Window fenetreInit = new BasicWindow("Initialisation du compte - " + pseudo);
-        fenetreInit.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
+        Joueur joueur = null;
+        try {
+            // Récupérer le joueur nouvellement inscrit
+            joueur = serviceAuthentification.obtenirJoueurParPseudo(pseudo);
+            if (joueur == null) {
+                afficherMessageErreur("Erreur: Impossible de récupérer les informations du joueur");
+                return;
+            }
+            
+            // Fenêtre pour le nom du royaume
+            Window fenetreRoyaume = new BasicWindow("Création du Royaume - Guerre des Royaumes");
+            fenetreRoyaume.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
+            
+            Panel panelRoyaume = new Panel(new GridLayout(1));
+            panelRoyaume.addComponent(new Label("Bienvenue dans le jeu Guerre des Royaumes, " + pseudo + " !"));
+            panelRoyaume.addComponent(new Label("Veuillez choisir un nom pour votre royaume :"));
+            
+            // Vérifier si le royaume est initialisé
+            if (joueur.getRoyaume() == null) {
+                // Créer un nouveau royaume si null
+                joueur.setRoyaume(new Royaume(0, "Royaume de " + pseudo, 1));
+            }
+            
+            TextBox nomRoyaumeBox = new TextBox(joueur.getRoyaume().getNom());
+            panelRoyaume.addComponent(nomRoyaumeBox);
+            
+            panelRoyaume.addComponent(new EmptySpace());
+            
+            // Un joueur final pour pouvoir l'utiliser dans les lambdas
+            final Joueur joueurFinal = joueur;
+            
+            panelRoyaume.addComponent(new Button("Confirmer", () -> {
+                String nomRoyaume = nomRoyaumeBox.getText();
+                if (nomRoyaume.isEmpty()) {
+                    afficherMessageErreur("Le nom du royaume ne peut pas être vide");
+                    return;
+                }
+                
+                try {
+                    // Mettre à jour le nom du royaume dans l'objet joueur
+                    joueurFinal.getRoyaume().setNom(nomRoyaume);
+                    serviceAuthentification.mettreAJourJoueur(joueurFinal);
+                    
+                    // Mettre à jour le royaume dans MongoDB
+                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO = 
+                        be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
+                    
+                    // Vérifier s'il faut mettre à jour ou créer un royaume dans MongoDB
+                    Royaume royaumeMongo = royaumeMongoDAO.obtenirRoyaumeParJoueurId(joueurFinal.getId());
+                    if (royaumeMongo != null) {
+                        royaumeMongoDAO.mettreAJourRoyaume(joueurFinal.getRoyaume(), joueurFinal.getId());
+                    } else {
+                        royaumeMongoDAO.ajouterRoyaume(joueurFinal.getRoyaume(), joueurFinal.getId());
+                    }
+                    
+                    fenetreRoyaume.close();
+                    afficherEcranChoixPersonnage(joueurFinal);
+                } catch (Exception e) {
+                    afficherMessageErreur("Erreur lors de la mise à jour du royaume: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }));
+            
+            fenetreRoyaume.setComponent(panelRoyaume);
+            textGUI.addWindowAndWait(fenetreRoyaume);
+        } catch (Exception e) {
+            afficherMessageErreur("Erreur lors de l'initialisation: " + e.getMessage());
+            e.printStackTrace();
+            ecranAuthentification.afficher();
+        }
+    }
+    
+    private void afficherEcranChoixPersonnage(Joueur joueur) {
+        Window fenetre = new BasicWindow("Choix du Personnage - Guerre des Royaumes");
+        fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
 
         Panel panel = new Panel(new GridLayout(1));
-
-        // Création du royaume
-        panel.addComponent(new Label("Étape 1 : Création de votre royaume"));
-        panel.addComponent(new Label("Choisissez un nom pour votre royaume :"));
+        panel.addComponent(new Label("Votre royaume \"" + joueur.getRoyaume().getNom() + "\" a été créé avec succès."));
+        panel.addComponent(new Label("Veuillez maintenant choisir votre personnage :"));
         
-        TextBox nomRoyaumeBox = new TextBox();
-        panel.addComponent(nomRoyaumeBox);
-
-        // Choix du personnage
         panel.addComponent(new EmptySpace());
-        panel.addComponent(new Label("Étape 2 : Choix de votre personnage"));
-        panel.addComponent(new Label("Choisissez votre personnage :"));
-
-        // Description des personnages
-        Panel panelPersonnages = new Panel(new GridLayout(1));
         
-        // Guerrier
-        Panel panelGuerrier = new Panel(new GridLayout(1));
-        panelGuerrier.addComponent(new Label("Guerrier :"));
-        panelGuerrier.addComponent(new Label("Points de vie : 100"));
-        panelGuerrier.addComponent(new Label("Dégâts : 40"));
-        panelGuerrier.addComponent(new Label("Résistance : 20"));
-        panelGuerrier.addComponent(new Label("Spécialité : Combat rapproché"));
-        panelPersonnages.addComponent(panelGuerrier);
-
-        // Voleur
-        Panel panelVoleur = new Panel(new GridLayout(1));
-        panelVoleur.addComponent(new Label("Voleur :"));
-        panelVoleur.addComponent(new Label("Points de vie : 90"));
-        panelVoleur.addComponent(new Label("Dégâts : 35"));
-        panelVoleur.addComponent(new Label("Résistance : 15"));
-        panelVoleur.addComponent(new Label("Spécialité : Gagne 2x plus d'argent"));
-        panelPersonnages.addComponent(panelVoleur);
-
-        // Golem
-        Panel panelGolem = new Panel(new GridLayout(1));
-        panelGolem.addComponent(new Label("Golem :"));
-        panelGolem.addComponent(new Label("Points de vie : 120"));
-        panelGolem.addComponent(new Label("Dégâts : 18"));
-        panelGolem.addComponent(new Label("Résistance : 50"));
-        panelGolem.addComponent(new Label("Spécialité : Grande résistance aux dégâts"));
-        panelPersonnages.addComponent(panelGolem);
-
-        panel.addComponent(panelPersonnages);
-
-        // Boutons de sélection
-        Panel panelBoutons = new Panel(new GridLayout(3));
-        panelBoutons.addComponent(new Button("Guerrier", () -> finaliserInitialisation(pseudo, nomRoyaumeBox.getText(), new Guerrier())));
-        panelBoutons.addComponent(new Button("Voleur", () -> finaliserInitialisation(pseudo, nomRoyaumeBox.getText(), new Voleur())));
-        panelBoutons.addComponent(new Button("Golem", () -> finaliserInitialisation(pseudo, nomRoyaumeBox.getText(), new Golem())));
+        // Ajouter les boutons pour chaque type de personnage
+        String[] personnages = {"Guerrier", "Voleur", "Golem", "Titan"};
         
-        panel.addComponent(panelBoutons);
-
-        fenetreInit.setComponent(panel);
-        textGUI.addWindowAndWait(fenetreInit);
-    }
-
-    private void finaliserInitialisation(String pseudo, String nomRoyaume, Personnage personnage) {
-        if (nomRoyaume.isEmpty()) {
-            afficherMessageErreur("Veuillez donner un nom à votre royaume");
-            return;
+        for (String nomPersonnage : personnages) {
+            Button btnPersonnage = new Button(nomPersonnage, () -> {
+                try {
+                    // Créer le personnage
+                    Personnage personnage = null;
+                    switch (nomPersonnage) {
+                        case "Guerrier":
+                            personnage = new Guerrier();
+                            break;
+                        case "Voleur":
+                            personnage = new Voleur();
+                            break;
+                        case "Golem":
+                            personnage = new Golem();
+                            break;
+                        case "Titan":
+                            personnage = new Titan();
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Type de personnage non reconnu");
+                    }
+                    
+                    // Enregistrer le personnage dans MongoDB
+                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO = 
+                        be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl.getInstance();
+                    personnageMongoDAO.ajouterPersonnage(personnage, joueur.getId());
+                    
+                    // Mettre à jour le joueur
+                    joueur.setPersonnage(personnage);
+                    serviceAuthentification.mettreAJourJoueur(joueur);
+                    
+                    fenetre.close();
+                    afficherMessageSucces("Personnage " + nomPersonnage + " choisi avec succès");
+                    ecranAuthentification.afficher();
+                } catch (Exception e) {
+                    afficherMessageErreur("Erreur lors du choix du personnage: " + e.getMessage());
+                }
+            });
+            panel.addComponent(btnPersonnage);
         }
-
-        try {
-            // Créer le royaume
-            Royaume royaume = new Royaume(0, nomRoyaume, 1);
-            
-            // Mettre à jour le joueur avec le royaume et le personnage
-            serviceAuthentification.initialiserJoueur(pseudo, royaume, personnage);
-            
-            // Afficher un message de succès
-            new MessageDialogBuilder()
-                .setTitle("Initialisation réussie")
-                .setText("Votre compte a été initialisé avec succès !\n" +
-                        "Royaume : " + nomRoyaume + "\n" +
-                        "Personnage : " + personnage.getNom())
-                .addButton(MessageDialogButton.OK)
-                .build()
-                .showDialog(textGUI);
-
-            // Retourner à l'écran d'authentification
+        
+        // Ajouter un bouton pour passer cette étape
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(new Button("Passer cette étape", () -> {
+            fenetre.close();
             ecranAuthentification.afficher();
-        } catch (Exception e) {
-            afficherMessageErreur("Erreur lors de l'initialisation : " + e.getMessage());
-        }
+        }));
+
+        fenetre.setComponent(panel);
+        textGUI.addWindowAndWait(fenetre);
     }
 
     private void afficherMessageErreur(String message) {
         new MessageDialogBuilder()
             .setTitle("Erreur")
+            .setText(message)
+            .addButton(MessageDialogButton.OK)
+            .build()
+            .showDialog(textGUI);
+    }
+
+    private void afficherMessageSucces(String message) {
+        new MessageDialogBuilder()
+            .setTitle("Succès")
             .setText(message)
             .addButton(MessageDialogButton.OK)
             .build()

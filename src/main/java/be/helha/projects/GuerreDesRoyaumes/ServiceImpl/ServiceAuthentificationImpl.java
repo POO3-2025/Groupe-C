@@ -3,6 +3,7 @@ package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.AuthentificationException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.JoueurNotFoundException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.PersonnageNotFoundException;
@@ -47,7 +48,6 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
         Royaume royaume = new Royaume(0, "Royaume de " + pseudo, 1);
         Coffre coffre = new Coffre();
 
-
         // Initialiser les slots du coffre avec une arme et un bouclier par défaut
         if (coffre.getSlots().size() >= 2) {
             coffre.getSlots().set(0, new Slot(new be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme(0, "Épée de base", 1, 0, 10), 1));
@@ -57,10 +57,27 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
         // Créer le joueur avec le mot de passe haché
         String motDePasseHache = BCrypt.hashpw(motDePasse, BCrypt.gensalt());
-        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasseHache, 5000, royaume, null, coffre,0,0);
+        Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasseHache, 5000, royaume, null, coffre, 0, 0);
 
-        // Persister le joueur
+        // Persister le joueur dans SQL
         joueurDAO.ajouterJoueur(joueur);
+        
+        // Récupérer l'ID généré pour le joueur
+        Joueur joueurCree = joueurDAO.obtenirJoueurParPseudo(pseudo);
+        if (joueurCree == null) {
+            throw new AuthentificationException("Erreur lors de la création du joueur");
+        }
+        
+        // Créer et persister le royaume dans MongoDB
+        try {
+            RoyaumeMongoDAOImpl royaumeMongoDAO = RoyaumeMongoDAOImpl.getInstance();
+            royaumeMongoDAO.ajouterRoyaume(royaume, joueurCree.getId());
+            System.out.println("Royaume créé dans MongoDB pour le joueur: " + joueurCree.getId());
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la création du royaume dans MongoDB: " + e.getMessage());
+            e.printStackTrace();
+            // On continue même en cas d'erreur pour ne pas bloquer l'inscription
+        }
     }
 
     @Override
@@ -195,6 +212,16 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
         joueur.setPersonnage(personnage);
 
         // Persister les modifications
+        joueurDAO.mettreAJourJoueur(joueur);
+    }
+
+    @Override
+    public Joueur obtenirJoueurParPseudo(String pseudo) {
+        return joueurDAO.obtenirJoueurParPseudo(pseudo);
+    }
+    
+    @Override
+    public void mettreAJourJoueur(Joueur joueur) {
         joueurDAO.mettreAJourJoueur(joueur);
     }
 }

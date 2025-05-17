@@ -10,4 +10,8 @@ public interface ServiceAuthentification {
     void gererProfil(int id, String pseudo, String motDePasse);
     void choisirPersonnage(int joueurId, int personnageId);
     void initialiserJoueur(String pseudo, Royaume royaume, Personnage personnage);
+    
+    // Méthodes ajoutées
+    Joueur obtenirJoueurParPseudo(String pseudo);
+    void mettreAJourJoueur(Joueur joueur);
 }

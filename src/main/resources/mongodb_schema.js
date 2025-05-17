@@ -94,9 +94,48 @@ db.createCollection('equipements', {
     }
 });
 
+// Schéma pour les personnages
+db.createCollection('personnages', {
+    validator: {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ["id_joueur", "nom", "type", "vie", "degats", "resistance"],
+            properties: {
+                id_joueur: { bsonType: "int" },
+                nom: { bsonType: "string" },
+                type: { bsonType: "string" },
+                vie: { bsonType: "int" },
+                degats: { bsonType: "int" },
+                resistance: { bsonType: "int" },
+                niveau: { bsonType: "int" }
+            }
+        }
+    }
+});
+
+// Schéma pour les royaumes
+db.createCollection('royaumes', {
+    validator: {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ["id_joueur", "nom", "niveau"],
+            properties: {
+                id_joueur: { bsonType: "int" },
+                nom: { bsonType: "string" },
+                niveau: { bsonType: "int" },
+                ressources: { bsonType: "object" }
+            }
+        }
+    }
+});
+
 // Index essentiels
 db.items.createIndex({ "id_item": 1 }, { unique: true });
 db.inventaires.createIndex({ "id_joueur": 1 });
 db.coffres.createIndex({ "id_joueur": 1 });
 db.equipements.createIndex({ "id_personnage": 1 });
+
+// Création des index pour les nouvelles collections
+db.personnages.createIndex({ "id_joueur": 1 }, { unique: true });
+db.royaumes.createIndex({ "id_joueur": 1 }, { unique: true });
 
