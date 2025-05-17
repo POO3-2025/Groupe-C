@@ -17,7 +17,7 @@ public class TestAjoueItemMongo {
 
         ItemMongoDAOImpl itemMongoDAO = ItemMongoDAOImpl.getInstance();
 
-
+        //TODO : REINITIALISER LA BASE DE DONNEES AVANT D'INSERER DES ITEMS pour avoir une base propre
 
         // ARMES //
 

@@ -39,10 +39,6 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
         return instance;
     }
 
-    public void ajouterItem(Item item) {
-        Document doc = toDocument(item);
-        collection.insertOne(doc);
-    }
 
     public List<Item> obtenirTousLesItems() {
         List<Item> items = new ArrayList<>();
