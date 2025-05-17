@@ -1,5 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
+import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
@@ -17,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ServiceCombatImpl implements ServiceCombat {
 
     private final JoueurDAO joueurDAO;
+    private final CombatDAO combatDAO;
     private final Random random = new Random();
 
     // Stockage temporaire des combats en cours avec thread-safety
@@ -27,8 +29,9 @@ public class ServiceCombatImpl implements ServiceCombat {
     private Map<String, Map<String, String>> resultatsActions = new ConcurrentHashMap<>();
 
     @Autowired
-    public ServiceCombatImpl(JoueurDAO joueurDAO) {
+    public ServiceCombatImpl(JoueurDAO joueurDAO, CombatDAO combatDAO) {
         this.joueurDAO = joueurDAO;
+        this.combatDAO = combatDAO;
     }
 
     @Override
@@ -487,6 +490,11 @@ public class ServiceCombatImpl implements ServiceCombat {
             e.printStackTrace();
             return false;
         }
+    }
+
+    @Override
+    public CombatDAO getCombatDAO() {
+        return combatDAO;
     }
 }
 

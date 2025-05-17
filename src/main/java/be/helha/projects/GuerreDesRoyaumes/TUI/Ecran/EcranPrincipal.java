@@ -770,8 +770,20 @@ public class EcranPrincipal {
         }
 
         try {
+            // Activer le statut du joueur (le rendre disponible pour le combat)
+            try {
+                // Définir le statut comme actif
+                joueurDAO.definirStatutConnexion(joueur.getId(), true);
+                System.out.println("Joueur " + joueur.getPseudo() + " activé pour le combat");
+            } catch (Exception e) {
+                System.err.println("Erreur lors de l'activation du statut de combat: " + e.getMessage());
+                e.printStackTrace();
+            }
+
             // Initialisation du service de combat
-            ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO);
+            // Créer une instance de CombatDAOImpl
+            be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAO = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
+            ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO);
 
             // Afficher l'écran de sélection d'adversaire
             new EcranSelectionAdversaire(joueurDAO, textGUI, screen, joueur.getPseudo(), serviceCombat).afficher();

@@ -1,5 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.Service;
 
+import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import org.springframework.stereotype.Service;
@@ -83,4 +84,10 @@ public interface ServiceCombat {
      * @return Le numéro du tour actuel
      */
     int getTourActuel(Joueur joueur, Joueur adversaire);
+    
+    /**
+     * Obtient l'instance de CombatDAO utilisée par ce service
+     * @return L'instance de CombatDAO
+     */
+    CombatDAO getCombatDAO();
 }

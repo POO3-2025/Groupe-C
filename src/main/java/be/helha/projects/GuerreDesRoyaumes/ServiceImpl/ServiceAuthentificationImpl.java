@@ -213,9 +213,10 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
                 return false;
             }
 
-            // Définir le statut comme actif
-            joueurDAO.definirStatutConnexion(joueur.getId(), true);
-            System.out.println("Joueur connecté avec succès: " + pseudo);
+            // Définir le statut comme inactif lors de la connexion
+            // Il sera activé uniquement lorsque le joueur clique sur Combattre
+            joueurDAO.definirStatutConnexion(joueur.getId(), false);
+            System.out.println("Joueur connecté avec succès (statut inactif): " + pseudo);
             return true;
         } catch (Exception e) {
             System.err.println("Erreur lors de la connexion du joueur " + pseudo + ": " + e.getMessage());

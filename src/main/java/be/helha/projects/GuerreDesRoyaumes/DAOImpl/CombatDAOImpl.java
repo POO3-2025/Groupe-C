@@ -21,6 +21,8 @@ import java.sql.*;
 public class CombatDAOImpl implements CombatDAO {
 
     private Connection connection;
+    private String tableNameCombat = "joueur"; // Table pour gerer et lier les demandes de combat aux joueurs
+
 
     public CombatDAOImpl() {
         try {
@@ -205,6 +207,138 @@ public class CombatDAOImpl implements CombatDAO {
             e.printStackTrace();
         }
         return combats;
+    }
+
+
+
+    /**
+     * Création de la table demandes_combat si elle n'existe pas
+     */
+    private void creerTableDemandesCombatSiInexistante() {
+        try {
+            // Vérifier si la table existe déjà
+            DatabaseMetaData dbm = connection.getMetaData();
+            ResultSet tables = dbm.getTables(null, null, "demandes_combat", null);
+
+            if (!tables.next()) {
+                // La table n'existe pas, la créer (SQL Server syntax)
+                String sql = "CREATE TABLE demandes_combat (" +
+                        "id INT IDENTITY(1,1) PRIMARY KEY, " +
+                        "id_demandeur INT NOT NULL, " +
+                        "id_adversaire INT NOT NULL, " +
+                        "date_demande DATETIME DEFAULT GETDATE(), " +
+                        "FOREIGN KEY (id_demandeur) REFERENCES " + tableNameCombat + "(id_joueur), " +
+                        "FOREIGN KEY (id_adversaire) REFERENCES " + tableNameCombat + "(id_joueur), " +
+                        "CONSTRAINT UC_demande UNIQUE (id_demandeur, id_adversaire))";
+                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                    stmt.executeUpdate();
+                    System.out.println("DEBUG: Table demandes_combat créée");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la création de la table demandes_combat: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public boolean envoyerDemandeCombat(int idDemandeur, int idAdversaire) {
+        // S'assurer que la table demandes_combat existe
+        creerTableDemandesCombatSiInexistante();
+
+        // Vérifier d'abord si une demande existe déjà
+        String sqlCheck = "SELECT COUNT(*) FROM demandes_combat WHERE id_demandeur = ? AND id_adversaire = ?";
+        try (PreparedStatement stmtCheck = connection.prepareStatement(sqlCheck)) {
+            stmtCheck.setInt(1, idDemandeur);
+            stmtCheck.setInt(2, idAdversaire);
+            ResultSet rs = stmtCheck.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                // Une demande existe déjà
+                System.out.println("DEBUG: Une demande de combat existe déjà du joueur " + idDemandeur + " vers " + idAdversaire);
+                return true;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la vérification de demande de combat: " + e.getMessage());
+            return false;
+        }
+
+        // Insérer la nouvelle demande
+        String sql = "INSERT INTO demandes_combat (id_demandeur, id_adversaire) VALUES (?, ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, idDemandeur);
+            stmt.setInt(2, idAdversaire);
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("DEBUG: Demande de combat envoyée du joueur " + idDemandeur + " vers " + idAdversaire);
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de l'envoi de demande de combat: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public int verifierDemandesCombat(int idJoueur) {
+        // S'assurer que la table demandes_combat existe
+        creerTableDemandesCombatSiInexistante();
+
+        // SQL Server n'utilise pas LIMIT mais TOP
+        String sql = "SELECT TOP 1 id_demandeur FROM demandes_combat WHERE id_adversaire = ? ORDER BY date_demande ASC";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, idJoueur);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                int idDemandeur = rs.getInt("id_demandeur");
+                System.out.println("DEBUG: Demande de combat trouvée pour le joueur " + idJoueur + " de la part de " + idDemandeur);
+                return idDemandeur;
+            }
+            return 0; // Pas de demande
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la vérification des demandes de combat: " + e.getMessage());
+            return 0; // En cas d'erreur
+        }
+    }
+
+    @Override
+    public boolean accepterDemandeCombat(int idDemandeur, int idAdversaire) {
+        // S'assurer que la table demandes_combat existe
+        creerTableDemandesCombatSiInexistante();
+
+        // Vérifier que la demande existe
+        String sqlCheck = "SELECT COUNT(*) FROM demandes_combat WHERE id_demandeur = ? AND id_adversaire = ?";
+        try (PreparedStatement stmtCheck = connection.prepareStatement(sqlCheck)) {
+            stmtCheck.setInt(1, idDemandeur);
+            stmtCheck.setInt(2, idAdversaire);
+            ResultSet rs = stmtCheck.executeQuery();
+            if (rs.next() && rs.getInt(1) == 0) {
+                // Pas de demande trouvée
+                System.out.println("DEBUG: Aucune demande de combat trouvée du joueur " + idDemandeur + " vers " + idAdversaire);
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la vérification de demande de combat: " + e.getMessage());
+            return false;
+        }
+
+        // Supprimer la demande car elle va être acceptée
+        return supprimerDemandeCombat(idDemandeur, idAdversaire);
+    }
+
+    @Override
+    public boolean supprimerDemandeCombat(int idDemandeur, int idAdversaire) {
+        // S'assurer que la table demandes_combat existe
+        creerTableDemandesCombatSiInexistante();
+
+        String sql = "DELETE FROM demandes_combat WHERE id_demandeur = ? AND id_adversaire = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, idDemandeur);
+            stmt.setInt(2, idAdversaire);
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("DEBUG: Demande de combat supprimée entre joueurs " + idDemandeur + " et " + idAdversaire);
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la suppression de demande de combat: " + e.getMessage());
+            return false;
+        }
     }
 }
 
