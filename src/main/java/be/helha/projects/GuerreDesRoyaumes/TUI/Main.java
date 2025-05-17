@@ -23,6 +23,8 @@ import com.mongodb.client.MongoDatabase;
 
 import java.sql.Connection;
 
+import static be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP.initialiserItemsBoutique;
+
 public class Main {
 
     public static void main(String[] args) {
@@ -44,9 +46,12 @@ public class Main {
             CoffreMongoDAOImpl coffreDAO = CoffreMongoDAOImpl.getInstance();
             InventaireMongoDAOImpl inventaireDAO = InventaireMongoDAOImpl.getInstance();
 
+            // Appel de ta méthode d'initialisation des items boutique
+            InitialiserAPP.initialiserItemsBoutique();
 
-                joueurDAO.setConnection(sqlConnection);
-                System.out.println("DAOs initialisés avec les connexions SQL");
+
+            joueurDAO.setConnection(sqlConnection);
+            System.out.println("DAOs initialisés avec les connexions SQL");
 
 
             // Initialisation des services
