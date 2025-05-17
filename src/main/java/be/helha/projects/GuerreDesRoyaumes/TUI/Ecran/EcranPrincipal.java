@@ -126,6 +126,12 @@ public class EcranPrincipal {
             afficherEcranCombat(joueur);
         }));
 
+        // Nouveau bouton pour accéder aux classements
+        panel.addComponent(new Button("Classements", () -> {
+            fenetre.close();
+            afficherEcranClassement(joueur);
+        }));
+
         panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
         panel.addComponent(new Button("Déconnexion", () -> {
             // Déconnecter le joueur
@@ -790,6 +796,17 @@ public class EcranPrincipal {
 
         } catch (Exception e) {
             afficherMessageErreur("Erreur lors de l'initialisation du combat: " + e.getMessage());
+        }
+    }
+
+    private void afficherEcranClassement(Joueur joueur) {
+        try {
+            new EcranClassement(joueurDAO, screen, joueur.getPseudo()).afficher();
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'affichage des classements: " + e.getMessage());
+            e.printStackTrace();
+            afficherMessageErreur("Impossible d'afficher les classements: " + e.getMessage());
+            afficher(); // Retour à l'écran principal en cas d'erreur
         }
     }
 
