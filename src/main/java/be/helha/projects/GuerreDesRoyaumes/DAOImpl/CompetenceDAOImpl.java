@@ -1,11 +1,14 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CompetenceDAO;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.SQLConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.Competence;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.DoubleDegats;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.DoubleArgent;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.Regeneration;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.DoubleResistance;
+import com.mongodb.client.MongoDatabase;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -18,10 +21,15 @@ public class CompetenceDAOImpl implements CompetenceDAO {
     private final String tableName = "competence";
 
     private CompetenceDAOImpl() {
+        try {
+            connection = InitialiserAPP.getSQLConnexion();
+        } catch (SQLConnectionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
-    public void setConnection(Connection connection) {
-        this.connection = connection;
+    public void setMongodb(Connection mongodb) {
+        this.connection = mongodb;
         creerTableCompetenceSiInexistante();
     }
 

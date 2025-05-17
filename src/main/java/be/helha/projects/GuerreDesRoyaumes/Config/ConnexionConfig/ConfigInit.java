@@ -5,7 +5,14 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class ConfigInit {
-    public static void initAll() {
+    private static boolean initialized = false;
+    
+    public static synchronized void initAll() {
+        // Vérifier si l'initialisation a déjà été effectuée
+        if (initialized) {
+            return;
+        }
+        
         try {
             Properties properties = new Properties();
             try (InputStream input = ConfigInit.class.getClassLoader().getResourceAsStream("application.properties")) {
@@ -37,8 +44,16 @@ public class ConfigInit {
                 String mongoPassword = properties.getProperty("spring.data.mongodb.password");
                 MongoDBConfigManager.initialize(mongoHost, mongoPort, mongoDatabaseName, mongoUsername, mongoPassword);
             }
+            
+            // Marquer comme initialisé après une initialisation réussie
+            initialized = true;
         } catch (Exception e) {
             throw new RuntimeException("Erreur d'initialisation des configs : " + e.getMessage(), e);
         }
+    }
+    
+    // Réinitialiser l'état (utile pour les tests)
+    public static synchronized void reset() {
+        initialized = false;
     }
 }

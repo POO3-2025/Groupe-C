@@ -60,17 +60,17 @@ public abstract class Stockage {
 
         // Si c'est une potion, essayer d'ajouter à un slot existant avec le même item
         if (!estArmeOuBouclier) {
-            for (int i = 0; i < slots.size(); i++) {
-                Slot slot = slots.get(i);
-                if (slot != null && slot.getItem() != null && slot.getItem().getId() == item.getId()) {
-                    int quantitePossible = item.getQuantiteMax() - slot.getQuantity();
-                    if (quantitePossible <= 0) {
-                        continue; // Slot plein, essayer le suivant
-                    }
-                    int aAjouter = Math.min(quantitePossible, quantite);
-                    slot.add(aAjouter);  // Ajouter la quantité à ce slot
-                    quantite -= aAjouter;
-                    if (quantite == 0) return true;
+        for (int i = 0; i < slots.size(); i++) {
+            Slot slot = slots.get(i);
+            if (slot != null && slot.getItem() != null && slot.getItem().getId() == item.getId()) {
+                int quantitePossible = item.getQuantiteMax() - slot.getQuantity();
+                if (quantitePossible <= 0) {
+                    continue; // Slot plein, essayer le suivant
+                }
+                int aAjouter = Math.min(quantitePossible, quantite);
+                slot.add(aAjouter);  // Ajouter la quantité à ce slot
+                quantite -= aAjouter;
+                if (quantite == 0) return true;
                 }
             }
         }
@@ -85,10 +85,10 @@ public abstract class Stockage {
                     if (quantite == 0) return true;
                 } else {
                     // Pour les potions et autres items empilables
-                    int aMettre = Math.min(item.getQuantiteMax(), quantite);
+                int aMettre = Math.min(item.getQuantiteMax(), quantite);
                     slots.set(i, new Slot(item, aMettre));
-                    quantite -= aMettre;
-                    if (quantite == 0) return true;
+                quantite -= aMettre;
+                if (quantite == 0) return true;
                 }
             }
         }
@@ -96,7 +96,7 @@ public abstract class Stockage {
         // Si on arrive ici avec quantite > 0, c'est qu'on n'a pas pu tout stocker
         if (quantite > 0) {
             System.out.println("Impossible de stocker tous les items. " + quantite + " items n'ont pas pu être ajoutés.");
-            return false;
+        return false;
         }
 
         return true;

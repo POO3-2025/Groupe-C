@@ -1,6 +1,8 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Potion;
@@ -19,8 +21,12 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
     private final MongoCollection<Document> collection;
 
     private ItemMongoDAOImpl() {
-        MongoDatabase db = ConnexionManager.getInstance().getMongoDatabase();
-        this.collection = db.getCollection("items");
+        try {
+            MongoDatabase mongoDB = InitialiserAPP.getMongoConnexion();
+            this.collection = mongoDB.getCollection("items");
+        } catch (MongoDBConnectionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     public static synchronized ItemMongoDAOImpl getInstance() {

@@ -1,8 +1,8 @@
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.AuthentificationException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.JoueurNotFoundException;
@@ -18,18 +18,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
-import java.sql.SQLException;
-
 @Service
 public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
     private JoueurDAO joueurDAO;
-    private PersonnageDAO personnageDAO;
 
     @Autowired
-    public ServiceAuthentificationImpl(JoueurDAO joueurDAO, PersonnageDAO personnageDAO) {
+    public ServiceAuthentificationImpl(JoueurDAO joueurDAO) {
         this.joueurDAO = joueurDAO;
-        this.personnageDAO = personnageDAO;
     }
 
     @Override
@@ -119,7 +115,7 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
             // Vérifier si le nouveau pseudo est disponible (si changé)
             if (!joueur.getPseudo().equals(pseudo)) {
                 Joueur existant = joueurDAO.obtenirJoueurParPseudo(pseudo);
-                if (existant != null) {
+                if (existant != null && existant.getId() != joueur.getId()) {
                     throw new AuthentificationException("Ce pseudo est déjà utilisé");
                 }
             }
@@ -138,45 +134,6 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
             throw e; // Relance l'exception si c'est déjà une JoueurNotFoundException
         } catch (Exception e) {
             throw new AuthentificationException("Erreur lors de la mise à jour du profil", e);
-        }
-    }
-
-    @Override
-    public void choisirPersonnage(int joueurId, int personnageId) {
-        try {
-            Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
-
-            Personnage personnage = personnageDAO.obtenirPersonnageParId(personnageId);
-            if (personnage == null) {
-                throw new PersonnageNotFoundException(personnageId);
-            }
-
-            // Si le personnage n'a pas d'inventaire, on l'initialise
-            if (personnage.getInventaire() == null) {
-                Inventaire inventaire = new Inventaire();
-                // Initialiser les slots de l'inventaire
-                for (int i = 0; i < inventaire.getMaxSlots(); i++) {
-                    inventaire.getSlots().set(i, new Slot(null, 0)); 
-                }
-                personnage.setInventaire(inventaire);
-            } else {
-                // Si l'inventaire existe, on s'assure que ses slots sont bien initialisés
-                for (int i = 0; i < personnage.getInventaire().getMaxSlots(); i++) {
-                    if (personnage.getInventaire().getSlots().get(i) == null) {
-                        personnage.getInventaire().getSlots().set(i, new Slot(null, 0));
-                    }
-                }
-            }
-
-            // Associer le personnage au joueur
-            joueur.setPersonnage(personnage);
-
-            // Persister les modifications
-            joueurDAO.mettreAJourJoueur(joueur);
-        } catch (JoueurNotFoundException | PersonnageNotFoundException e) {
-            throw e; // Relance l'exception
-        } catch (Exception e) {
-            throw new AuthentificationException("Erreur lors du choix de personnage", e);
         }
     }
 
@@ -213,6 +170,35 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
         // Persister les modifications
         joueurDAO.mettreAJourJoueur(joueur);
+    }
+
+    @Override
+    public void choisirPersonnage(int joueurId, int personnageId) {
+        try {
+            // Récupérer le joueur
+            Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
+            if (joueur == null) {
+                throw new JoueurNotFoundException("Joueur non trouvé avec l'ID: " + joueurId);
+            }
+            
+            // Récupérer le personnage depuis MongoDB en utilisant l'ID du joueur
+            PersonnageMongoDAOImpl personnageMongoDAO = PersonnageMongoDAOImpl.getInstance();
+            Personnage personnage = personnageMongoDAO.obtenirPersonnageParJoueurId(joueurId);
+            
+            if (personnage == null) {
+                throw new PersonnageNotFoundException("Personnage non trouvé pour ce joueur");
+            }
+            
+            // Assigner le personnage au joueur
+            joueur.setPersonnage(personnage);
+            
+            // Persister les modifications
+            joueurDAO.mettreAJourJoueur(joueur);
+            
+            System.out.println("Personnage associé au joueur " + joueur.getPseudo());
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur lors du choix du personnage: " + e.getMessage(), e);
+        }
     }
 
     @Override

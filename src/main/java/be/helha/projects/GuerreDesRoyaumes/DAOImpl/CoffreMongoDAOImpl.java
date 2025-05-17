@@ -1,9 +1,9 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
-import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CoffreMongoDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme;
@@ -13,9 +13,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Updates;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -30,16 +28,19 @@ public class CoffreMongoDAOImpl implements CoffreMongoDAO {
 
     private static CoffreMongoDAOImpl instance;
     private final MongoCollection<Document> collection;
-    private final ItemDAO itemDAO;
     private final ItemMongoDAO itemMongoDAO;
 
     /**
      * Constructeur privé pour le singleton qui initialise la connexion à la collection MongoDB.
      */
     private CoffreMongoDAOImpl() {
-        MongoDatabase db = ConnexionManager.getInstance().getMongoDatabase();
-        this.collection = db.getCollection("coffres");
-        this.itemDAO = ItemDAOImpl.getInstance();
+        MongoDatabase mongoDB;
+        try {
+            mongoDB = InitialiserAPP.getMongoConnexion();
+        } catch (MongoDBConnectionException ex) {
+            throw new RuntimeException(ex);
+        }
+        this.collection = mongoDB.getCollection("coffres");
         this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
     }
 
@@ -48,7 +49,7 @@ public class CoffreMongoDAOImpl implements CoffreMongoDAO {
      *
      * @return L'instance unique de CoffreMongoDAOImpl
      */
-    public static synchronized CoffreMongoDAOImpl getInstance() {
+    public static synchronized CoffreMongoDAOImpl getInstance() throws MongoDBConnectionException {
         if (instance == null) {
             instance = new CoffreMongoDAOImpl();
         }
@@ -140,8 +141,8 @@ public class CoffreMongoDAOImpl implements CoffreMongoDAO {
             }
         }
         
-        // Si non trouvé dans MongoDB, chercher en SQL
-        return itemDAO.obtenirItemParId(itemId);
+        // Si l'item n'est pas trouvé, retourner null
+        return null;
     }
 
     /**

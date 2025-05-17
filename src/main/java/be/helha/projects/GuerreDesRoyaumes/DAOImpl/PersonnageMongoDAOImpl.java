@@ -1,7 +1,9 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Golem;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
@@ -29,8 +31,12 @@ public class PersonnageMongoDAOImpl implements PersonnageMongoDAO {
      * Constructeur privé pour le singleton qui initialise la connexion à la collection MongoDB.
      */
     private PersonnageMongoDAOImpl() {
-        MongoDatabase db = ConnexionManager.getInstance().getMongoDatabase();
-        this.collection = db.getCollection("personnages");
+        try {
+            MongoDatabase mongoDB = InitialiserAPP.getMongoConnexion();
+            this.collection = mongoDB.getCollection("personnages");
+        } catch (MongoDBConnectionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**

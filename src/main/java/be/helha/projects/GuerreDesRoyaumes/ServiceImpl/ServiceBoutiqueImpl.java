@@ -1,9 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
-import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemMongoDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
@@ -19,7 +17,6 @@ import java.util.List;
 @Service
 public class ServiceBoutiqueImpl implements ServiceBoutique {
 
-    private ItemDAO itemDAO;
     private ItemMongoDAO itemMongoDAO;
     private JoueurDAO joueurDAO;
     private CoffreService coffreService;
@@ -27,7 +24,6 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
     private static ServiceBoutiqueImpl instance;
 
     public ServiceBoutiqueImpl() {
-        this.itemDAO = ItemDAOImpl.getInstance();
         this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
         this.joueurDAO = JoueurDAOImpl.getInstance();
         this.coffreService = CoffreServiceMongoImpl.getInstance();
@@ -119,7 +115,7 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
     }
 
     /**
-     * Trouve un item par son ID en cherchant d'abord dans MongoDB puis en SQL si nécessaire
+     * Trouve un item par son ID en cherchant dans MongoDB
      * 
      * @param itemId L'ID de l'item à rechercher
      * @return L'item trouvé ou null
@@ -133,8 +129,8 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
             }
         }
         
-        // Si non trouvé dans MongoDB, essayer avec SQL
-        return itemDAO.obtenirItemParId(itemId);
+        // Si non trouvé
+        return null;
     }
 
     private int calculerPrixAchat(Item item, int quantite) {

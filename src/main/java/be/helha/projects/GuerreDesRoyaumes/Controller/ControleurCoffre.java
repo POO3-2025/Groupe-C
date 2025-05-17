@@ -1,8 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Controller;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
@@ -28,12 +27,12 @@ public class ControleurCoffre {
     private static final Logger logger = LoggerFactory.getLogger(ControleurCoffre.class);
 
     private final JoueurDAO joueurDAO;
-    private final ItemDAOImpl itemDAO;
+    private final ItemMongoDAOImpl itemMongoDAO;
 
     @Autowired
     public ControleurCoffre(JoueurDAO joueurDAO) {
         this.joueurDAO = joueurDAO;
-        this.itemDAO = ItemDAOImpl.getInstance();
+        this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
     }
 
     /**
@@ -107,7 +106,16 @@ public class ControleurCoffre {
 
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
 
-            Item item = itemDAO.obtenirItemParId(itemId);
+            // Chercher l'item dans tous les items de MongoDB
+            List<Item> items = itemMongoDAO.obtenirTousLesItems();
+            Item item = null;
+            for (Item i : items) {
+                if (i.getId() == itemId) {
+                    item = i;
+                    break;
+                }
+            }
+            
             if (item == null) {
                 throw new ItemNotFoundException(itemId);
             }
@@ -172,7 +180,16 @@ public class ControleurCoffre {
 
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
 
-            Item item = itemDAO.obtenirItemParId(itemId);
+            // Chercher l'item dans tous les items de MongoDB
+            List<Item> items = itemMongoDAO.obtenirTousLesItems();
+            Item item = null;
+            for (Item i : items) {
+                if (i.getId() == itemId) {
+                    item = i;
+                    break;
+                }
+            }
+            
             if (item == null) {
                 throw new ItemNotFoundException(itemId);
             }
@@ -230,7 +247,16 @@ public class ControleurCoffre {
         try {
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
 
-            Item item = itemDAO.obtenirItemParId(itemId);
+            // Chercher l'item dans tous les items de MongoDB
+            List<Item> items = itemMongoDAO.obtenirTousLesItems();
+            Item item = null;
+            for (Item i : items) {
+                if (i.getId() == itemId) {
+                    item = i;
+                    break;
+                }
+            }
+            
             if (item == null) {
                 throw new ItemNotFoundException(itemId);
             }

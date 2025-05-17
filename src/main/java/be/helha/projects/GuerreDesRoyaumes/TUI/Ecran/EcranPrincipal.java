@@ -2,21 +2,17 @@ package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
 import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
 import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
-import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
-import be.helha.projects.GuerreDesRoyaumes.Service.CoffreService;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceBoutique;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
-import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CoffreServiceImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CoffreServiceMongoImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceBoutiqueImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceCombatImpl;
@@ -25,7 +21,6 @@ import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.screen.Screen;
-import org.bson.Document;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -153,17 +148,23 @@ public class EcranPrincipal {
                     afficherMessageErreur("Les mots de passe ne correspondent pas");
                     return;
                 }
-                // Hacher le nouveau mot de passe
-                joueur.setMotDePasse(org.springframework.security.crypto.bcrypt.BCrypt.hashpw(motDePasse, org.springframework.security.crypto.bcrypt.BCrypt.gensalt()));
             }
 
-            // Mettre à jour les informations du joueur
-            joueur.setNom(nom);
-            joueur.setPrenom(prenom);
-            joueur.setPseudo(pseudo);
-
             try {
-                joueurDAO.mettreAJourJoueur(joueur);
+                // Mettre à jour les informations du joueur
+                joueur.setNom(nom);
+                joueur.setPrenom(prenom);
+                joueur.setPseudo(pseudo);
+                
+                // Utiliser le service d'authentification pour mettre à jour le joueur
+                if (!motDePasse.isEmpty()) {
+                    // Si un nouveau mot de passe est fourni
+                    serviceAuthentification.gererProfil(joueur.getId(), pseudo, motDePasse);
+                } else {
+                    // Si le mot de passe reste inchangé
+                    serviceAuthentification.mettreAJourJoueur(joueur);
+                }
+                
                 fenetre.close();
                 afficherMessageSucces("Profil mis à jour avec succès");
                 afficher();
@@ -581,8 +582,7 @@ public class EcranPrincipal {
 
             // Initialiser et afficher l'écran boutique
             ServiceBoutique serviceBoutique = ServiceBoutiqueImpl.getInstance();
-            ItemDAO itemDAO = ItemDAOImpl.getInstance();
-            EcranBoutique ecranBoutique = new EcranBoutique(serviceBoutique, itemDAO, joueur, screen);
+            EcranBoutique ecranBoutique = new EcranBoutique(serviceBoutique, joueur, screen);
             ecranBoutique.afficher();
 
         } catch (Exception e) {

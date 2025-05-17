@@ -192,7 +192,7 @@ public class EcranInscription {
                     // Mettre à jour le joueur
                     joueur.setPersonnage(personnage);
                     serviceAuthentification.mettreAJourJoueur(joueur);
-                    
+
                     fenetre.close();
                     afficherMessageSucces("Personnage " + nomPersonnage + " choisi avec succès");
                     ecranAuthentification.afficher();

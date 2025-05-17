@@ -1,9 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
-import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemMongoDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
@@ -24,16 +22,14 @@ import java.util.List;
 public class EcranBoutique {
 
     private final ServiceBoutique serviceBoutique;
-    private final ItemDAO itemDAO;
     private final ItemMongoDAO itemMongoDAO;
     private final JoueurDAO joueurDAO;
     private final Joueur joueur;
     private final Screen screen;
     private final WindowBasedTextGUI textGUI;
 
-    public EcranBoutique(ServiceBoutique serviceBoutique, ItemDAO itemDAO, Joueur joueur, Screen screen) {
+    public EcranBoutique(ServiceBoutique serviceBoutique, Joueur joueur, Screen screen) {
         this.serviceBoutique = serviceBoutique;
-        this.itemDAO = itemDAO;
         this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
         this.joueurDAO = JoueurDAOImpl.getInstance();
         this.joueur = joueur;

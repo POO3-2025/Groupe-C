@@ -1,9 +1,11 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.JoueurNotFoundException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.AuthentificationException;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.SQLConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
@@ -30,6 +32,12 @@ public class JoueurDAOImpl implements JoueurDAO {
 
     public JoueurDAOImpl() {
         // Constructeur par défaut
+        try {
+            connection = InitialiserAPP.getSQLConnexion();
+            creerTableJoueurSiInexistante();
+        } catch (SQLConnectionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**

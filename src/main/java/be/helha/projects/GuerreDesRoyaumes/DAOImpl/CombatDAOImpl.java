@@ -1,9 +1,14 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
+import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.SQLConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Combat.Combat;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import com.mongodb.client.MongoDatabase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -18,30 +23,25 @@ public class CombatDAOImpl implements CombatDAO {
     private Connection connection;
 
     public CombatDAOImpl() {
-        // Constructeur par défaut
-    }
-
-    @Autowired(required = false)
-    public void setDataSource(DataSource dataSource) {
-        if (dataSource == null) {
-            System.out.println("DataSource est null dans CombatDAOImpl.setDataSource");
-            return;
-        }
-
         try {
-            this.connection = dataSource.getConnection();
-            System.out.println("Connexion établie via DataSource dans CombatDAOImpl");
-        } catch (SQLException e) {
-            throw new RuntimeException("Erreur lors de la connexion à la base de données via DataSource", e);
+            this.connection = InitialiserAPP.getSQLConnexion();
+            System.out.println("Connexion SQL initialisée via InitialiserAPP");
+        } catch (SQLConnectionException e) {
+            throw new RuntimeException(e);
         }
     }
-
+    
     /**
-     * Méthode alternative pour définir directement la connexion
+     * Définit la connexion SQL à utiliser pour les opérations DAO
+     * 
+     * @param connection La connexion SQL à utiliser
      */
     public void setConnection(Connection connection) {
+        if (connection == null) {
+            throw new IllegalArgumentException("La connexion ne peut pas être null");
+        }
         this.connection = connection;
-        System.out.println("Connexion SQL définie directement dans CombatDAOImpl");
+        System.out.println("Connexion SQL mise à jour dans CombatDAOImpl");
     }
 
     // Create

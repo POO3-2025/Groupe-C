@@ -1,7 +1,9 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAO.RoyaumeMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -23,8 +25,12 @@ public class RoyaumeMongoDAOImpl implements RoyaumeMongoDAO {
      * Constructeur privé pour le singleton qui initialise la connexion à la collection MongoDB.
      */
     private RoyaumeMongoDAOImpl() {
-        MongoDatabase db = ConnexionManager.getInstance().getMongoDatabase();
-        this.collection = db.getCollection("royaumes");
+        try {
+            MongoDatabase mongoDB = InitialiserAPP.getMongoConnexion();
+            this.collection = mongoDB.getCollection("royaumes");
+        } catch (MongoDBConnectionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**

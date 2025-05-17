@@ -1,12 +1,15 @@
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CoffreMongoDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.CoffreService;
+import com.mongodb.client.MongoDatabase;
 import org.springframework.stereotype.Service;
 
 /**
@@ -17,14 +20,20 @@ public class CoffreServiceMongoImpl implements CoffreService {
 
     private static CoffreServiceMongoImpl instance;
     private final CoffreMongoDAOImpl coffreMongoDAO;
-    private final ItemDAOImpl itemDAO;
+    private final ItemMongoDAOImpl itemMongoDAO;
 
     /**
      * Constructeur privé pour le singleton
      */
     private CoffreServiceMongoImpl() {
-        this.coffreMongoDAO = CoffreMongoDAOImpl.getInstance();
-        this.itemDAO = ItemDAOImpl.getInstance();
+        MongoDatabase mongoDB;
+        try {
+            mongoDB = InitialiserAPP.getMongoConnexion();
+            this.coffreMongoDAO = CoffreMongoDAOImpl.getInstance();
+            this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
+        } catch (MongoDBConnectionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**

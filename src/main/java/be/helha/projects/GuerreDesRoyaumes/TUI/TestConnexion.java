@@ -1,6 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
-import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConfigInit;
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
 import com.mongodb.client.MongoDatabase;
 import java.sql.Connection;
@@ -8,16 +8,17 @@ import java.sql.Connection;
 public class TestConnexion {
     public static void main(String[] args) {
         try {
-            // Initialisation centralisée des configs
-            ConfigInit.initAll();
+            // Obtenir les connexions via InitialiserAPP
+            Connection sqlConnection = InitialiserAPP.getSQLConnexion();
+            MongoDatabase mongoDB = InitialiserAPP.getMongoConnexion();
 
             ConnexionManager manager = ConnexionManager.getInstance();
 
-            // Test SQL
-            testSQL(manager);
+            // Test SQL avec la connexion déjà établie
+            testSQL(sqlConnection);
 
-            // Test MongoDB
-            testMongoDB(manager);
+            // Test MongoDB avec la connexion déjà établie
+            testMongoDB(mongoDB);
 
         } catch (Exception e) {
             System.err.println("Erreur: " + e.getMessage());
@@ -25,9 +26,9 @@ public class TestConnexion {
         }
     }
 
-    private static void testSQL(ConnexionManager manager) {
+    private static void testSQL(Connection conn) {
         System.out.println("===== TEST SQL =====");
-        try (Connection conn = manager.getSQLConnection()) {
+        try {
             System.out.println(conn != null ? "Connexion SQL réussie!" : "Échec connexion SQL");
             if (conn != null) {
                 System.out.println("URL de connexion: " + conn.getMetaData().getURL());
@@ -40,10 +41,9 @@ public class TestConnexion {
         }
     }
 
-    private static void testMongoDB(ConnexionManager manager) {
+    private static void testMongoDB(MongoDatabase db) {
         System.out.println("\n===== TEST MongoDB =====");
         try {
-            MongoDatabase db = manager.getMongoDatabase();
             System.out.println(db != null ? "Connexion MongoDB réussie!" : "Échec connexion MongoDB");
             if (db != null) {
                 System.out.println("Nom de la base de données: " + db.getName());
@@ -52,8 +52,6 @@ public class TestConnexion {
             }
         } catch (Exception e) {
             System.err.println("Erreur MongoDB: " + e.getMessage());
-        } finally {
-            manager.closeConnections();
         }
     }
 }
