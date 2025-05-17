@@ -1,12 +1,10 @@
 package be.helha.projects.GuerreDesRoyaumes.Controller;
 
-import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceBoutique;
-import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceBoutiqueImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,13 +18,13 @@ import java.util.Map;
 @RequestMapping("/boutique")
 public class BoutiqueController {
 
-    private final ItemDAO itemDAO;
+    private final ItemMongoDAOImpl itemDAO;
     private final ServiceBoutique serviceBoutique;
     private final JoueurDAOImpl joueurDAO;
 
     @Autowired
     public BoutiqueController(ServiceBoutique serviceBoutique) {
-        this.itemDAO = ItemDAOImpl.getInstance();
+        this.itemDAO = ItemMongoDAOImpl.getInstance();
         this.joueurDAO = JoueurDAOImpl.getInstance();
         this.serviceBoutique = serviceBoutique;
     }

@@ -1,17 +1,16 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
-import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
-import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
-import be.helha.projects.GuerreDesRoyaumes.Service.CoffreService;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Golem;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceBoutique;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
-import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CoffreServiceImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceBoutiqueImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceCombatImpl;
 import com.googlecode.lanterna.TerminalSize;
@@ -19,11 +18,6 @@ import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.screen.Screen;
-import org.bson.Document;
-
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.List;
 
 public class EcranPrincipal {
 
@@ -82,15 +76,17 @@ public class EcranPrincipal {
 
         panel.addComponent(new Button("Combattre", () -> {
             fenetre.close();
-            try {
-                afficherEcranCombat(joueur);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            afficherEcranCombat(joueur);
         }));
 
         panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        panel.addComponent(new Button("Déconnexion", fenetre::close));
+        panel.addComponent(new Button("Déconnexion", () -> {
+            // Déconnecter le joueur
+            if (serviceAuthentification != null) {
+                serviceAuthentification.deconnecterJoueur(joueur.getPseudo());
+            }
+            fenetre.close();
+        }));
 
         fenetre.setComponent(panel);
         textGUI.addWindowAndWait(fenetre);
@@ -101,35 +97,121 @@ public class EcranPrincipal {
     }
 
     private void afficherEcranChoixPersonnage(Joueur joueur) {
-        // Implémentation à venir pour le choix du personnage
+        Window fenetre = new BasicWindow("Choix du Personnage");
+        fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
+
+        Panel panel = new Panel(new GridLayout(1));
+        panel.addComponent(new Label("Choisissez votre personnage :"));
+
+        // Description des personnages
+        Panel panelPersonnages = new Panel(new GridLayout(1));
+
+        // Guerrier
+        Panel panelGuerrier = new Panel(new GridLayout(1));
+        panelGuerrier.addComponent(new Label("Guerrier :"));
+        panelGuerrier.addComponent(new Label("Points de vie : 100"));
+        panelGuerrier.addComponent(new Label("Dégâts : 40"));
+        panelGuerrier.addComponent(new Label("Résistance : 20"));
+        panelGuerrier.addComponent(new Label("Spécialité : Combat rapproché"));
+        panelPersonnages.addComponent(panelGuerrier);
+
+        // Voleur
+        Panel panelVoleur = new Panel(new GridLayout(1));
+        panelVoleur.addComponent(new Label("Voleur :"));
+        panelVoleur.addComponent(new Label("Points de vie : 90"));
+        panelVoleur.addComponent(new Label("Dégâts : 35"));
+        panelVoleur.addComponent(new Label("Résistance : 15"));
+        panelVoleur.addComponent(new Label("Spécialité : Gagne 2x plus d'argent"));
+        panelPersonnages.addComponent(panelVoleur);
+
+        // Golem
+        Panel panelGolem = new Panel(new GridLayout(1));
+        panelGolem.addComponent(new Label("Golem :"));
+        panelGolem.addComponent(new Label("Points de vie : 120"));
+        panelGolem.addComponent(new Label("Dégâts : 18"));
+        panelGolem.addComponent(new Label("Résistance : 50"));
+        panelGolem.addComponent(new Label("Spécialité : Grande résistance aux dégâts"));
+        panelPersonnages.addComponent(panelGolem);
+
+        panel.addComponent(panelPersonnages);
+
+        // Boutons de sélection
+        Panel panelBoutons = new Panel(new GridLayout(3));
+
+        panelBoutons.addComponent(new Button("Guerrier", () -> {
+            try {
+                Personnage guerrier = new Guerrier();
+                joueur.setPersonnage(guerrier);
+                joueurDAO.mettreAJourJoueur(joueur);
+                afficherMessageSucces("Vous avez choisi le personnage Guerrier !");
+                fenetre.close();
+                afficher(); // Retour au menu principal
+            } catch (Exception e) {
+                afficherMessageErreur("Erreur lors de la sélection du personnage: " + e.getMessage());
+            }
+        }));
+
+        panelBoutons.addComponent(new Button("Voleur", () -> {
+            try {
+                Personnage voleur = new Voleur();
+                joueur.setPersonnage(voleur);
+                joueurDAO.mettreAJourJoueur(joueur);
+                afficherMessageSucces("Vous avez choisi le personnage Voleur !");
+                fenetre.close();
+                afficher(); // Retour au menu principal
+            } catch (Exception e) {
+                afficherMessageErreur("Erreur lors de la sélection du personnage: " + e.getMessage());
+            }
+        }));
+
+        panelBoutons.addComponent(new Button("Golem", () -> {
+            try {
+                Personnage golem = new Golem();
+                joueur.setPersonnage(golem);
+                joueurDAO.mettreAJourJoueur(joueur);
+                afficherMessageSucces("Vous avez choisi le personnage Golem !");
+                fenetre.close();
+                afficher(); // Retour au menu principal
+            } catch (Exception e) {
+                afficherMessageErreur("Erreur lors de la sélection du personnage: " + e.getMessage());
+            }
+        }));
+
+        panel.addComponent(panelBoutons);
+
+        // Bouton retour
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(new Button("Retour", () -> {
+            fenetre.close();
+            afficher(); // Retour au menu principal
+        }));
+
+        fenetre.setComponent(panel);
+        textGUI.addWindowAndWait(fenetre);
     }
 
     private void afficherEcranGestionInventaire(Joueur joueur) {
-        // Implémentation à venir pour la gestion de l'inventaire
+        try {
+            EcranGestionInventaire ecranGestionInventaire = new EcranGestionInventaire(joueur, screen);
+            ecranGestionInventaire.afficher();
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'affichage de l'écran de gestion d'inventaire: " + e.getMessage());
+            e.printStackTrace();
+            afficherMessageErreur("Erreur lors de l'affichage de l'écran de gestion d'inventaire");
+        }
     }
 
-    private void afficherEcranBoutique(Joueur joueur) {
-        // Assurer que les données du coffre sont chargées avant d'afficher l'écran boutique
-        CoffreServiceImpl coffreService = CoffreServiceImpl.getInstance();
-
+    public void afficherEcranBoutique(Joueur joueur) {
         try {
-            // Obtenir une connexion si nécessaire
-            if (coffreService.getConnection() == null) {
-                Connection connection = ConnexionManager.getInstance().getSQLConnection();
-                coffreService.setConnection(connection);
-            }
-
-            // Charger le contenu du coffre depuis la base de données
-            coffreService.chargerCoffre(joueur);
-
-            // Initialiser et afficher l'écran boutique
+            // Utiliser ItemMongoDAOImpl pour la gestion des items
+            ItemDAO itemDAO = ItemMongoDAOImpl.getInstance();
             ServiceBoutique serviceBoutique = ServiceBoutiqueImpl.getInstance();
-            ItemDAO itemDAO = ItemDAOImpl.getInstance();
+
             EcranBoutique ecranBoutique = new EcranBoutique(serviceBoutique, itemDAO, joueur, screen);
             ecranBoutique.afficher();
-
-        } catch (SQLException e) {
-            afficherMessageErreur("Erreur lors du chargement du coffre : " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'affichage de l'écran boutique: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -137,89 +219,36 @@ public class EcranPrincipal {
         // Implémentation à venir pour la gestion du royaume
     }
 
-    private void afficherEcranCombat(Joueur joueur) throws SQLException {
+    private void afficherEcranCombat(Joueur joueur) {
         // Vérifier si le joueur a un personnage
         if (joueur.getPersonnage() == null) {
             afficherMessageErreur("Vous devez d'abord choisir un personnage avant de combattre.");
             return;
         }
 
-        // Obtenir la liste des joueurs disponibles pour le combat
-        List<Joueur> adversairesPotentiels = joueurDAO.obtenirTousLesJoueurs();
-        adversairesPotentiels.removeIf(j ->
-                j.getPseudo().equals(joueur.getPseudo()) || // Enlever le joueur actuel
-                        j.getPersonnage() == null // Enlever les joueurs sans personnage
-        );
-
-        if (adversairesPotentiels.isEmpty()) {
-            afficherMessageErreur("Aucun adversaire disponible pour le combat. Assurez-vous qu'il y a au moins un autre joueur avec un personnage.");
-            return;
-        }
-
-        // Créer une fenêtre pour choisir l'adversaire
-        Window fenetreAdversaire = new BasicWindow("Choisir un adversaire");
-        Panel panelAdversaire = new Panel(new GridLayout(1));
-        panelAdversaire.addComponent(new Label("Choisissez votre adversaire :"));
-
-        // Ajouter un bouton pour chaque adversaire potentiel
-        for (Joueur adversaire : adversairesPotentiels) {
-            Button boutonAdversaire = new Button(adversaire.getPseudo() + " (" + adversaire.getPersonnage().getNom() + ")", () -> {
-                fenetreAdversaire.close();
-                demarrerCombat(joueur, adversaire);
-            });
-            panelAdversaire.addComponent(boutonAdversaire);
-        }
-
-        fenetreAdversaire.setComponent(panelAdversaire);
-        textGUI.addWindowAndWait(fenetreAdversaire);
-    }
-
-    private void demarrerCombat(Joueur joueur, Joueur adversaire) {
-        // Initialisation du service de combat
-        ServiceCombat serviceCombat = new ServiceCombatImpl();
-
-        // Création et configuration du DAO
-        CombatDAOImpl combatDAO = new CombatDAOImpl();
-
         try {
-            // Obtenir une connexion directe via ConnexionManager
-            Connection connection = ConnexionManager.getInstance().getSQLConnection();
-            combatDAO.setConnection(connection);
-            System.out.println("Connexion SQL établie pour le combat via ConnexionManager");
-        } catch (SQLException e) {
-            afficherMessageErreur("Erreur de connexion à la base de données: " + e.getMessage());
-            return;
+            // Initialisation du service de combat
+            ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO);
+
+            // Afficher l'écran de sélection d'adversaire
+            new EcranSelectionAdversaire(joueurDAO, textGUI, screen, joueur.getPseudo(), serviceCombat).afficher();
+
+        } catch (Exception e) {
+            afficherMessageErreur("Erreur lors de l'initialisation du combat: " + e.getMessage());
         }
-
-        // Initialisation du CombatController avec les deux joueurs
-        CombatController combatController = new CombatController(
-                serviceCombat,
-                combatDAO,
-                joueur,
-                adversaire
-        );
-
-        try {
-            combatController.initialiserCombat();
-        } catch (IllegalStateException e) {
-            afficherMessageErreur("Erreur lors de l'initialisation du combat : " + e.getMessage());
-            return;
-        }
-
-        // Vérifier si le combat est correctement initialisé
-        if (combatController.getCombatEnCours() == null) {
-            afficherMessageErreur("Erreur lors de l'initialisation du combat");
-            return;
-        }
-
-        // Afficher l'écran de préparation au combat
-        EcranPreparationCombat ecranPreparationCombat = new EcranPreparationCombat(combatController, textGUI);
-        ecranPreparationCombat.afficher();
     }
 
     private void afficherMessageErreur(String message) {
         MessageDialogBuilder dialogBuilder = new MessageDialogBuilder()
                 .setTitle("Erreur")
+                .setText(message)
+                .addButton(MessageDialogButton.OK);
+        dialogBuilder.build().showDialog(textGUI);
+    }
+
+    private void afficherMessageSucces(String message) {
+        MessageDialogBuilder dialogBuilder = new MessageDialogBuilder()
+                .setTitle("Succès")
                 .setText(message)
                 .addButton(MessageDialogButton.OK);
         dialogBuilder.build().showDialog(textGUI);

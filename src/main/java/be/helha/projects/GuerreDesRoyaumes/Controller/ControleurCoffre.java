@@ -1,8 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Controller;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
@@ -28,12 +27,12 @@ public class ControleurCoffre {
     private static final Logger logger = LoggerFactory.getLogger(ControleurCoffre.class);
 
     private final JoueurDAO joueurDAO;
-    private final ItemDAOImpl itemDAO;
+    private final ItemMongoDAOImpl itemDAO;
 
     @Autowired
     public ControleurCoffre(JoueurDAO joueurDAO) {
         this.joueurDAO = joueurDAO;
-        this.itemDAO = ItemDAOImpl.getInstance();
+        this.itemDAO = ItemMongoDAOImpl.getInstance();
     }
 
     /**

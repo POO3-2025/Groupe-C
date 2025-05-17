@@ -1,7 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
@@ -28,7 +28,7 @@ public class CoffreServiceImpl implements CoffreService {
      * Constructeur par défaut
      */
     public CoffreServiceImpl() {
-        this.itemDAO = ItemDAOImpl.getInstance();
+        this.itemDAO = ItemMongoDAOImpl.getInstance();
     }
 
     /**

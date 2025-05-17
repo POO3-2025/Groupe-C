@@ -2,7 +2,7 @@ package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
@@ -21,7 +21,7 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
     private static ServiceBoutiqueImpl instance;
 
     public ServiceBoutiqueImpl() {
-        this.itemDAO = ItemDAOImpl.getInstance();
+        this.itemDAO = ItemMongoDAOImpl.getInstance();
         this.joueurDAO = JoueurDAOImpl.getInstance();
         this.coffreService = CoffreServiceImpl.getInstance();
     }

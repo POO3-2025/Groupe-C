@@ -51,6 +51,13 @@ public interface JoueurDAO {
     List<Joueur> obtenirTousLesJoueurs();
 
     /**
+     * Récupère tous les joueurs actifs (connectés) enregistrés dans la base de données.
+     *
+     * @return Une liste de tous les joueurs actifs
+     */
+    List<Joueur> obtenirJoueursActifs();
+
+    /**
      * Met à jour les informations d'un joueur existant.
      *
      * @param joueur Le joueur avec les nouvelles informations
@@ -65,4 +72,12 @@ public interface JoueurDAO {
     void supprimerJoueur(int id);
 
     boolean verifierIdentifiants(String pseudo, String motDePasse);
+
+    /**
+     * Définit le statut de connexion d'un joueur.
+     *
+     * @param id L'identifiant du joueur
+     * @param estActif true si le joueur est connecté, false sinon
+     */
+    void definirStatutConnexion(int id, boolean estActif);
 }
