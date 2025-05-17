@@ -4,6 +4,8 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
 
+import javax.imageio.plugins.jpeg.JPEGImageReadParam;
+
 public abstract class Personnage {
     private String nom;
     private double vie;
@@ -18,6 +20,10 @@ public abstract class Personnage {
         this.degats = degats;
         this.resistance = resistance;
         this.inventaire = inventaire;
+    }
+
+    //Constructeur par défaut
+    public Personnage() {
     }
 
     //Getteur

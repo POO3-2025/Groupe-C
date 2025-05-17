@@ -5,6 +5,9 @@ import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAO.RoyaumeMongoDAO;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
+import be.helha.projects.GuerreDesRoyaumes.Outils.GsonObjectIdAdapter;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
@@ -20,6 +23,8 @@ public class RoyaumeMongoDAOImpl implements RoyaumeMongoDAO {
 
     private static RoyaumeMongoDAOImpl instance;
     private final MongoCollection<Document> collection;
+    private final Gson gson = GsonObjectIdAdapter.getGson();
+
 
     /**
      * Constructeur privé pour le singleton qui initialise la connexion à la collection MongoDB.
@@ -102,12 +107,23 @@ public class RoyaumeMongoDAOImpl implements RoyaumeMongoDAO {
      * @return Un Document MongoDB représentant le royaume
      */
     private Document toDocument(Royaume royaume, int joueurId) {
-        Document doc = new Document();
-        doc.append("id_joueur", joueurId);
-        doc.append("nom", royaume.getNom());
-        doc.append("niveau", royaume.getNiveau());
-        // On pourrait ajouter d'autres informations sur le royaume ici (ressources, bâtiments, etc.)
-        return doc;
+        try {
+            // Création manuelle du document JSON
+            JsonObject jsonRoyaume = new JsonObject();
+            
+            // Ajouter les propriétés du royaume - sans l'id
+            jsonRoyaume.addProperty("nom", royaume.getNom());
+            jsonRoyaume.addProperty("niveau", royaume.getNiveau());
+            
+            // Ajouter l'ID du joueur
+            jsonRoyaume.addProperty("id_joueur", joueurId);
+            
+            // Convertir en document MongoDB
+            Document doc = Document.parse(jsonRoyaume.toString());
+            return doc;
+        } catch (Exception e) {
+            throw new RuntimeException("Échec de la sérialisation: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -117,8 +133,25 @@ public class RoyaumeMongoDAOImpl implements RoyaumeMongoDAO {
      * @return Un objet Royaume créé à partir du Document
      */
     private Royaume fromDocument(Document doc) {
-        String nom = doc.getString("nom");
-        int niveau = doc.getInteger("niveau", 1);
-        return new Royaume(0, nom, niveau); // L'ID sera mis à jour si nécessaire
+        try {
+            // Créer un nouveau royaume et remplir directement les propriétés
+            Royaume royaume = new Royaume();
+            
+            if (doc.containsKey("id")) {
+                royaume.setId(doc.getInteger("id"));
+            }
+            
+            if (doc.containsKey("nom")) {
+                royaume.setNom(doc.getString("nom"));
+            }
+            
+            if (doc.containsKey("niveau")) {
+                royaume.setNiveau(doc.getInteger("niveau"));
+            }
+            
+            return royaume;
+        } catch (Exception e) {
+            throw new RuntimeException("Échec de la désérialisation: " + e.getMessage(), e);
+        }
     }
 } 

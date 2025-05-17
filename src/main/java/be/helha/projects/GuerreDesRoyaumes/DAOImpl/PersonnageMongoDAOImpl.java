@@ -10,6 +10,10 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Titan;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
+import be.helha.projects.GuerreDesRoyaumes.Outils.GsonObjectIdAdapter;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
@@ -26,6 +30,7 @@ public class PersonnageMongoDAOImpl implements PersonnageMongoDAO {
 
     private static PersonnageMongoDAOImpl instance;
     private final MongoCollection<Document> collection;
+    private final Gson gson;
 
     /**
      * Constructeur privé pour le singleton qui initialise la connexion à la collection MongoDB.
@@ -34,6 +39,8 @@ public class PersonnageMongoDAOImpl implements PersonnageMongoDAO {
         try {
             MongoDatabase mongoDB = InitialiserAPP.getMongoConnexion();
             this.collection = mongoDB.getCollection("personnages");
+            this.gson = GsonObjectIdAdapter.getGson();
+
         } catch (MongoDBConnectionException ex) {
             throw new RuntimeException(ex);
         }
@@ -100,6 +107,7 @@ public class PersonnageMongoDAOImpl implements PersonnageMongoDAO {
         collection.deleteOne(Filters.eq("id_joueur", joueurId));
     }
 
+
     /**
      * Convertit un objet Personnage en Document MongoDB.
      *
@@ -108,17 +116,32 @@ public class PersonnageMongoDAOImpl implements PersonnageMongoDAO {
      * @return Un Document MongoDB représentant le personnage
      */
     private Document toDocument(Personnage personnage, int joueurId) {
-        Document doc = new Document();
-        doc.append("id_joueur", joueurId);
-        doc.append("nom", personnage.getNom());
-        doc.append("vie", personnage.getVie());
-        doc.append("degats", personnage.getDegats());
-        doc.append("resistance", personnage.getResistance());
-        doc.append("type", personnage.getClass().getSimpleName());
-        
-        // On pourrait ajouter d'autres informations spécifiques au type de personnage ici
-        
-        return doc;
+        try {
+            // Conversion du personnage en JsonObject via notre adaptateur
+            JsonObject jsonPersonnage = new JsonObject();
+            
+            // Ajouter les propriétés principales du personnage
+            jsonPersonnage.addProperty("nom", personnage.getNom());
+            jsonPersonnage.addProperty("vie", personnage.getVie());
+            jsonPersonnage.addProperty("degats", personnage.getDegats());
+            jsonPersonnage.addProperty("resistance", personnage.getResistance());
+            jsonPersonnage.addProperty("type", personnage.getClass().getSimpleName());
+            
+            // Ajouter l'ID du joueur
+            jsonPersonnage.addProperty("id_joueur", joueurId);
+            
+            // Ajouter l'inventaire si présent
+            if (personnage.getInventaire() != null) {
+                JsonElement inventaireJson = gson.toJsonTree(personnage.getInventaire());
+                jsonPersonnage.add("inventaire", inventaireJson);
+            }
+            
+            // Convertir en document MongoDB
+            Document doc = Document.parse(jsonPersonnage.toString());
+            return doc;
+        } catch (Exception e) {
+            throw new RuntimeException("Échec de la sérialisation: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -128,29 +151,48 @@ public class PersonnageMongoDAOImpl implements PersonnageMongoDAO {
      * @return Un objet Personnage créé à partir du Document
      */
     private Personnage fromDocument(Document doc) {
-        String type = doc.getString("type");
-        
-        // Créer une instance de personnage en fonction du type
-        Personnage personnage = null;
-        switch (type) {
-            case "Guerrier":
-                personnage = new Guerrier();
-                break;
-            case "Voleur":
-                personnage = new Voleur();
-                break;
-            case "Golem":
-                personnage = new Golem();
-                break;
-            case "Titan":
-                personnage = new Titan();
-                break;
-            default:
-                // Par défaut, on crée un guerrier si le type n'est pas reconnu
-                personnage = new Guerrier();
-                break;
+        try {
+            String type = doc.getString("type");
+            if (type == null) {
+                throw new RuntimeException("Le champ 'type' est absent du document MongoDB");
+            }
+            
+            Personnage personnage;
+            switch (type) {
+                case "Golem":
+                    personnage = new Golem();
+                    break;
+                case "Guerrier":
+                    personnage = new Guerrier();
+                    break;
+                case "Titan":
+                    personnage = new Titan();
+                    break;
+                case "Voleur":
+                    personnage = new Voleur();
+                    break;
+                default:
+                    throw new RuntimeException("Type de personnage non reconnu: " + type);
+            }
+            
+            // Définir les propriétés à partir du document
+            personnage.setNom(doc.getString("nom"));
+            personnage.setVie(doc.getDouble("vie"));
+            personnage.setDegats(doc.getDouble("degats"));
+            personnage.setResistance(doc.getDouble("resistance"));
+            
+            // Gérer l'inventaire si présent
+            Document invDoc = (Document) doc.get("inventaire");
+            if (invDoc != null) {
+                Inventaire inventaire = gson.fromJson(invDoc.toJson(), Inventaire.class);
+                personnage.setInventaire(inventaire);
+            } else {
+                personnage.setInventaire(new Inventaire());
+            }
+            
+            return personnage;
+        } catch (Exception e) {
+            throw new RuntimeException("Échec de la désérialisation: " + e.getMessage(), e);
         }
-        
-        return personnage;
     }
 } 

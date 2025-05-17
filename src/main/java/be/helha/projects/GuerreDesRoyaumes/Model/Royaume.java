@@ -1,5 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.Model;
 
+import org.bson.types.ObjectId;
+
 /**
  * Classe représentant un royaume dans le jeu Guerre des Royaumes.
  * Un royaume est caractérisé par un identifiant, un nom et un niveau.
@@ -10,6 +12,11 @@ public class Royaume {
     private int id;
     private String nom;
     private int niveau;
+
+    /**
+     * Constructeur par défaut pour créer un royaume avec des valeurs par défaut.
+     */
+    public Royaume() {}
 
     /**
      * Constructeur pour créer un royaume avec toutes ses propriétés.

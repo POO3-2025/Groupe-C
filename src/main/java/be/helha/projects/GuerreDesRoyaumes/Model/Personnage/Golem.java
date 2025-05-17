@@ -7,6 +7,8 @@ public class Golem extends Personnage {
         super("Golem",120, 18, 50, new Inventaire());
     }
 
+
+
     @Override
     public void attaquer() {
         System.out.println(getNom() + " fait une attaque");
