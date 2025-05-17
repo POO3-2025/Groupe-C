@@ -340,6 +340,192 @@ public class CombatDAOImpl implements CombatDAO {
             return false;
         }
     }
+    
+    /**
+     * Obtient le pseudonyme d'un joueur à partir de son ID
+     * 
+     * @param idJoueur L'identifiant du joueur
+     * @return Le pseudonyme du joueur ou null si le joueur n'est pas trouvé
+     */
+    public String obtenirPseudonyme(int idJoueur) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+        
+        String sql = "SELECT pseudo FROM " + tableNameCombat + " WHERE id_joueur = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, idJoueur);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("pseudo");
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération du pseudonyme: " + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Création de la table combats_en_cours si elle n'existe pas
+     */
+    private void creerTableCombatsEnCoursSiInexistante() {
+        try {
+            // Vérifier si la table existe déjà
+            DatabaseMetaData dbm = connection.getMetaData();
+            ResultSet tables = dbm.getTables(null, null, "combats_en_cours", null);
+
+            if (!tables.next()) {
+                // La table n'existe pas, la créer (SQL Server syntax)
+                String sql = "CREATE TABLE combats_en_cours (" +
+                        "id INT IDENTITY(1,1) PRIMARY KEY, " +
+                        "id_joueur1 INT NOT NULL, " +
+                        "id_joueur2 INT NOT NULL, " +
+                        "date_debut DATETIME DEFAULT GETDATE(), " +
+                        "FOREIGN KEY (id_joueur1) REFERENCES " + tableNameCombat + "(id_joueur), " +
+                        "FOREIGN KEY (id_joueur2) REFERENCES " + tableNameCombat + "(id_joueur), " +
+                        "CONSTRAINT UC_combat UNIQUE (id_joueur1, id_joueur2))";
+                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                    stmt.executeUpdate();
+                    System.out.println("DEBUG: Table combats_en_cours créée");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la création de la table combats_en_cours: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    @Override
+    public boolean ajouterCombatEnCours(int idJoueur1, int idJoueur2) {
+        // S'assurer que la table combats_en_cours existe
+        creerTableCombatsEnCoursSiInexistante();
+
+        // Vérifier d'abord si un combat existe déjà
+        String sqlCheck = "SELECT COUNT(*) FROM combats_en_cours WHERE (id_joueur1 = ? AND id_joueur2 = ?) OR (id_joueur1 = ? AND id_joueur2 = ?)";
+        try (PreparedStatement stmtCheck = connection.prepareStatement(sqlCheck)) {
+            stmtCheck.setInt(1, idJoueur1);
+            stmtCheck.setInt(2, idJoueur2);
+            stmtCheck.setInt(3, idJoueur2);
+            stmtCheck.setInt(4, idJoueur1);
+            ResultSet rs = stmtCheck.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                // Un combat existe déjà
+                System.out.println("DEBUG: Un combat existe déjà entre les joueurs " + idJoueur1 + " et " + idJoueur2);
+                return true;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la vérification de combat en cours: " + e.getMessage());
+            return false;
+        }
+
+        // Insérer le nouveau combat
+        String sql = "INSERT INTO combats_en_cours (id_joueur1, id_joueur2) VALUES (?, ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, idJoueur1);
+            stmt.setInt(2, idJoueur2);
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("DEBUG: Combat en cours ajouté entre les joueurs " + idJoueur1 + " et " + idJoueur2);
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de l'ajout du combat en cours: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    @Override
+    public int verifierCombatEnCours(int idJoueur) {
+        // S'assurer que la table combats_en_cours existe
+        creerTableCombatsEnCoursSiInexistante();
+
+        // SQL Server n'utilise pas LIMIT mais TOP
+        String sql = "SELECT TOP 1 id_joueur1, id_joueur2 FROM combats_en_cours WHERE id_joueur1 = ? OR id_joueur2 = ? ORDER BY date_debut ASC";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, idJoueur);
+            stmt.setInt(2, idJoueur);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                int idJoueur1 = rs.getInt("id_joueur1");
+                int idJoueur2 = rs.getInt("id_joueur2");
+                // Retourner l'ID de l'adversaire (pas celui du joueur)
+                int idAdversaire = (idJoueur1 == idJoueur) ? idJoueur2 : idJoueur1;
+                System.out.println("DEBUG: Combat en cours trouvé pour le joueur " + idJoueur + " contre " + idAdversaire);
+                return idAdversaire;
+            }
+            return 0; // Pas de combat en cours
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la vérification des combats en cours: " + e.getMessage());
+            return 0; // En cas d'erreur
+        }
+    }
+    
+    @Override
+    public boolean supprimerCombatEnCours(int idJoueur1, int idJoueur2) {
+        // S'assurer que la table combats_en_cours existe
+        creerTableCombatsEnCoursSiInexistante();
+
+        String sql = "DELETE FROM combats_en_cours WHERE (id_joueur1 = ? AND id_joueur2 = ?) OR (id_joueur1 = ? AND id_joueur2 = ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, idJoueur1);
+            stmt.setInt(2, idJoueur2);
+            stmt.setInt(3, idJoueur2);
+            stmt.setInt(4, idJoueur1);
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("DEBUG: Combat en cours supprimé entre joueurs " + idJoueur1 + " et " + idJoueur2);
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la suppression du combat en cours: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean appliquerSanctionFinanciere(int idJoueur, int montant) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+
+        // Récupérer d'abord l'argent actuel du joueur
+        String sqlSelect = "SELECT argent FROM joueur WHERE id_joueur = ?";
+        int argentActuel = 0;
+        
+        try (PreparedStatement stmtSelect = connection.prepareStatement(sqlSelect)) {
+            stmtSelect.setInt(1, idJoueur);
+            ResultSet rs = stmtSelect.executeQuery();
+            
+            if (rs.next()) {
+                argentActuel = rs.getInt("argent");
+            } else {
+                System.err.println("Joueur non trouvé pour appliquer la sanction financière: " + idJoueur);
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération de l'argent du joueur: " + e.getMessage());
+            return false;
+        }
+        
+        // Calculer le nouvel argent (ne pas descendre en dessous de 0)
+        int nouvelArgent = Math.max(0, argentActuel - montant);
+        
+        // Mettre à jour l'argent du joueur
+        String sqlUpdate = "UPDATE joueur SET argent = ? WHERE id_joueur = ?";
+        try (PreparedStatement stmtUpdate = connection.prepareStatement(sqlUpdate)) {
+            stmtUpdate.setInt(1, nouvelArgent);
+            stmtUpdate.setInt(2, idJoueur);
+            int rowsAffected = stmtUpdate.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                System.out.println("DEBUG: Sanction financière appliquée au joueur " + idJoueur + ": -" + montant + 
+                                   " TerraCoins (avant: " + argentActuel + ", après: " + nouvelArgent + ")");
+                return true;
+            } else {
+                System.err.println("Échec de l'application de la sanction financière au joueur: " + idJoueur);
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de l'application de la sanction financière: " + e.getMessage());
+            return false;
+        }
+    }
 }
 
 

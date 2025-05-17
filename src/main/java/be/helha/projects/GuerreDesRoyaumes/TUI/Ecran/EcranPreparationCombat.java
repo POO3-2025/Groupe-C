@@ -126,10 +126,70 @@ public class EcranPreparationCombat {
             panelTemporaire.addComponent(btnPretSimule);
             panel.addComponent(panelTemporaire);
 
-            // Bouton de retour
+            // Créer un thread de vérification pour voir si l'adversaire a annulé le combat
+            demarrerVerificationAnnulationCombat(joueur, adversaire, fenetre);
+
+            // Bouton d'annulation
             panel.addComponent(new Button("Annuler", () -> {
-                fenetre.close();
-                new EcranSelectionAdversaire(joueurDAO, textGUI, screen, pseudoJoueur, serviceCombat).afficher();
+                // Afficher une boîte de dialogue de confirmation avec avertissement de sanction
+                MessageDialogButton confirmation = new MessageDialogBuilder()
+                        .setTitle("Confirmation d'annulation")
+                        .setText("Voulez-vous vraiment annuler ce combat ?\nUne sanction de 500 TerraCoins sera appliquée à votre compte.")
+                        .addButton(MessageDialogButton.Yes)
+                        .addButton(MessageDialogButton.No)
+                        .build()
+                        .showDialog(textGUI);
+                
+                if (confirmation == MessageDialogButton.Yes) {
+                    try {
+                        if (joueur != null && adversaire != null) {
+                            // Obtenir le CombatDAO depuis le ServiceCombat
+                            be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO combatDAO = serviceCombat.getCombatDAO();
+                            
+                            // Supprimer le combat en cours
+                            combatDAO.supprimerCombatEnCours(joueur.getId(), adversaire.getId());
+                            
+                            // Appliquer la sanction financière (500 TerraCoins) en utilisant la méthode standard
+                            if (joueur.getArgent() >= 500) {
+                                joueur.retirerArgent(500);
+                                // Mettre à jour le joueur dans la base de données
+                                joueurDAO.mettreAJourJoueur(joueur);
+                                
+                                // Informer l'utilisateur de la sanction appliquée
+                                new MessageDialogBuilder()
+                                        .setTitle("Sanction appliquée")
+                                        .setText("Une sanction de 500 TerraCoins a été appliquée à votre compte.")
+                                        .addButton(MessageDialogButton.OK)
+                                        .build()
+                                        .showDialog(textGUI);
+                            } else {
+                                new MessageDialogBuilder()
+                                        .setTitle("Fonds insuffisants")
+                                        .setText("Vous n'avez pas assez de TerraCoins. Votre solde a été mis à 0.")
+                                        .addButton(MessageDialogButton.OK)
+                                        .build()
+                                        .showDialog(textGUI);
+                                
+                                // Mettre le solde à 0 si le joueur n'a pas assez d'argent
+                                joueur.setArgent(0);
+                                joueurDAO.mettreAJourJoueur(joueur);
+                            }
+                            
+                            // Envoyer un message à l'adversaire pour l'informer de l'annulation
+                            // Dans une implémentation réelle, on utiliserait le réseau
+                            // Ici, on simule avec un message d'information pour le développement
+                            System.out.println("Combat annulé par " + pseudoJoueur + ". Notification envoyée à " + pseudoAdversaire);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Erreur lors de l'annulation du combat: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                    
+                    // Retour à l'écran de sélection d'adversaire
+                    fenetre.close();
+                    new EcranSelectionAdversaire(joueurDAO, textGUI, screen, pseudoJoueur, serviceCombat).afficher();
+                }
+                // Si le joueur choisit "Non", rien ne se passe et il reste sur l'écran actuel
             }));
 
         } catch (Exception e) {
@@ -142,6 +202,52 @@ public class EcranPreparationCombat {
 
         fenetre.setComponent(panel);
         textGUI.addWindowAndWait(fenetre);
+    }
+    
+    /**
+     * Démarre un thread qui vérifie périodiquement si l'adversaire a annulé le combat
+     * Si l'adversaire annule, le joueur est redirigé vers l'écran de sélection d'adversaire
+     */
+    private void demarrerVerificationAnnulationCombat(Joueur joueur, Joueur adversaire, Window fenetre) {
+        Thread thread = new Thread(() -> {
+            try {
+                // Obtenir le CombatDAO depuis le ServiceCombat
+                be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO combatDAO = serviceCombat.getCombatDAO();
+                boolean combatTermine = false;
+                
+                while (!combatTermine) {
+                    // Vérifier si le combat existe toujours en BD
+                    int idAdversaireCombat = combatDAO.verifierCombatEnCours(joueur.getId());
+                    
+                    if (idAdversaireCombat == 0) {
+                        // Le combat n'existe plus, l'adversaire a probablement annulé
+                        combatTermine = true;
+                        
+                        // Afficher un message et revenir à l'écran de sélection dans le thread UI
+                        textGUI.getGUIThread().invokeLater(() -> {
+                            new MessageDialogBuilder()
+                                    .setTitle("Combat annulé")
+                                    .setText("L'adversaire a annulé le combat. Vous êtes redirigé vers l'écran de sélection d'adversaire.")
+                                    .addButton(MessageDialogButton.OK)
+                                    .build()
+                                    .showDialog(textGUI);
+                            
+                            fenetre.close();
+                            new EcranSelectionAdversaire(joueurDAO, textGUI, screen, pseudoJoueur, serviceCombat).afficher();
+                        });
+                    }
+                    
+                    // Attendre 1 seconde avant la prochaine vérification
+                    Thread.sleep(1000);
+                }
+            } catch (Exception e) {
+                System.err.println("Erreur lors de la vérification d'annulation du combat: " + e.getMessage());
+            }
+        });
+        
+        // Marquer le thread comme daemon pour qu'il se termine quand l'application se termine
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void afficherMessageErreur(String message) {

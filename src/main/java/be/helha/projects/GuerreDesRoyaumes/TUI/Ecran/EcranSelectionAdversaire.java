@@ -4,11 +4,15 @@ import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.screen.Screen;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -110,7 +114,7 @@ public class EcranSelectionAdversaire {
                 // Exécuter la recherche dans un thread séparé
                 actualiserListeJoueursActifs();
             }
-        }, 0, 2, TimeUnit.SECONDS);  // Actualiser tous les 2 secondes
+        }, 0, 500, TimeUnit.MILLISECONDS);  // Actualiser tous les 2 secondes
     }
 
     private void arreterRecherche() {
@@ -189,10 +193,17 @@ public class EcranSelectionAdversaire {
                                         boolean demandeAcceptee = combatDAO.accepterDemandeCombat(idDemandeur, joueurActuel.getId());
                                         
                                         if (demandeAcceptee) {
-                                            // Arrêter la recherche et passer à l'écran de préparation de combat
-                                            arreterRecherche();
-                                            fenetre.close();
-                                            new EcranPreparationCombat(joueurDAO, textGUI, screen, pseudoJoueur, demandeur.getPseudo(), serviceCombat).afficher();
+                                            // Ajouter les deux joueurs à la table des combats en cours
+                                            boolean combatAjoute = combatDAO.ajouterCombatEnCours(idDemandeur, joueurActuel.getId());
+                                            
+                                            if (combatAjoute) {
+                                                // Arrêter la recherche et passer à l'écran de préparation de combat
+                                                arreterRecherche();
+                                                fenetre.close();
+                                                new EcranPreparationCombat(joueurDAO, textGUI, screen, pseudoJoueur, demandeur.getPseudo(), serviceCombat).afficher();
+                                            } else {
+                                                afficherMessageErreur("Erreur lors de l'ajout du combat en cours");
+                                            }
                                         } else {
                                             afficherMessageErreur("Erreur lors de l'acceptation de la demande de combat");
                                         }
@@ -321,8 +332,54 @@ public class EcranSelectionAdversaire {
                 // Afficher un message de confirmation
                 afficherMessageInfo("Demande de combat envoyée à " + pseudoAdversaire + ". En attente de réponse...");
                 
-                // Continuer à rechercher pour voir si l'adversaire accepte
-                // La mise à jour se fait automatiquement via le thread de recherche existant
+                // Démarrer un thread de vérification pour voir si le joueur a été ajouté à un combat en cours
+                ScheduledExecutorService checkAcceptance = Executors.newScheduledThreadPool(1);
+                AtomicBoolean continuerVerification = new AtomicBoolean(true);
+                
+                checkAcceptance.scheduleAtFixedRate(() -> {
+                    if (continuerVerification.get()) {
+                        try {
+                            // Vérifier si le joueur est impliqué dans un combat en cours
+                            int idAdversaireCombat = combatDAO.verifierCombatEnCours(joueur.getId());
+                            
+                            if (idAdversaireCombat > 0) {
+                                // Un combat en cours a été trouvé, vérifier que c'est bien avec l'adversaire sélectionné
+                                if (idAdversaireCombat == adversaire.getId()) {
+                                    // Demande acceptée, on arrête la vérification
+                                    continuerVerification.set(false);
+                                    checkAcceptance.shutdown();
+                                    
+                                    // Passer à l'écran de préparation de combat
+                                    textGUI.getGUIThread().invokeLater(() -> {
+                                        arreterRecherche();
+                                        fenetre.close();
+                                        new EcranPreparationCombat(joueurDAO, textGUI, screen, pseudoJoueur, pseudoAdversaire, serviceCombat).afficher();
+                                    });
+                                }
+                            }
+                            
+                            // Vérifier aussi si l'adversaire est toujours actif
+                            boolean adversaireActif = joueurDAO.obtenirJoueursActifs().stream()
+                                                    .anyMatch(j -> j.getId() == adversaire.getId());
+                            
+                            if (!adversaireActif) {
+                                // L'adversaire n'est plus actif, arrêter la vérification
+                                continuerVerification.set(false);
+                                checkAcceptance.shutdown();
+                                
+                                // Supprimer la demande de combat
+                                combatDAO.supprimerDemandeCombat(joueur.getId(), adversaire.getId());
+                                
+                                // Informer le joueur
+                                textGUI.getGUIThread().invokeLater(() -> {
+                                    afficherMessageInfo("L'adversaire s'est déconnecté. La demande de combat a été annulée.");
+                                });
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Erreur lors de la vérification de l'acceptation: " + e.getMessage());
+                        }
+                    }
+                }, 1, 500, TimeUnit.MILLISECONDS); // Vérifier toutes les 500 millisecondes
             } else {
                 afficherMessageErreur("Erreur lors de l'envoi de la demande de combat");
             }
