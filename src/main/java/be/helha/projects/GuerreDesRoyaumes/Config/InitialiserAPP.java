@@ -95,20 +95,20 @@ public class InitialiserAPP {
         // Supprimer tous les items avant d'ajouter
         itemMongoDAO.supprimerTousLesItems();
 
-//        // ARMES //
-//        List<Arme> listeArme = new ArrayList<>();
-//        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en bois", 1, 10, 10));
-//        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en pierre", 1, 20, 20));
-//        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en fer", 1, 30, 30));
-//        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en or", 1, 40, 40));
-//        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en diamant", 1, 50, 50));
-//        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en netherite", 1, 60, 60));
-//        listeArme.add(new Arme(ItemIdGenerator.generateId(), "AK-47", 1, 1000, 5000));
-//
-//        for (Arme arme : listeArme) {
-//            itemMongoDAO.ajouterItem(arme);
-//            System.out.println("Ajouté : " + arme.getNom());
-//        }
+        // ARMES //
+        List<Arme> listeArme = new ArrayList<>();
+        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en bois", 1, 10, 10));
+        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en pierre", 1, 20, 20));
+        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en fer", 1, 30, 30));
+        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en or", 1, 40, 40));
+        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en diamant", 1, 50, 50));
+        listeArme.add(new Arme(ItemIdGenerator.generateId(), "épée en netherite", 1, 60, 60));
+        listeArme.add(new Arme(ItemIdGenerator.generateId(), "AK-47", 1, 1000, 5000));
+
+        for (Arme arme : listeArme) {
+            itemMongoDAO.ajouterItem(arme);
+            System.out.println("Ajouté : " + arme.getNom());
+        }
 
         // BOUCLIERS //
         List<Bouclier> listeBouclier = new ArrayList<>();
