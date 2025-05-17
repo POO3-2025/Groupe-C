@@ -253,4 +253,14 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
         return doc;
     }
 
+    public void supprimerTousLesItems() {
+        try {
+            itemCollection.deleteMany(new Document()); // supprime tous les documents
+            System.out.println("Tous les items ont été supprimés de la collection.");
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la suppression de tous les items : " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 }
