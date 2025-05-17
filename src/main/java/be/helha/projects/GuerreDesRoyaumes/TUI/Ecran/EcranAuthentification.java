@@ -67,4 +67,8 @@ public class EcranAuthentification {
         fenetre.setComponent(panel);
         textGUI.addWindowAndWait(fenetre);
     }
+    
+    public JoueurDAO getJoueurDAO() {
+        return joueurDAO;
+    }
 }

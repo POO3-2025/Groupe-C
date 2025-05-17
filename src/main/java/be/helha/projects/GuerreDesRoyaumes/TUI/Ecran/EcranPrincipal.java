@@ -54,6 +54,36 @@ public class EcranPrincipal {
             return;
         }
 
+        // Synchroniser avec les données MongoDB avant d'afficher
+        try {
+            // Récupérer le personnage depuis MongoDB
+            be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO =
+                be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl.getInstance();
+            Personnage personnageMongo = personnageMongoDAO.obtenirPersonnageParJoueurId(joueur.getId());
+            
+            if (personnageMongo != null) {
+                joueur.setPersonnage(personnageMongo);
+                joueurDAO.mettreAJourJoueur(joueur);
+            }
+            
+            // Récupérer le royaume depuis MongoDB
+            be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO =
+                be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
+            Royaume royaumeMongo = royaumeMongoDAO.obtenirRoyaumeParJoueurId(joueur.getId());
+            
+            if (royaumeMongo != null) {
+                if (joueur.getRoyaume() == null) {
+                    joueur.setRoyaume(royaumeMongo);
+                } else {
+                    joueur.getRoyaume().setNom(royaumeMongo.getNom());
+                    joueur.getRoyaume().setNiveau(royaumeMongo.getNiveau());
+                }
+                joueurDAO.mettreAJourJoueur(joueur);
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la synchronisation avec MongoDB: " + e.getMessage());
+        }
+
         Window fenetre = new BasicWindow("Guerre des Royaumes - Menu Principal");
         fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
 
@@ -158,6 +188,9 @@ public class EcranPrincipal {
             }
 
             try {
+                // Stocker l'ancien pseudo pour vérification
+                String ancienPseudo = joueur.getPseudo();
+                
                 // Mettre à jour les informations du joueur
                 joueur.setNom(nom);
                 joueur.setPrenom(prenom);
@@ -170,6 +203,16 @@ public class EcranPrincipal {
                 } else {
                     // Si le mot de passe reste inchangé
                     serviceAuthentification.mettreAJourJoueur(joueur);
+                }
+
+                // Si le pseudo a été modifié, créer une nouvelle instance d'EcranPrincipal
+                if (!ancienPseudo.equals(pseudo)) {
+                    fenetre.close();
+                    afficherMessageSucces("Profil mis à jour avec succès. Reconnexion avec le nouveau pseudo...");
+                    
+                    // Créer et afficher un nouvel écran principal avec le nouveau pseudo
+                    new EcranPrincipal(serviceAuthentification, joueurDAO, pseudo, screen).afficher();
+                    return;
                 }
 
                 fenetre.close();
@@ -201,8 +244,8 @@ public class EcranPrincipal {
                 be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl.getInstance();
             personnageMongo = personnageMongoDAO.obtenirPersonnageParJoueurId(joueur.getId());
 
-            // Si on trouve un personnage dans MongoDB mais pas dans le joueur, on le met à jour
-            if (personnageMongo != null && joueur.getPersonnage() == null) {
+            // Toujours mettre à jour le personnage depuis MongoDB s'il existe
+            if (personnageMongo != null) {
                 joueur.setPersonnage(personnageMongo);
                 try {
                     joueurDAO.mettreAJourJoueur(joueur);
@@ -252,8 +295,16 @@ public class EcranPrincipal {
         // Informations du personnage
         if (joueur.getPersonnage() != null) {
             panel.addComponent(new Label("Votre personnage actuel: " + joueur.getPersonnage().getClass().getSimpleName()));
+            // Afficher les statistiques du personnage
+            panel.addComponent(new Label("Points de vie: " + joueur.getPersonnage().getVie()));
+            panel.addComponent(new Label("Points d'attaque: " + joueur.getPersonnage().getDegats()));
+            panel.addComponent(new Label("Points de défense: " + joueur.getPersonnage().getResistance()));
         } else if (personnageMongo != null) {
             panel.addComponent(new Label("Votre personnage actuel (MongoDB): " + personnageMongo.getClass().getSimpleName()));
+            // Afficher les statistiques du personnage
+            panel.addComponent(new Label("Points de vie: " + personnageMongo.getVie()));
+            panel.addComponent(new Label("Points d'attaque: " + personnageMongo.getDegats()));
+            panel.addComponent(new Label("Points de défense: " + personnageMongo.getResistance()));
         } else {
             panel.addComponent(new Label("Vous n'avez pas encore choisi de personnage"));
         }
@@ -351,7 +402,14 @@ public class EcranPrincipal {
 
                     fenetre.close();
                     afficherMessageSucces("Personnage " + nomPersonnage + " sélectionné");
-                    afficher(); // Retour à l'écran principal
+                    // Récupérer le joueur avec les données à jour avant d'afficher l'écran principal
+                    Joueur joueurMisAJour = joueurDAO.obtenirJoueurParId(joueur.getId());
+                    if (joueurMisAJour != null) {
+                        afficher(); // Retour à l'écran principal avec des données à jour
+                    } else {
+                        afficherMessageErreur("Erreur lors de la récupération des données mises à jour du joueur");
+                        afficher(); // Retour à l'écran principal avec les données existantes
+                    }
                 } catch (Exception e) {
                     afficherMessageErreur("Erreur lors de la sélection du personnage: " + e.getMessage());
                     e.printStackTrace();

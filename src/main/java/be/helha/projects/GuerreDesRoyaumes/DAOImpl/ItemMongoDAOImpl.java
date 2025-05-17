@@ -41,24 +41,31 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
 
     public List<Item> obtenirTousLesItems() {
         List<Item> items = new ArrayList<>();
+        System.out.println("Tentative de récupération de tous les items depuis MongoDB...");
 
         try (MongoCursor<Document> cursor = itemCollection.find().iterator()) {
             while (cursor.hasNext()) {
                 Document doc = cursor.next();
+                System.out.println("Document trouvé: " + doc.toJson());
                 Item item = convertirDocumentEnItem(doc);
                 if (item != null) {
+                    System.out.println("Item converti avec succès: ID=" + item.getId() + ", Nom=" + item.getNom() + ", Type=" + item.getClass().getSimpleName());
                     items.add(item);
+                } else {
+                    System.err.println("Échec de la conversion du document en item: " + doc.toJson());
                 }
             }
+            System.out.println("Nombre total d'items récupérés: " + items.size());
         } catch (Exception e) {
             System.err.println("Erreur lors de la récupération des items: " + e.getMessage());
+            e.printStackTrace();
         }
 
         return items;
     }
 
     private Item convertirDocumentEnItem(Document doc) {
-        return null;
+        return fromDocument(doc);
     }
 
     private static double getAsDouble(Document doc, String key) {
@@ -111,7 +118,30 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
     }
 
     private Document convertirItemEnDocument(Item item) {
-        return null;
+        Document doc = new Document()
+            .append("id", item.getId())
+            .append("nom", item.getNom())
+            .append("quantiteMax", item.getQuantiteMax())
+            .append("type", item.getType())
+            .append("prix", item.getPrix());
+
+        // Ajouter des champs spécifiques selon le type d'item
+        if (item instanceof Arme) {
+            Arme arme = (Arme) item;
+            doc.append("degats", arme.getDegats());
+            doc.append("itemClass", "Arme");
+        } else if (item instanceof Bouclier) {
+            Bouclier bouclier = (Bouclier) item;
+            doc.append("defense", bouclier.getDefense());
+            doc.append("itemClass", "Bouclier");
+        } else if (item instanceof Potion) {
+            Potion potion = (Potion) item;
+            doc.append("soin", potion.getSoin());
+            doc.append("degats", potion.getDegats());
+            doc.append("itemClass", "Potion");
+        }
+
+        return doc;
     }
 
     @Override
@@ -136,30 +166,6 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
         }
     }
 
-
-    /**
-     * Vide la collection d'items et la réinitialise avec les items par défaut
-     * @return true si l'opération a réussi, false sinon
-     */
-    public boolean reinitialiserCollection() {
-        try {
-            itemCollection.drop();
-            System.out.println("Collection items supprimée");
-
-            // Recréer la collection
-            mongoDB.createCollection("items");
-            System.out.println("Collection items recréée");
-
-            return true;
-        } catch (Exception e) {
-            System.err.println("Erreur lors de la réinitialisation de la collection: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-
-
     // Méthode pour générer un nouvel ID unique
     public int genererNouvelId() {
         Document maxDoc = itemCollection.find()
@@ -171,33 +177,58 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
     }
 
     private static Item fromDocument(org.bson.Document doc) {
-        int id = doc.getInteger("id", 0);
-        String nom = doc.getString("nom");
-        int quantiteMax = doc.getInteger("quantiteMax", 1);
-        String type = doc.getString("type");
-        int prix = doc.getInteger("prix", 0);
-
-        if (type == null) type = "item";
-        type = type.toLowerCase();
-
-        if (type.contains("arme")) {
-            double degats = getAsDouble(doc, "degats");
-            return new Arme(id, nom, quantiteMax, prix, degats);
-        } else if (type.contains("bouclier")) {
-            double defense = getAsDouble(doc, "defense");
-            return new Bouclier(id, nom, quantiteMax, prix, defense);
-        } else if (type.contains("potion")) {
-            double degats = getAsDouble(doc, "degats");
-            double soin = getAsDouble(doc, "soin");
-            return new Potion(id, nom, quantiteMax, prix, degats, soin);
-        } else {
-            // Item générique si le type n'est pas reconnu
-            return new Item(id, nom, quantiteMax, type, prix) {
-                @Override
-                public void use() {
-                    System.out.println("Utilisation de l'item générique : " + getNom());
+        try {
+            int id = doc.getInteger("id", 0);
+            String nom = doc.getString("nom");
+            int quantiteMax = doc.getInteger("quantiteMax", 1);
+            int prix = doc.getInteger("prix", 0);
+            
+            // Utiliser itemClass en priorité, puis type comme fallback
+            String itemClass = doc.getString("itemClass");
+            String type = doc.getString("type");
+            
+            // Si itemClass est présent, l'utiliser pour déterminer le type
+            if (itemClass != null && !itemClass.isEmpty()) {
+                if (itemClass.equals("Arme")) {
+                    double degats = getAsDouble(doc, "degats");
+                    return new Arme(id, nom, quantiteMax, prix, degats);
+                } else if (itemClass.equals("Bouclier")) {
+                    double defense = getAsDouble(doc, "defense");
+                    return new Bouclier(id, nom, quantiteMax, prix, defense);
+                } else if (itemClass.equals("Potion")) {
+                    double degats = getAsDouble(doc, "degats");
+                    double soin = getAsDouble(doc, "soin");
+                    return new Potion(id, nom, quantiteMax, prix, degats, soin);
                 }
-            };
+            }
+            
+            // Fallback sur le champ type
+            if (type == null) type = "item";
+            type = type.toLowerCase();
+    
+            if (type.contains("arme")) {
+                double degats = getAsDouble(doc, "degats");
+                return new Arme(id, nom, quantiteMax, prix, degats);
+            } else if (type.contains("bouclier")) {
+                double defense = getAsDouble(doc, "defense");
+                return new Bouclier(id, nom, quantiteMax, prix, defense);
+            } else if (type.contains("potion")) {
+                double degats = getAsDouble(doc, "degats");
+                double soin = getAsDouble(doc, "soin");
+                return new Potion(id, nom, quantiteMax, prix, degats, soin);
+            } else {
+                // Item générique si le type n'est pas reconnu
+                return new Item(id, nom, quantiteMax, type, prix) {
+                    @Override
+                    public void use() {
+                        System.out.println("Utilisation de l'item générique : " + getNom());
+                    }
+                };
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la conversion du document en item: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 }

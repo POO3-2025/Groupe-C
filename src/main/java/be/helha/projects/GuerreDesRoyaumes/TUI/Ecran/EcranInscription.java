@@ -1,5 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
+import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
@@ -14,12 +15,14 @@ public class EcranInscription {
     private final WindowBasedTextGUI textGUI;
     private final Screen screen;
     private final EcranAuthentification ecranAuthentification;
+    private final JoueurDAO joueurDAO;
 
     public EcranInscription(ServiceAuthentification serviceAuthentification, WindowBasedTextGUI textGUI, Screen screen, EcranAuthentification ecranAuthentification) {
         this.serviceAuthentification = serviceAuthentification;
         this.textGUI = textGUI;
         this.screen = screen;
         this.ecranAuthentification = ecranAuthentification;
+        this.joueurDAO = ecranAuthentification.getJoueurDAO();
     }
 
     public void afficher() {
@@ -193,9 +196,14 @@ public class EcranInscription {
                     joueur.setPersonnage(personnage);
                     serviceAuthentification.mettreAJourJoueur(joueur);
 
+                    // Connecter le joueur
+                    serviceAuthentification.connecterJoueur(joueur.getPseudo());
+
                     fenetre.close();
                     afficherMessageSucces("Personnage " + nomPersonnage + " choisi avec succès");
-                    ecranAuthentification.afficher();
+                    
+                    // Rediriger vers l'écran principal au lieu de l'écran d'authentification
+                    new EcranPrincipal(serviceAuthentification, joueurDAO, joueur.getPseudo(), screen).afficher();
                 } catch (Exception e) {
                     afficherMessageErreur("Erreur lors du choix du personnage: " + e.getMessage());
                 }
@@ -203,11 +211,15 @@ public class EcranInscription {
             panel.addComponent(btnPersonnage);
         }
         
-        // Ajouter un bouton pour passer cette étape
+        // Ajouter un bouton pour passer cette étape avec redirection vers l'écran principal
         panel.addComponent(new EmptySpace());
         panel.addComponent(new Button("Passer cette étape", () -> {
+            // Connecter le joueur même s'il passe l'étape
+            serviceAuthentification.connecterJoueur(joueur.getPseudo());
+            
             fenetre.close();
-            ecranAuthentification.afficher();
+            // Rediriger vers l'écran principal
+            new EcranPrincipal(serviceAuthentification, joueurDAO, joueur.getPseudo(), screen).afficher();
         }));
 
         fenetre.setComponent(panel);
