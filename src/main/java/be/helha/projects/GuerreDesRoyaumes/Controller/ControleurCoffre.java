@@ -106,16 +106,7 @@ public class ControleurCoffre {
 
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
 
-            // Chercher l'item dans tous les items de MongoDB
-            List<Item> items = itemMongoDAO.obtenirTousLesItems();
-            Item item = null;
-            for (Item i : items) {
-                if (i.getId() == itemId) {
-                    item = i;
-                    break;
-                }
-            }
-            
+            Item item = itemMongoDAO.obtenirItemParId(itemId);
             if (item == null) {
                 throw new ItemNotFoundException(itemId);
             }
@@ -180,16 +171,7 @@ public class ControleurCoffre {
 
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
 
-            // Chercher l'item dans tous les items de MongoDB
-            List<Item> items = itemMongoDAO.obtenirTousLesItems();
-            Item item = null;
-            for (Item i : items) {
-                if (i.getId() == itemId) {
-                    item = i;
-                    break;
-                }
-            }
-            
+            Item item = itemMongoDAO.obtenirItemParId(itemId);
             if (item == null) {
                 throw new ItemNotFoundException(itemId);
             }
@@ -247,16 +229,7 @@ public class ControleurCoffre {
         try {
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
 
-            // Chercher l'item dans tous les items de MongoDB
-            List<Item> items = itemMongoDAO.obtenirTousLesItems();
-            Item item = null;
-            for (Item i : items) {
-                if (i.getId() == itemId) {
-                    item = i;
-                    break;
-                }
-            }
-            
+            Item item = itemMongoDAO.obtenirItemParId(itemId);
             if (item == null) {
                 throw new ItemNotFoundException(itemId);
             }

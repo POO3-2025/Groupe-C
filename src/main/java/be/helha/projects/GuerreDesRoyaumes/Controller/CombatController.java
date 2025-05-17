@@ -71,8 +71,9 @@ public class CombatController {
             return ResponseEntity.notFound().build();
         }
 
-        serviceCombat.executerTour(action);
-        return ResponseEntity.ok(serviceCombat.getStatutCombat());
+        String resultat = serviceCombat.executerAction(combat.getJoueur1(), combat.getJoueur2(),
+                action.getAction(), combat.getNombreTours());
+        return ResponseEntity.ok(resultat);
     }
 
 
@@ -83,12 +84,13 @@ public class CombatController {
     // Initialisation du combat
     public void initialiserCombat() {
         this.combatEnCours = new Combat(0, joueur1, joueur2, null, 0, java.time.LocalDateTime.now());
+        serviceCombat.initialiserCombat(joueur1, joueur2, null);
         preparerInventairesCombat();
     }
 
     // Initialisation du combat
     public void initialiserCombat(Joueur joueur1, Joueur joueur2) {
-        serviceCombat.initialiserCombat();
+        serviceCombat.initialiserCombat(joueur1, joueur2, null);
         this.combatEnCours = new Combat(0, joueur1, joueur2, null, 0, java.time.LocalDateTime.now());
         preparerInventairesCombat();
     }
@@ -124,10 +126,10 @@ public class CombatController {
         Coffre coffre = joueur.getCoffre();
         Inventaire inventaire = joueur.getPersonnage().getInventaire();
 
-       if (inventaire == null) {
-           inventaire = new Inventaire();
-              joueur.getPersonnage().setInventaire(inventaire);
-       }
+        if (inventaire == null) {
+            inventaire = new Inventaire();
+            joueur.getPersonnage().setInventaire(inventaire);
+        }
 
         for (Slot slot : coffre.getSlots()) {
             if (slot.getItem() != null && slot.getQuantity() > 0) {
@@ -183,7 +185,7 @@ public class CombatController {
 
         if ("Attaque".equals(action1.getAction())) {
             int degats = calculerDegats(p1, p2);
-            p2.setVie(p2.getVie() - degats);
+            p2.setPointsDeVie(p2.getPointsDeVie() - degats);
 
             if (estMort(p2)) {
                 System.out.println(p2.getNom() + " est mort !");
@@ -217,13 +219,13 @@ public class CombatController {
     }
 
     private boolean estMort(Personnage personnage) {
-        return personnage.getVie() <= 0;
+        return personnage.getPointsDeVie() <= 0;
     }
     // Gestion fin de combat
     private boolean checkFinCombat() {
         return combatEnCours.getNombreTours() >= 5 ||
-                combatEnCours.getJoueur1().getPersonnage().getVie() <= 0 ||
-                combatEnCours.getJoueur2().getPersonnage().getVie() <= 0;
+                combatEnCours.getJoueur1().getPersonnage().getPointsDeVie() <= 0 ||
+                combatEnCours.getJoueur2().getPersonnage().getPointsDeVie() <= 0;
     }
 
     private void terminerCombat() {
@@ -236,10 +238,10 @@ public class CombatController {
         Joueur j1 = combatEnCours.getJoueur1();
         Joueur j2 = combatEnCours.getJoueur2();
 
-        if (j1.getPersonnage().getVie() == j2.getPersonnage().getVie()) {
+        if (j1.getPersonnage().getPointsDeVie() == j2.getPersonnage().getPointsDeVie()) {
             combatEnCours.setVainqueur(null);
         } else {
-            combatEnCours.setVainqueur(j1.getPersonnage().getVie() > j2.getPersonnage().getVie() ? j1 : j2);
+            combatEnCours.setVainqueur(j1.getPersonnage().getPointsDeVie() > j2.getPersonnage().getPointsDeVie() ? j1 : j2);
         }
     }
 
@@ -299,8 +301,8 @@ public class CombatController {
 
         return "Tour " + combatEnCours.getNombreTours() + "/5\n" +
                 combatEnCours.getJoueur1().getPseudo() + ": " +
-                combatEnCours.getJoueur1().getPersonnage().getVie() + " PV\n" +
+                combatEnCours.getJoueur1().getPersonnage().getPointsDeVie() + " PV\n" +
                 combatEnCours.getJoueur2().getPseudo() + ": " +
-                combatEnCours.getJoueur2().getPersonnage().getVie() + " PV";
+                combatEnCours.getJoueur2().getPersonnage().getPointsDeVie() + " PV";
     }
 }

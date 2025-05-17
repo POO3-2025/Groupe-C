@@ -5,5 +5,15 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import java.util.List;
 
 public interface ItemMongoDAO {
-    public List<Item> obtenirTousLesItems();
+    List<Item> obtenirItemsParType(String type);
+
+    Item obtenirItemParId(int id);
+
+    void ajouterItem(Item item);
+
+    void mettreAJourItem(Item item);
+
+    void supprimerItem(int id);
+
+    List<Item> obtenirTousLesItems();
 }

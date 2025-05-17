@@ -1,7 +1,13 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI;
 
+import be.helha.projects.GuerreDesRoyaumes.Config.*;
 import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
 import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
+import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.MongoDBConfigManager;
+import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.SQLConfigManager;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CoffreMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.InventaireMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceAuthentificationImpl;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
@@ -33,6 +39,11 @@ public class Main {
             // Initialisation des DAOs
             JoueurDAOImpl joueurDAO = JoueurDAOImpl.getInstance();
 
+            // Initialiser les DAOs MongoDB
+            ItemMongoDAOImpl itemDAO = ItemMongoDAOImpl.getInstance();
+            CoffreMongoDAOImpl coffreDAO = CoffreMongoDAOImpl.getInstance();
+            InventaireMongoDAOImpl inventaireDAO = InventaireMongoDAOImpl.getInstance();
+
 
                 joueurDAO.setConnection(sqlConnection);
                 System.out.println("DAOs initialisés avec les connexions SQL");
@@ -47,8 +58,9 @@ public class Main {
             terminalFactory.setInitialTerminalSize(new TerminalSize(80, 24));
             SwingTerminalFrame terminal = terminalFactory.createSwingTerminal();
             terminal.setVisible(true);
-            terminal.setResizable(true);
+            terminal.setResizable(true); // Désactiver la redimension
 
+            // Création de l'écran à partir du terminal
             screen = new TerminalScreen(terminal);
             screen.startScreen();
             WindowBasedTextGUI textGUI = new MultiWindowTextGUI(screen);

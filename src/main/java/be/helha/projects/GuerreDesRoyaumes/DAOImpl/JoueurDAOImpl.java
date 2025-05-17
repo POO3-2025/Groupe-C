@@ -1,5 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
+import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
@@ -139,9 +140,27 @@ public class JoueurDAOImpl implements JoueurDAO {
             System.out.println("DEBUG: Création du coffre par défaut");
             Coffre coffre = new Coffre();
 
-            // Le personnage et le royaume seront gérés par leurs DAOs respectifs
-            System.out.println("DEBUG: Pas de récupération du personnage (sera géré par PersonnageDAO)");
+            // Création du personnage si id_personnage existe
             Personnage personnage = null;
+
+            try {
+                // Vérifier si la colonne id_personnage existe
+                if (verifierExistenceColonne(tableName, "id_personnage")) {
+                    int personnageId = resultSet.getInt("id_personnage");
+                    if (personnageId > 0 && !resultSet.wasNull()) {
+                        System.out.println("DEBUG: ID personnage trouvé: " + personnageId);
+                        // Décider quel type de personnage créer
+                        // Cette logique est simplifiée - dans un vrai système vous auriez une table personnage
+                        // Pour l'instant, on crée simplement un guerrier par défaut
+                        personnage = new Guerrier();
+                        System.out.println("DEBUG: Personnage créé (Guerrier par défaut)");
+                    }
+                } else {
+                    System.out.println("DEBUG: Pas de colonne id_personnage dans la table joueur");
+                }
+            } catch (Exception e) {
+                System.out.println("DEBUG: Erreur lors de la récupération du personnage: " + e.getMessage());
+            }
 
             System.out.println("DEBUG: Pas de récupération du royaume (sera géré par RoyaumeDAO)");
             Royaume royaume = null;
@@ -344,7 +363,22 @@ public class JoueurDAOImpl implements JoueurDAO {
             Coffre coffre = new Coffre();
             System.out.println("DEBUG: Création d'un joueur simple: " + pseudo);
 
-            return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, null, null, coffre, victoires, defaites);
+            // Essayer de récupérer le personnage si possible
+            Personnage personnage = null;
+            try {
+                if (verifierExistenceColonne(tableName, "id_personnage")) {
+                    int personnageId = rs.getInt("id_personnage");
+                    if (personnageId > 0 && !rs.wasNull()) {
+                        // Nous créons un Guerrier par défaut
+                        personnage = new Guerrier();
+                        System.out.println("DEBUG: Personnage créé pour joueur simple: Guerrier");
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("DEBUG: Pas de personnage pour le joueur simple");
+            }
+
+            return new Joueur(id, nom, prenom, pseudo, motDePasse, argent, null, personnage, coffre, victoires, defaites);
         } catch (SQLException e) {
             System.err.println("ERREUR création joueur simple: " + e.getMessage());
             e.printStackTrace();
@@ -367,11 +401,44 @@ public class JoueurDAOImpl implements JoueurDAO {
         return joueurs;
     }
 
+    @Override
+    public List<Joueur> obtenirJoueursActifs() {
+        List<Joueur> joueursActifs = new ArrayList<>();
+        // Vérifier si la colonne actif_joueur existe
+        boolean colonneExiste = verifierExistenceColonne(tableName, "actif_joueur");
+        if (!colonneExiste) {
+            System.out.println("DEBUG: La colonne actif_joueur n'existe pas encore. Retour de tous les joueurs.");
+            return obtenirTousLesJoueurs();
+        }
+
+        try {
+            String sql = "SELECT * FROM " + tableName + " WHERE actif_joueur = 1";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                ResultSet resultSet = statement.executeQuery();
+                while (resultSet.next()) {
+                    joueursActifs.add(extraireJoueurDeResultSet(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération des joueurs actifs: " + e.getMessage());
+            // En cas d'erreur, retourner tous les joueurs pour ne pas bloquer la sélection
+            return obtenirTousLesJoueurs();
+        }
+
+        // Si aucun joueur actif n'est trouvé, retourner tous les joueurs
+        if (joueursActifs.isEmpty()) {
+            System.out.println("DEBUG: Aucun joueur actif trouvé. Retour de tous les joueurs.");
+            return obtenirTousLesJoueurs();
+        }
+
+        return joueursActifs;
+    }
+
     // Update
     @Override
     public void mettreAJourJoueur(Joueur joueur) {
-        // Version simple qui ne met à jour que les colonnes existantes
-        String sqlJoueur = "UPDATE joueur SET nom_joueur = ?, prenom_joueur = ?, pseudo_joueur = ?, motDePasse_joueur = ?, argent_joueur = ? WHERE id_joueur = ?";
+        // Version améliorée qui met à jour les colonnes existantes et l'association avec le personnage
+        String sqlJoueur = "UPDATE " + tableName + " SET nom_joueur = ?, prenom_joueur = ?, pseudo_joueur = ?, motDePasse_joueur = ?, argent_joueur = ? WHERE id_joueur = ?";
 
         try {
             // Mise à jour du joueur
@@ -385,9 +452,83 @@ public class JoueurDAOImpl implements JoueurDAO {
                 stmtJoueur.executeUpdate();
                 System.out.println("Joueur mis à jour avec succès, nouvel argent: " + joueur.getArgent());
             }
+
+            // Mise à jour additionnelle: sauvegarde de l'association avec le personnage
+            if (joueur.getPersonnage() != null) {
+                // Vérifier si la colonne id_personnage existe
+                boolean colonnePersonnageExiste = verifierExistenceColonne(tableName, "id_personnage");
+
+                if (!colonnePersonnageExiste) {
+                    // Créer la colonne si elle n'existe pas
+                    try (PreparedStatement stmtAlter = connection.prepareStatement(
+                            "ALTER TABLE " + tableName + " ADD id_personnage INT NULL")) {
+                        stmtAlter.executeUpdate();
+                    }
+                }
+
+                // Sauvegarder l'association (temporairement en utilisant le hashCode du personnage comme ID)
+                int personnageId = joueur.getPersonnage().hashCode();
+                try (PreparedStatement stmtPersonnage = connection.prepareStatement(
+                        "UPDATE " + tableName + " SET id_personnage = ? WHERE id_joueur =?")) {
+                    stmtPersonnage.setInt(1, personnageId);
+                    stmtPersonnage.setInt(2, joueur.getId());
+                    stmtPersonnage.executeUpdate();
+                    System.out.println("Association joueur-personnage mise à jour: Personnage ID=" + personnageId);
+                }
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             throw new RuntimeException("Erreur lors de la mise à jour du joueur : " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void definirStatutConnexion(int id, boolean estActif) {
+        // Vérifier si la colonne actif_joueur existe
+        boolean colonneExiste = verifierExistenceColonne(tableName, "actif_joueur");
+        if (!colonneExiste) {
+            // Créer la colonne si elle n'existe pas
+            try (PreparedStatement stmtAlter = connection.prepareStatement(
+                    "ALTER TABLE " + tableName + " ADD actif_joueur BIT NOT NULL DEFAULT 0")) {
+                stmtAlter.executeUpdate();
+                System.out.println("DEBUG: Colonne actif_joueur ajoutée à la table " + tableName);
+            } catch (SQLException e) {
+                throw new DatabaseException("Erreur lors de l'ajout de la colonne actif_joueur", e);
+            }
+        }
+
+        // Mettre à jour le statut de connexion
+        String sql = "UPDATE " + tableName + " SET actif_joueur = ? WHERE id_joueur = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setBoolean(1, estActif);
+            statement.setInt(2, id);
+            int rowsAffected = statement.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new JoueurNotFoundException(id);
+            }
+            System.out.println("DEBUG: Statut de connexion du joueur ID=" + id + " mis à jour: " + (estActif ? "connecté" : "déconnecté"));
+        } catch (SQLException e) {
+            throw new DatabaseException("Erreur lors de la mise à jour du statut de connexion du joueur", e);
+        }
+    }
+
+    /**
+     * Vérifie si une colonne existe dans une table
+     * @param table Nom de la table
+     * @param colonne Nom de la colonne
+     * @return true si la colonne existe, false sinon
+     */
+    private boolean verifierExistenceColonne(String table, String colonne) {
+        try {
+            PreparedStatement stmt = connection.prepareStatement(
+                    "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?");
+            stmt.setString(1, table);
+            stmt.setString(2, colonne);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 

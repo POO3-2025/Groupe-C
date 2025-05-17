@@ -7,9 +7,14 @@ import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Golem;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceBoutique;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
@@ -88,15 +93,17 @@ public class EcranPrincipal {
 
         panel.addComponent(new Button("Combattre", () -> {
             fenetre.close();
-            try {
-                afficherEcranCombat(joueur);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            afficherEcranCombat(joueur);
         }));
 
         panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        panel.addComponent(new Button("Déconnexion", fenetre::close));
+        panel.addComponent(new Button("Déconnexion", () -> {
+            // Déconnecter le joueur
+            if (serviceAuthentification != null) {
+                serviceAuthentification.deconnecterJoueur(joueur.getPseudo());
+            }
+            fenetre.close();
+        }));
 
         fenetre.setComponent(panel);
         textGUI.addWindowAndWait(fenetre);
@@ -107,7 +114,7 @@ public class EcranPrincipal {
         fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
 
         Panel panel = new Panel(new GridLayout(2));
-        
+
         // Champs de modification
         panel.addComponent(new Label("Nom :"));
         TextBox nomBox = new TextBox(joueur.getNom());
@@ -155,7 +162,7 @@ public class EcranPrincipal {
                 joueur.setNom(nom);
                 joueur.setPrenom(prenom);
                 joueur.setPseudo(pseudo);
-                
+
                 // Utiliser le service d'authentification pour mettre à jour le joueur
                 if (!motDePasse.isEmpty()) {
                     // Si un nouveau mot de passe est fourni
@@ -164,7 +171,7 @@ public class EcranPrincipal {
                     // Si le mot de passe reste inchangé
                     serviceAuthentification.mettreAJourJoueur(joueur);
                 }
-                
+
                 fenetre.close();
                 afficherMessageSucces("Profil mis à jour avec succès");
                 afficher();
@@ -190,10 +197,10 @@ public class EcranPrincipal {
         // Tenter de récupérer le personnage depuis MongoDB
         Personnage personnageMongo = null;
         try {
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO = 
+            be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO =
                 be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl.getInstance();
             personnageMongo = personnageMongoDAO.obtenirPersonnageParJoueurId(joueur.getId());
-            
+
             // Si on trouve un personnage dans MongoDB mais pas dans le joueur, on le met à jour
             if (personnageMongo != null && joueur.getPersonnage() == null) {
                 joueur.setPersonnage(personnageMongo);
@@ -206,26 +213,26 @@ public class EcranPrincipal {
         } catch (Exception e) {
             System.err.println("Erreur lors de la récupération du personnage dans MongoDB: " + e.getMessage());
         }
-        
+
         // Tenter de récupérer le royaume depuis MongoDB
         Royaume royaumeMongo = null;
         try {
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO = 
+            be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO =
                 be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
             royaumeMongo = royaumeMongoDAO.obtenirRoyaumeParJoueurId(joueur.getId());
-            
+
             // Si on trouve un royaume dans MongoDB mais pas dans le joueur ou si les noms sont différents, on le met à jour
-            if (royaumeMongo != null && 
-                (joueur.getRoyaume() == null || 
+            if (royaumeMongo != null &&
+                (joueur.getRoyaume() == null ||
                  !joueur.getRoyaume().getNom().equals(royaumeMongo.getNom()))) {
-                
+
                 if (joueur.getRoyaume() == null) {
                     joueur.setRoyaume(royaumeMongo);
                 } else {
                     joueur.getRoyaume().setNom(royaumeMongo.getNom());
                     joueur.getRoyaume().setNiveau(royaumeMongo.getNiveau());
                 }
-                
+
                 try {
                     joueurDAO.mettreAJourJoueur(joueur);
                 } catch (Exception e) {
@@ -237,11 +244,11 @@ public class EcranPrincipal {
         }
 
         Panel panel = new Panel(new GridLayout(1));
-        
+
         // Informations principales
         panel.addComponent(new Label("=== Informations du Joueur ==="));
         panel.addComponent(new Label("Pseudo: " + joueur.getPseudo()));
-        
+
         // Informations du personnage
         if (joueur.getPersonnage() != null) {
             panel.addComponent(new Label("Votre personnage actuel: " + joueur.getPersonnage().getClass().getSimpleName()));
@@ -250,7 +257,7 @@ public class EcranPrincipal {
         } else {
             panel.addComponent(new Label("Vous n'avez pas encore choisi de personnage"));
         }
-        
+
         panel.addComponent(new Label("Argent: " + joueur.getArgent() + " TerraCoins"));
         panel.addComponent(new Label("Victoires: " + joueur.getVictoires()));
         panel.addComponent(new Label("Défaites: " + joueur.getDefaites()));
@@ -273,7 +280,7 @@ public class EcranPrincipal {
             fenetre.close();
             afficherEcranGestionProfil(joueur);
         }));
-        
+
         boutonsPanel.addComponent(new Button("Choisir Personnage", () -> {
             fenetre.close();
             afficherEcranChoixPersonnage(joueur);
@@ -294,9 +301,9 @@ public class EcranPrincipal {
         fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
 
         Panel panel = new Panel(new GridLayout(1));
-        
+
         panel.addComponent(new Label("=== Choisissez votre Personnage ==="));
-        
+
         // Liste des personnages disponibles
         String[] personnages = {"Guerrier", "Voleur", "Golem", "Titan"};
         for (String nomPersonnage : personnages) {
@@ -304,7 +311,7 @@ public class EcranPrincipal {
                 try {
                     // Création du personnage selon le type choisi
                     Personnage personnage = null;
-                    
+
                     switch (nomPersonnage) {
                         case "Guerrier":
                             personnage = new Guerrier();
@@ -321,13 +328,13 @@ public class EcranPrincipal {
                         default:
                             throw new IllegalArgumentException("Type de personnage non reconnu");
                     }
-                    
+
                     // Vérifier si un personnage existe déjà dans MongoDB
-                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO = 
+                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO =
                         be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl.getInstance();
-                    
+
                     Personnage personnageExistant = personnageMongoDAO.obtenirPersonnageParJoueurId(joueur.getId());
-                    
+
                     if (personnageExistant != null) {
                         // Si un personnage existe déjà, on le met à jour
                         personnageMongoDAO.mettreAJourPersonnage(personnage, joueur.getId());
@@ -337,11 +344,11 @@ public class EcranPrincipal {
                         personnageMongoDAO.ajouterPersonnage(personnage, joueur.getId());
                         System.out.println("Personnage créé dans MongoDB pour le joueur: " + joueur.getId());
                     }
-                    
+
                     // Mettre à jour le joueur avec le personnage
                     joueur.setPersonnage(personnage);
                     joueurDAO.mettreAJourJoueur(joueur);
-                    
+
                     fenetre.close();
                     afficherMessageSucces("Personnage " + nomPersonnage + " sélectionné");
                     afficher(); // Retour à l'écran principal
@@ -370,92 +377,92 @@ public class EcranPrincipal {
         try {
             // Charger le contenu du coffre depuis MongoDB
             coffreService.chargerCoffre(joueur);
-            
+
             // Vérifier si le coffre est initialisé après le chargement
             if (joueur.getCoffre() == null) {
                 joueur.setCoffre(new Coffre());
             }
-            
+
             // Créer et afficher l'écran de gestion du coffre
             Panel panel = new Panel(new GridLayout(1));
             Window fenetre = new BasicWindow("Gestion du Coffre - " + joueur.getPseudo());
             fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
-            
+
             // En-tête
             panel.addComponent(new Label("═══ Coffre de " + joueur.getPseudo() + " ═══"));
             panel.addComponent(new Label("Or disponible: " + joueur.getArgent() + " TerraCoins"));
             panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-            
+
             // Afficher le contenu du coffre
             List<Slot> slots = joueur.getCoffre().getSlots();
             boolean coffreVide = true;
-            
+
             Panel contenuPanel = new Panel(new GridLayout(5));
             contenuPanel.addComponent(new Label("ID"));
             contenuPanel.addComponent(new Label("Nom"));
             contenuPanel.addComponent(new Label("Type"));
             contenuPanel.addComponent(new Label("Prix"));
             contenuPanel.addComponent(new Label("Quantité"));
-            
+
             // Calculer la valeur totale du coffre et la valeur de vente ici
             int totalValeurCoffre = 0;
-            
+
             for (Slot slot : slots) {
                 if (slot != null && slot.getItem() != null && slot.getQuantity() > 0) {
                     coffreVide = false;
                     Item item = slot.getItem();
-                    
+
                     contenuPanel.addComponent(new Label(String.valueOf(item.getId())));
                     contenuPanel.addComponent(new Label(item.getNom()));
                     contenuPanel.addComponent(new Label(item.getType()));
                     contenuPanel.addComponent(new Label(String.valueOf(item.getPrix())));
                     contenuPanel.addComponent(new Label(String.valueOf(slot.getQuantity())));
-                    
+
                     // Ajouter le prix de l'item à la valeur totale
                     totalValeurCoffre += item.getPrix() * slot.getQuantity();
                 }
             }
-            
+
             // Calculer la valeur de vente une seule fois
             final int valeurTotale = totalValeurCoffre;
             final int valeurVente = totalValeurCoffre / 2;
-            
+
             if (coffreVide) {
                 panel.addComponent(new Label("Votre coffre est vide"));
             } else {
                 panel.addComponent(contenuPanel);
-                
+
                 // Afficher la valeur totale et la valeur de vente
                 panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
                 panel.addComponent(new Label("Valeur totale du coffre: " + valeurTotale + " TerraCoins"));
                 panel.addComponent(new Label("Valeur de vente (50%): " + valeurVente + " TerraCoins"));
-                
+
                 // Ajouter des options de gestion
                 panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
                 panel.addComponent(new Label("Options:"));
-                
+
                 Panel optionsPanel = new Panel(new GridLayout(2));
                 optionsPanel.addComponent(new Label("ID Item:"));
                 TextBox idBox = new TextBox();
                 optionsPanel.addComponent(idBox);
-                
+
                 optionsPanel.addComponent(new Label("Quantité:"));
                 TextBox quantiteBox = new TextBox().setText("1");
                 optionsPanel.addComponent(quantiteBox);
-                
+
                 panel.addComponent(optionsPanel);
-                
+
                 Panel boutonsPanel = new Panel(new GridLayout(3));
-                
+
                 // Bouton Retirer Item
                 boutonsPanel.addComponent(new Button("Retirer", () -> {
                     try {
                         int itemId = Integer.parseInt(idBox.getText());
                         int quantite = Integer.parseInt(quantiteBox.getText());
-                        
+
                         // Retirer l'item avec la méthode du service
                         boolean success = coffreService.retirerItemDuCoffre(joueur, itemId, quantite);
-                        
+
                         if (success) {
                             afficherMessageSucces("Item retiré avec succès");
                             // Fermer et réafficher l'écran pour actualiser
@@ -468,13 +475,13 @@ public class EcranPrincipal {
                         afficherMessageErreur("Veuillez entrer des valeurs numériques valides");
                     }
                 }));
-                
+
                 // Bouton Vendre Item
                 boutonsPanel.addComponent(new Button("Vendre Item", () -> {
                     try {
                         int itemId = Integer.parseInt(idBox.getText());
                         int quantite = Integer.parseInt(quantiteBox.getText());
-                        
+
                         // Trouver l'item dans le coffre
                         Item itemAVendre = null;
                         for (Slot slot : slots) {
@@ -483,35 +490,35 @@ public class EcranPrincipal {
                                 break;
                             }
                         }
-                        
+
                         if (itemAVendre == null) {
                             afficherMessageErreur("Item non trouvé dans le coffre");
                             return;
                         }
-                        
+
                         // Calculer le prix de vente (50% du prix original)
                         int prixVente = (itemAVendre.getPrix() * quantite) / 2;
-                        
+
                         // Demander confirmation
                         MessageDialogBuilder confirmDialog = new MessageDialogBuilder()
                                 .setTitle("Confirmation de vente")
                                 .setText("Voulez-vous vendre " + quantite + "x " + itemAVendre.getNom() + " pour " + prixVente + " TerraCoins? (50% du prix original)")
                                 .addButton(MessageDialogButton.Yes)
                                 .addButton(MessageDialogButton.No);
-                        
+
                         MessageDialogButton reponse = confirmDialog.build().showDialog(textGUI);
-                        
+
                         if (reponse == MessageDialogButton.Yes) {
                             // Retirer l'item du coffre
                             boolean success = coffreService.retirerItemDuCoffre(joueur, itemId, quantite);
-                            
+
                             if (success) {
                                 // Ajouter l'argent au joueur
                                 joueur.ajouterArgent(prixVente);
                                 joueurDAO.mettreAJourJoueur(joueur);
-                                
+
                                 afficherMessageSucces("Item vendu avec succès! Vous avez gagné " + prixVente + " TerraCoins.");
-                                
+
                                 // Fermer et réafficher l'écran pour actualiser
                                 fenetre.close();
                                 afficherEcranGestionCoffre(joueur);
@@ -523,29 +530,29 @@ public class EcranPrincipal {
                         afficherMessageErreur("Veuillez entrer des valeurs numériques valides");
                     }
                 }));
-                
+
                 // Bouton Vendre Tout - Utilisant les variables finales
                 boutonsPanel.addComponent(new Button("Vendre Tout", () -> {
                     // Demander confirmation - Utiliser les variables finales
                     MessageDialogBuilder confirmDialog = new MessageDialogBuilder()
                             .setTitle("Confirmation de vente")
-                            .setText("Voulez-vous vendre tout le contenu du coffre pour " + valeurVente + 
+                            .setText("Voulez-vous vendre tout le contenu du coffre pour " + valeurVente +
                                     " TerraCoins? (50% du prix original total de " + valeurTotale + " TerraCoins)")
                             .addButton(MessageDialogButton.Yes)
                             .addButton(MessageDialogButton.No);
-                    
+
                     MessageDialogButton reponse = confirmDialog.build().showDialog(textGUI);
-                    
+
                     if (reponse == MessageDialogButton.Yes) {
                         // Vider le coffre
                         if (coffreService.viderCoffre(joueur)) {
                             // Ajouter l'argent au joueur en utilisant la variable finale
                             joueur.ajouterArgent(valeurVente);
                             joueurDAO.mettreAJourJoueur(joueur);
-                            
-                            afficherMessageSucces("Tous les items ont été vendus avec succès! Vous avez gagné " + 
+
+                            afficherMessageSucces("Tous les items ont été vendus avec succès! Vous avez gagné " +
                                                   valeurVente + " TerraCoins.");
-                            
+
                             // Fermer et réafficher l'écran pour actualiser
                             fenetre.close();
                             afficherEcranGestionCoffre(joueur);
@@ -554,16 +561,16 @@ public class EcranPrincipal {
                         }
                     }
                 }));
-                
+
                 panel.addComponent(boutonsPanel);
             }
-            
+
             panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
             panel.addComponent(new Button("Retour", () -> {
                 fenetre.close();
                 afficher(); // Retour à l'écran principal
             }));
-            
+
             fenetre.setComponent(panel);
             textGUI.addWindowAndWait(fenetre);
         } catch (Exception e) {
@@ -601,13 +608,13 @@ public class EcranPrincipal {
                 return;
             }
         }
-        
+
         // Récupérer également le royaume depuis MongoDB pour s'assurer qu'il est correctement synchronisé
         try {
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO = 
+            be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO =
                 be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
             Royaume royaumeMongo = royaumeMongoDAO.obtenirRoyaumeParJoueurId(joueur.getId());
-            
+
             // Si le royaume existe dans MongoDB mais a un nom différent, synchroniser avec l'objet joueur
             if (royaumeMongo != null && !joueur.getRoyaume().getNom().equals(royaumeMongo.getNom())) {
                 joueur.getRoyaume().setNom(royaumeMongo.getNom());
@@ -621,37 +628,37 @@ public class EcranPrincipal {
         } catch (Exception e) {
             System.err.println("Erreur lors de la récupération du royaume depuis MongoDB: " + e.getMessage());
         }
-        
+
         // Créer la fenêtre de gestion du royaume
         Window fenetre = new BasicWindow("Gestion du Royaume - Guerre des Royaumes");
         fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
 
         Panel panel = new Panel(new GridLayout(2));
-        
+
         // Informations actuelles du royaume
         panel.addComponent(new Label("Nom actuel du royaume:"));
         panel.addComponent(new Label(joueur.getRoyaume().getNom()));
-        
+
         panel.addComponent(new Label("Niveau actuel:"));
         panel.addComponent(new Label(String.valueOf(joueur.getRoyaume().getNiveau())));
-        
+
         // Champ pour modifier le nom du royaume
         panel.addComponent(new Label("Nouveau nom du royaume:"));
         TextBox nomRoyaumeBox = new TextBox(joueur.getRoyaume().getNom());
         panel.addComponent(nomRoyaumeBox);
-        
+
         panel.addComponent(new EmptySpace());
         panel.addComponent(new Button("Sauvegarder", () -> {
             String nouveauNom = nomRoyaumeBox.getText();
-            
+
             if (nouveauNom.isEmpty()) {
                 afficherMessageErreur("Le nom du royaume ne peut pas être vide");
                 return;
             }
-            
+
             // Mettre à jour le nom du royaume
             joueur.getRoyaume().setNom(nouveauNom);
-            
+
             // Mettre à jour dans SQL
             try {
                 joueurDAO.mettreAJourJoueur(joueur);
@@ -659,122 +666,61 @@ public class EcranPrincipal {
                 afficherMessageErreur("Erreur lors de la mise à jour du royaume dans SQL: " + e.getMessage());
                 return;
             }
-            
+
             // Mettre à jour dans MongoDB
             try {
-                be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO = 
+                be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO =
                     be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
-                
+
                 Royaume royaumeMongo = royaumeMongoDAO.obtenirRoyaumeParJoueurId(joueur.getId());
                 if (royaumeMongo != null) {
                     royaumeMongoDAO.mettreAJourRoyaume(joueur.getRoyaume(), joueur.getId());
                 } else {
                     royaumeMongoDAO.ajouterRoyaume(joueur.getRoyaume(), joueur.getId());
                 }
-                
+
                 afficherMessageSucces("Royaume mis à jour avec succès");
                 fenetre.close();
                 afficher();
-                
+
             } catch (Exception e) {
                 afficherMessageErreur("Erreur lors de la mise à jour du royaume dans MongoDB: " + e.getMessage());
                 e.printStackTrace();
             }
         }));
-        
+
         // Autres options de gestion du royaume (à développer ultérieurement)
         panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
         panel.addComponent(new EmptySpace());
-        
+
         // Bouton retour
         panel.addComponent(new EmptySpace());
         panel.addComponent(new Button("Retour", () -> {
             fenetre.close();
             afficher();
         }));
-        
+
         fenetre.setComponent(panel);
         textGUI.addWindowAndWait(fenetre);
     }
 
-    private void afficherEcranCombat(Joueur joueur) throws SQLException {
+    private void afficherEcranCombat(Joueur joueur) {
         // Vérifier si le joueur a un personnage
         if (joueur.getPersonnage() == null) {
             afficherMessageErreur("Vous devez d'abord choisir un personnage avant de combattre.");
             return;
         }
 
-        // Obtenir la liste des joueurs disponibles pour le combat
-        List<Joueur> adversairesPotentiels = joueurDAO.obtenirTousLesJoueurs();
-        adversairesPotentiels.removeIf(j ->
-                j.getPseudo().equals(joueur.getPseudo()) || // Enlever le joueur actuel
-                        j.getPersonnage() == null // Enlever les joueurs sans personnage
-        );
-
-        if (adversairesPotentiels.isEmpty()) {
-            afficherMessageErreur("Aucun adversaire disponible pour le combat. Assurez-vous qu'il y a au moins un autre joueur avec un personnage.");
-            return;
-        }
-
-        // Créer une fenêtre pour choisir l'adversaire
-        Window fenetreAdversaire = new BasicWindow("Choisir un adversaire");
-        Panel panelAdversaire = new Panel(new GridLayout(1));
-        panelAdversaire.addComponent(new Label("Choisissez votre adversaire :"));
-
-        // Ajouter un bouton pour chaque adversaire potentiel
-        for (Joueur adversaire : adversairesPotentiels) {
-            Button boutonAdversaire = new Button(adversaire.getPseudo() + " (" + adversaire.getPersonnage().getNom() + ")", () -> {
-                fenetreAdversaire.close();
-                demarrerCombat(joueur, adversaire);
-            });
-            panelAdversaire.addComponent(boutonAdversaire);
-        }
-
-        fenetreAdversaire.setComponent(panelAdversaire);
-        textGUI.addWindowAndWait(fenetreAdversaire);
-    }
-
-    private void demarrerCombat(Joueur joueur, Joueur adversaire) {
-        // Initialisation du service de combat
-        ServiceCombat serviceCombat = new ServiceCombatImpl();
-
-        // Création et configuration du DAO
-        CombatDAOImpl combatDAO = new CombatDAOImpl();
-
         try {
-            // Obtenir une connexion directe via ConnexionManager
-            Connection connection = ConnexionManager.getInstance().getSQLConnection();
-            combatDAO.setConnection(connection);
-            System.out.println("Connexion SQL établie pour le combat via ConnexionManager");
-        } catch (SQLException e) {
-            afficherMessageErreur("Erreur de connexion à la base de données: " + e.getMessage());
-            return;
+            // Initialisation du service de combat
+            ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO);
+
+            // Afficher l'écran de sélection d'adversaire
+            new EcranSelectionAdversaire(joueurDAO, textGUI, screen, joueur.getPseudo(), serviceCombat).afficher();
+
+        } catch (Exception e) {
+            afficherMessageErreur("Erreur lors de l'initialisation du combat: " + e.getMessage());
         }
-
-        // Initialisation du CombatController avec les deux joueurs
-        CombatController combatController = new CombatController(
-                serviceCombat,
-                combatDAO,
-                joueur,
-                adversaire
-        );
-
-        try {
-            combatController.initialiserCombat();
-        } catch (IllegalStateException e) {
-            afficherMessageErreur("Erreur lors de l'initialisation du combat : " + e.getMessage());
-            return;
-        }
-
-        // Vérifier si le combat est correctement initialisé
-        if (combatController.getCombatEnCours() == null) {
-            afficherMessageErreur("Erreur lors de l'initialisation du combat");
-            return;
-        }
-
-        // Afficher l'écran de préparation au combat
-        EcranPreparationCombat ecranPreparationCombat = new EcranPreparationCombat(combatController, textGUI);
-        ecranPreparationCombat.afficher();
     }
 
     private void afficherMessageErreur(String message) {

@@ -44,26 +44,19 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
         Royaume royaume = new Royaume(0, "Royaume de " + pseudo, 1);
         Coffre coffre = new Coffre();
 
-        // Initialiser les slots du coffre avec une arme et un bouclier par défaut
-        if (coffre.getSlots().size() >= 2) {
-            coffre.getSlots().set(0, new Slot(new be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme(0, "Épée de base", 1, 0, 10), 1));
-            coffre.getSlots().set(1, new Slot(new be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier(0, "Bouclier de base", 1, 0, 10), 1));
-        }
-        // Les autres slots restent vides (déjà initialisés)
-
         // Créer le joueur avec le mot de passe haché
         String motDePasseHache = BCrypt.hashpw(motDePasse, BCrypt.gensalt());
         Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasseHache, 5000, royaume, null, coffre, 0, 0);
 
         // Persister le joueur dans SQL
         joueurDAO.ajouterJoueur(joueur);
-        
+
         // Récupérer l'ID généré pour le joueur
         Joueur joueurCree = joueurDAO.obtenirJoueurParPseudo(pseudo);
         if (joueurCree == null) {
             throw new AuthentificationException("Erreur lors de la création du joueur");
         }
-        
+
         // Créer et persister le royaume dans MongoDB
         try {
             RoyaumeMongoDAOImpl royaumeMongoDAO = RoyaumeMongoDAOImpl.getInstance();
@@ -180,21 +173,21 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
             if (joueur == null) {
                 throw new JoueurNotFoundException("Joueur non trouvé avec l'ID: " + joueurId);
             }
-            
+
             // Récupérer le personnage depuis MongoDB en utilisant l'ID du joueur
             PersonnageMongoDAOImpl personnageMongoDAO = PersonnageMongoDAOImpl.getInstance();
             Personnage personnage = personnageMongoDAO.obtenirPersonnageParJoueurId(joueurId);
-            
+
             if (personnage == null) {
                 throw new PersonnageNotFoundException("Personnage non trouvé pour ce joueur");
             }
-            
+
             // Assigner le personnage au joueur
             joueur.setPersonnage(personnage);
-            
+
             // Persister les modifications
             joueurDAO.mettreAJourJoueur(joueur);
-            
+
             System.out.println("Personnage associé au joueur " + joueur.getPseudo());
         } catch (Exception e) {
             throw new RuntimeException("Erreur lors du choix du personnage: " + e.getMessage(), e);
@@ -205,9 +198,49 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
     public Joueur obtenirJoueurParPseudo(String pseudo) {
         return joueurDAO.obtenirJoueurParPseudo(pseudo);
     }
-    
+
     @Override
     public void mettreAJourJoueur(Joueur joueur) {
         joueurDAO.mettreAJourJoueur(joueur);
+    }
+
+    @Override
+    public boolean connecterJoueur(String pseudo) {
+        try {
+            Joueur joueur = joueurDAO.obtenirJoueurParPseudo(pseudo);
+            if (joueur == null) {
+                System.err.println("Impossible de connecter le joueur, pseudo introuvable: " + pseudo);
+                return false;
+            }
+
+            // Définir le statut comme actif
+            joueurDAO.definirStatutConnexion(joueur.getId(), true);
+            System.out.println("Joueur connecté avec succès: " + pseudo);
+            return true;
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la connexion du joueur " + pseudo + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean deconnecterJoueur(String pseudo) {
+        try {
+            Joueur joueur = joueurDAO.obtenirJoueurParPseudo(pseudo);
+            if (joueur == null) {
+                System.err.println("Impossible de déconnecter le joueur, pseudo introuvable: " + pseudo);
+                return false;
+            }
+
+            // Définir le statut comme inactif
+            joueurDAO.definirStatutConnexion(joueur.getId(), false);
+            System.out.println("Joueur déconnecté avec succès: " + pseudo);
+            return true;
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la déconnexion du joueur " + pseudo + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 }

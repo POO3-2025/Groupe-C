@@ -40,7 +40,7 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
     public boolean acheterItem(int joueurId, int itemId, int quantite) {
         try {
             System.out.println("Début d'achat - Item ID: " + itemId + ", Quantité: " + quantite);
-            
+
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
             if (joueur == null) {
                 throw new IllegalArgumentException("Joueur non trouvé");
@@ -62,14 +62,14 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
 
             // IMPORTANT: Toujours recharger le coffre depuis MongoDB pour éviter d'écraser les achats précédents
             coffreService.chargerCoffre(joueur);
-            
+
             // Vérifier que le coffre est bien présent
             Coffre coffre = joueur.getCoffre();
             if (coffre == null) {
                 joueur.setCoffre(new Coffre());
                 coffre = joueur.getCoffre();
             }
-            
+
             System.out.println("Contenu du coffre avant ajout:");
             for (int i = 0; i < coffre.getSlots().size(); i++) {
                 Slot slot = coffre.getSlots().get(i);
@@ -83,7 +83,7 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
             if (!ajoutReussi) {
                 throw new IllegalArgumentException("Coffre plein ou quantité trop élevée");
             }
-            
+
             System.out.println("Contenu du coffre après ajout:");
             for (int i = 0; i < coffre.getSlots().size(); i++) {
                 Slot slot = coffre.getSlots().get(i);
@@ -116,7 +116,7 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
 
     /**
      * Trouve un item par son ID en cherchant dans MongoDB
-     * 
+     *
      * @param itemId L'ID de l'item à rechercher
      * @return L'item trouvé ou null
      */
@@ -128,7 +128,7 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
                 return item;
             }
         }
-        
+
         // Si non trouvé
         return null;
     }

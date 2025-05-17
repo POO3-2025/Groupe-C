@@ -64,4 +64,8 @@ public interface CoffreMongoDAO {
      * @return La liste des slots du coffre ou une liste vide si aucun coffre n'est trouvé
      */
     List<Slot> obtenirSlotsDuCoffre(int joueurId);
-} 
+
+    List<Item> obtenirItemsDuCoffre(String pseudo);
+
+    boolean supprimerItemDuCoffre(String pseudo, int itemId);
+}

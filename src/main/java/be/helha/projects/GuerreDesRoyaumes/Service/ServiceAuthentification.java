@@ -10,8 +10,24 @@ public interface ServiceAuthentification {
     void gererProfil(int id, String pseudo, String motDePasse);
     void choisirPersonnage(int joueurId, int personnageId);
     void initialiserJoueur(String pseudo, Royaume royaume, Personnage personnage);
-    
+
     // Méthodes ajoutées
     Joueur obtenirJoueurParPseudo(String pseudo);
     void mettreAJourJoueur(Joueur joueur);
+
+    /**
+     * Connecte un joueur (définit son statut comme actif).
+     *
+     * @param pseudo Le pseudo du joueur à connecter
+     * @return true si la connexion a réussi, false sinon
+     */
+    boolean connecterJoueur(String pseudo);
+
+    /**
+     * Déconnecte un joueur (définit son statut comme inactif).
+     *
+     * @param pseudo Le pseudo du joueur à déconnecter
+     * @return true si la déconnexion a réussi, false sinon
+     */
+    boolean deconnecterJoueur(String pseudo);
 }

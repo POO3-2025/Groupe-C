@@ -37,6 +37,11 @@ public abstract class Personnage {
         return inventaire;
     }
 
+    // Alias pour getVie pour compatibilité avec le reste du code
+    public double getPointsDeVie() {
+        return vie;
+    }
+
     //Setteur
     public void setNom(String nom) {
         this.nom = nom;
@@ -52,6 +57,11 @@ public abstract class Personnage {
     }
     public void setInventaire(Inventaire inventaire) {
         this.inventaire = inventaire;
+    }
+
+    // Alias pour setVie pour compatibilité avec le reste du code
+    public void setPointsDeVie(double pointsDeVie) {
+        this.vie = pointsDeVie;
     }
 
     // Méthodes abstraites pour subir des dégâts et se soigner

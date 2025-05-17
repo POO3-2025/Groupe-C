@@ -1,6 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
-import be.helha.projects.GuerreDesRoyaumes.DAO.ItemMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAO.*;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;

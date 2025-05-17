@@ -5,25 +5,28 @@ import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Potion;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import org.bson.Document;
-import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
-import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
+import org.bson.conversions.Bson;
+import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
 
-
+@Repository
 public class ItemMongoDAOImpl implements ItemMongoDAO {
     private static ItemMongoDAOImpl instance;
-    private final MongoCollection<Document> collection;
-
+    private final MongoCollection<Document> itemCollection;
+    MongoDatabase mongoDB = null;
     private ItemMongoDAOImpl() {
         try {
-            MongoDatabase mongoDB = InitialiserAPP.getMongoConnexion();
-            this.collection = mongoDB.getCollection("items");
+             mongoDB = InitialiserAPP.getMongoConnexion();
+            this.itemCollection = mongoDB.getCollection("items");
         } catch (MongoDBConnectionException ex) {
             throw new RuntimeException(ex);
         }
@@ -38,10 +41,24 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
 
     public List<Item> obtenirTousLesItems() {
         List<Item> items = new ArrayList<>();
-        for (Document doc : collection.find()) {
-            items.add(fromDocument(doc));
+
+        try (MongoCursor<Document> cursor = itemCollection.find().iterator()) {
+            while (cursor.hasNext()) {
+                Document doc = cursor.next();
+                Item item = convertirDocumentEnItem(doc);
+                if (item != null) {
+                    items.add(item);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la récupération des items: " + e.getMessage());
         }
+
         return items;
+    }
+
+    private Item convertirDocumentEnItem(Document doc) {
+        return null;
     }
 
     private static double getAsDouble(Document doc, String key) {
@@ -50,6 +67,107 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
             return ((Number) value).doubleValue();
         }
         return 0.0;
+    }
+
+    @Override
+    public List<Item> obtenirItemsParType(String type) {
+        List<Item> items = new ArrayList<>();
+
+        try (MongoCursor<Document> cursor = itemCollection.find(Filters.eq("type", type)).iterator()) {
+            while (cursor.hasNext()) {
+                Document doc = cursor.next();
+                Item item = convertirDocumentEnItem(doc);
+                if (item != null) {
+                    items.add(item);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la récupération des items par type: " + e.getMessage());
+        }
+
+        return items;
+    }
+
+    @Override
+    public Item obtenirItemParId(int id) {
+        try {
+            Document doc = itemCollection.find(Filters.eq("id", id)).first();
+            return (doc != null) ? convertirDocumentEnItem(doc) : null;
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la récupération de l'item par ID: " + e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public void ajouterItem(Item item) {
+        try {
+            Document itemDoc = convertirItemEnDocument(item);
+            itemCollection.insertOne(itemDoc);
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'ajout de l'item: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private Document convertirItemEnDocument(Item item) {
+        return null;
+    }
+
+    @Override
+    public void mettreAJourItem(Item item) {
+        try {
+            Bson filter = Filters.eq("id", item.getId());
+            Document updateDoc = convertirItemEnDocument(item);
+            itemCollection.replaceOne(filter, updateDoc);
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la mise à jour de l'item: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void supprimerItem(int id) {
+        try {
+            itemCollection.deleteOne(Filters.eq("id", id));
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la suppression de l'item: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * Vide la collection d'items et la réinitialise avec les items par défaut
+     * @return true si l'opération a réussi, false sinon
+     */
+    public boolean reinitialiserCollection() {
+        try {
+            itemCollection.drop();
+            System.out.println("Collection items supprimée");
+
+            // Recréer la collection
+            mongoDB.createCollection("items");
+            System.out.println("Collection items recréée");
+
+            return true;
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la réinitialisation de la collection: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+
+    // Méthode pour générer un nouvel ID unique
+    public int genererNouvelId() {
+        Document maxDoc = itemCollection.find()
+                .sort(new Document("id", -1))
+                .limit(1)
+                .first();
+
+        return (maxDoc != null) ? maxDoc.getInteger("id") + 1 : 1;
     }
 
     private static Item fromDocument(org.bson.Document doc) {

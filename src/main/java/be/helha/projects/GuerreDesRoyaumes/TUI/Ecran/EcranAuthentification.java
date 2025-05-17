@@ -30,10 +30,10 @@ public class EcranAuthentification {
 
         Panel panel = new Panel(new GridLayout(1));
         panel.setLayoutData(GridLayout.createLayoutData(
-            GridLayout.Alignment.CENTER,
-            GridLayout.Alignment.CENTER,
-            true,
-            true
+                GridLayout.Alignment.CENTER,
+                GridLayout.Alignment.CENTER,
+                true,
+                true
         ));
 
         // Titre

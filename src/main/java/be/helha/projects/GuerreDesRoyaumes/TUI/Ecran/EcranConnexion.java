@@ -55,6 +55,9 @@ public class EcranConnexion {
                         // Vérifier directement si l'utilisateur existe dans la base de données
                         Joueur joueur = joueurDAO.obtenirJoueurParPseudo(pseudo);
                         if (joueur != null) {
+                            // Mettre à jour le statut de connexion du joueur
+                            serviceAuthentification.connecterJoueur(pseudo);
+
                             fenetre.close();
                             new EcranPrincipal(serviceAuthentification, joueurDAO, pseudo, screen).afficher();
                         } else {
