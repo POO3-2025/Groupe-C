@@ -45,8 +45,8 @@ public class Main {
             InventaireMongoDAOImpl inventaireDAO = InventaireMongoDAOImpl.getInstance();
 
 
-                joueurDAO.setConnection(sqlConnection);
-                System.out.println("DAOs initialisés avec les connexions SQL");
+            joueurDAO.setConnection(sqlConnection);
+            System.out.println("DAOs initialisés avec les connexions SQL");
 
 
             // Initialisation des services
