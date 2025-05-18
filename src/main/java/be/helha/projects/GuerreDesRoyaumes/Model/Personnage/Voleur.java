@@ -19,7 +19,7 @@ public class Voleur extends Personnage {
      * Initialise un Voleur avec une vie de 100, 0 dégâts, 10 de résistance et un inventaire vide.
      */
     public Voleur() {
-        super("Voleur", 100, 0, 10, new Inventaire());
+        super("Voleur", 100, 10, 10, new Inventaire());
     }
 
     /**
