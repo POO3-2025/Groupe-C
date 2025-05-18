@@ -4,10 +4,8 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 
 public class Golem extends Personnage {
     public Golem() {
-        super("Golem",120, 18, 50, new Inventaire());
+        super("Golem",120, 18, 25, new Inventaire());
     }
-
-
 
     @Override
     public void attaquer() {
@@ -41,6 +39,4 @@ public class Golem extends Personnage {
         setVie(getVie() + pointsSoin);
         System.out.println(getNom() + " se soigne de " + pointsSoin + " points de vie. Vie actuelle : " + getVie());
     }
-
-
 }

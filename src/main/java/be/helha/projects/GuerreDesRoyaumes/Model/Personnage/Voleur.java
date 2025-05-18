@@ -4,7 +4,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 
 public class Voleur extends Personnage {
     public Voleur() {
-        super("Voleur",90, 0, 15, new Inventaire());
+        super("Voleur",100, 0, 10, new Inventaire());
     }
 
     @Override
