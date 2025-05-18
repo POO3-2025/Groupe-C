@@ -8,6 +8,7 @@ import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.screen.Screen;
 
+import java.util.Collections;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -35,6 +36,14 @@ public class EcranCombat {
     }
 
     public void afficher() {
+
+        // verifier si les deux joueur sont pret pour passer au tour suivant
+        if (!serviceCombat.sontJoueursPrets(joueur, adversaire)) {
+            afficherFenetreAttenteEtPlanifierVerification();
+            return;
+        }
+
+
         // Vérifier si c'est le tour du joueur
         boolean estTourDuJoueur = serviceCombat.estTourDuJoueur(joueur, adversaire);
 
@@ -98,8 +107,35 @@ public class EcranCombat {
         textGUI.addWindowAndWait(fenetre);
     }
 
+    private void afficherFenetreAttenteEtPlanifierVerification() {
+        Window fenetreAttente = new BasicWindow("Attente");
+        fenetreAttente.setHints(Collections.singletonList(Window.Hint.CENTERED));
+
+        Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
+        panel.addComponent(new Label("En attente de l'adversaire..."));
+
+        // Bouton de vérification manuelle
+        panel.addComponent(new Button("Actualiser", () -> {
+            fenetreAttente.close();
+            textGUI.getGUIThread().invokeLater(this::afficher);
+        }));
+
+        fenetreAttente.setComponent(panel);
+        textGUI.addWindowAndWait(fenetreAttente);
+
+        // Planifier la vérification automatique après fermeture de la fenêtre
+        textGUI.getGUIThread().invokeLater(() -> {
+            if (!serviceCombat.sontJoueursPrets(joueur, adversaire)) {
+                afficherFenetreAttenteEtPlanifierVerification();
+            } else {
+                afficher(); // Relancer l'affichage principal si prêt
+            }
+        });
+    }
+
     private void verifierTourAdversaire() {
         try {
+            // Actualiser l'état du combat avant vérification
             // Méthode de simulation pour débloquer l'attente mutuelle
             // En mode développement, on simule une action de l'adversaire après quelques vérifications
             if (!serviceCombat.estTourDuJoueur(joueur, adversaire)) {

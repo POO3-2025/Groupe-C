@@ -1,25 +1,19 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
-import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.JoueurNotFoundException;
-import be.helha.projects.GuerreDesRoyaumes.Exceptions.AuthentificationException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.SQLConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
-import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
-import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Golem;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
-import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.io.ObjectInputFilter;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -433,6 +427,26 @@ public class JoueurDAOImpl implements JoueurDAO {
         }
 
         return joueursActifs;
+    }
+
+    @Override
+    public boolean estJoueurActif(int id) {
+        if (!verifierExistenceColonne(tableName, "actif_joueur")) {
+            System.out.println("DEBUG: Colonne actif_joueur absente. Retour true par défaut.");
+            return true;
+        }
+
+        try {
+            String sql = "SELECT actif_joueur FROM " + tableName + " WHERE id_joueur = ?";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, id);
+                ResultSet rs = statement.executeQuery();
+                return rs.next() && rs.getInt(1) == 1;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur vérification statut actif pour ID " + id + ": " + e.getMessage());
+            return false;
+        }
     }
 
     // Update

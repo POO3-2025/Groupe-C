@@ -153,6 +153,7 @@ public class EcranSelectionAdversaire {
                 
                 if (joueurActuel != null) {
                     // Utiliser combatDAO au lieu de joueurDAO
+                    // quand le demandeur fait une demande de combat il est automatiquement cree dans demande_combat et on verifie chez tout les autres joueur si une demande presente dans la table demande_combat leurs correspond
                     int idDemandeur = combatDAO.verifierDemandesCombat(joueurActuel.getId());
                     // Vérifier si c'est une nouvelle demande
                     if (idDemandeur > 0 && idDemandeur != derniereDemandeCombatId) {
@@ -163,13 +164,7 @@ public class EcranSelectionAdversaire {
                         Joueur demandeur = joueurDAO.obtenirJoueurParId(idDemandeur);
                         if (demandeur != null) {
                             // S'assurer que le demandeur est toujours actif
-                            boolean demandeurEstActif = false;
-                            for (Joueur j : joueursActifs) {
-                                if (j.getId() == idDemandeur) {
-                                    demandeurEstActif = true;
-                                    break;
-                                }
-                            }
+                            boolean demandeurEstActif = joueurDAO.estJoueurActif(idDemandeur);
                             
                             if (demandeurEstActif) {
                                 // Marquer qu'un dialogue est en cours d'affichage
@@ -194,16 +189,12 @@ public class EcranSelectionAdversaire {
                                         
                                         if (demandeAcceptee) {
                                             // Ajouter les deux joueurs à la table des combats en cours
-                                            boolean combatAjoute = combatDAO.ajouterCombatEnCours(idDemandeur, joueurActuel.getId());
-                                            
-                                            if (combatAjoute) {
+
                                                 // Arrêter la recherche et passer à l'écran de préparation de combat
                                                 arreterRecherche();
                                                 fenetre.close();
                                                 new EcranPreparationCombat(joueurDAO, textGUI, screen, pseudoJoueur, demandeur.getPseudo(), serviceCombat).afficher();
-                                            } else {
-                                                afficherMessageErreur("Erreur lors de l'ajout du combat en cours");
-                                            }
+
                                         } else {
                                             afficherMessageErreur("Erreur lors de l'acceptation de la demande de combat");
                                         }

@@ -84,13 +84,13 @@ public class CombatController {
     // Initialisation du combat
     public void initialiserCombat() {
         this.combatEnCours = new Combat(0, joueur1, joueur2, null, 0, java.time.LocalDateTime.now());
-        serviceCombat.initialiserCombat(joueur1, joueur2, null);
+        serviceCombat.initialiserCombat(joueur1, joueur2);
         preparerInventairesCombat();
     }
 
     // Initialisation du combat
     public void initialiserCombat(Joueur joueur1, Joueur joueur2) {
-        serviceCombat.initialiserCombat(joueur1, joueur2, null);
+        serviceCombat.initialiserCombat(joueur1, joueur2);
         this.combatEnCours = new Combat(0, joueur1, joueur2, null, 0, java.time.LocalDateTime.now());
         preparerInventairesCombat();
     }

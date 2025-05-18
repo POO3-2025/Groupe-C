@@ -5,14 +5,12 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 public interface ServiceCombat {
     /**
      * Initialise un combat entre deux joueurs avec les items sélectionnés
      */
-    void initialiserCombat(Joueur joueur1, Joueur joueur2, List<Item> itemsSelectionnes);
+    void initialiserCombat(Joueur joueur1, Joueur joueur2);
 
     /**
      * Exécute une action pour un tour de combat
@@ -99,4 +97,13 @@ public interface ServiceCombat {
      * @return true si le transfert a réussi, false sinon
      */
     boolean transfererItemsCoffreVersInventaire(Joueur joueur, Item item, int quantite);
+
+    /**
+     * Vérifie si les deux joueurs sont prêts à combattre
+     * 
+     * @param joueur1 Le premier joueur
+     * @param joueur2 Le second joueur
+     * @return true si les deux joueurs sont prêts, false sinon
+     */
+    boolean sontJoueursPrets(Joueur joueur1, Joueur joueur2);
 }

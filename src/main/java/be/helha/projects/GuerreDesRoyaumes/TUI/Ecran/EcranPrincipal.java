@@ -572,7 +572,6 @@ public class EcranPrincipal {
                                 afficherEcranGestionCoffre(joueur, true);
                                 return;
                             }
-                            // Si l'utilisateur choisit "Oui", continuer le combat sans items
                         }
 
                         // Passer à l'écran de sélection des compétences avant de lancer le combat
@@ -885,7 +884,7 @@ public class EcranPrincipal {
 
             // Initialisation du service de combat
             // Créer une instance de CombatDAOImpl
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAO = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
+            CombatDAOImpl combatDAO = new CombatDAOImpl();
             ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO);
 
             // Afficher l'écran de sélection d'adversaire
@@ -1082,14 +1081,37 @@ public class EcranPrincipal {
                 
                 // Initialisation du service de combat
                 try {
-                    // Appliquer les compétences achetées
-                    competenceService.appliquerCompetences(joueur);
-                    
-                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAO = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
+
+                    CombatDAOImpl combatDAO = new CombatDAOImpl();
                     ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO);
                     
-                    // Lancement du combat
-                    new EcranCombat(joueurDAO, textGUI, screen, joueur, null, serviceCombat).afficher();
+                    // Récupérer l'ID du combat en cours
+                    String idCombat = combatDAO.obtenirIdCombatEnCours(joueur.getId());
+                    
+                    if (idCombat != null) {
+                        System.out.println("Combat en cours trouvé avec ID: " + idCombat);
+                        
+                        // Récupérer les joueurs à partir de l'ID du combat
+                        Joueur joueur1 = combatDAO.recupererJoueurActif(idCombat);
+                        Joueur adversaire = combatDAO.recupererAdversaire(idCombat);
+                        
+                        if (joueur1 != null && adversaire != null) {
+                            new EcranCombat(joueurDAO, textGUI, screen, joueur1, adversaire, serviceCombat).afficher();
+                        } else {
+                            afficherMessageErreur("Impossible de récupérer les informations des joueurs du combat.");
+                        }
+                    } else {
+                        // Aucun combat en cours trouvé, fallback sur la méthode sans paramètre
+                        System.out.println("Aucun ID de combat trouvé, utilisation des méthodes de récupération sans paramètre");
+                        Joueur joueur1 = combatDAO.recupererJoueurActif();
+                        Joueur adversaire = combatDAO.recupererAdversaire();
+                        
+                        if (joueur1 != null && adversaire != null) {
+                            new EcranCombat(joueurDAO, textGUI, screen, joueur1, adversaire, serviceCombat).afficher();
+                        } else {
+                            afficherMessageErreur("Impossible de récupérer les informations des joueurs du combat.");
+                        }
+                    }
                 } catch (Exception e) {
                     afficherMessageErreur("Erreur lors de l'initialisation du combat: " + e.getMessage());
                 }

@@ -22,7 +22,6 @@ public class EcranPreparationCombat {
     private final String pseudoJoueur;
     private final String pseudoAdversaire;
     private final ServiceCombat serviceCombat;
-    private boolean estHote;
     private List<Item> itemsSelectionnes;
     private Joueur joueur;
     private Joueur adversaire;
@@ -36,9 +35,6 @@ public class EcranPreparationCombat {
         this.pseudoAdversaire = pseudoAdversaire;
         this.serviceCombat = serviceCombat;
 
-        // Déterminer si ce joueur est l'hôte (par exemple, celui qui a initié le combat)
-        // Cette logique peut être ajustée selon votre système
-        this.estHote = pseudoJoueur.compareTo(pseudoAdversaire) < 0;
         this.itemsSelectionnes = new ArrayList<>();
     }
 
@@ -61,12 +57,13 @@ public class EcranPreparationCombat {
             }
 
             // Initialiser le combat
-            serviceCombat.initialiserCombat(joueur, adversaire, new ArrayList<>());
+            serviceCombat.initialiserCombat(joueur, adversaire);
 
             // Ajout du bouton "Préparer mon combat"
             Button btnPreparerCombat = new Button("Préparer mon combat", () -> {
                 //ici afficher l'ecran de gestiond de coffre en mode combat
                 fenetre.close();
+                // ici on recupere les items du coffre vers l'inventaire pour simplifier on utilise le meme ecran que gestion de coffre avec des bouton different
                 new EcranPrincipal(null, joueurDAO, joueur.getPseudo(), screen).afficherEcranGestionCoffre(joueur, true);
             });
             panel.addComponent(btnPreparerCombat);
@@ -74,30 +71,9 @@ public class EcranPreparationCombat {
 
             // En mode développement, attendre la confirmation de l'utilisateur
             panel.addComponent(new Label("Préparation complète!"));
+
+            // Ici, on simule une attente pour l'instant pour la confirmation a implementer plus tard si on a le temps
             panel.addComponent(new Label("Attendez que l'adversaire confirme..."));
-
-            // Simuler une attente pour la confirmation
-            // Dans une implémentation réelle, on attendrait un message réseau
-            Panel panelTemporaire = new Panel(new GridLayout(1));
-            Button btnPretSimule = new Button("Simuler adversaire prêt", () -> {
-                fenetre.close();
-                Window fenetreConfirmation = new BasicWindow("Confirmation");
-                fenetreConfirmation.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
-
-                Panel panelConfirmation = new Panel(new GridLayout(1));
-                panelConfirmation.addComponent(new Label("L'adversaire est prêt!"));
-                panelConfirmation.addComponent(new EmptySpace());
-                panelConfirmation.addComponent(new Button("Commencer le combat", () -> {
-                    fenetreConfirmation.close();
-                    new EcranCombat(joueurDAO, textGUI, screen, joueur, adversaire, serviceCombat).afficher();
-                }));
-
-                fenetreConfirmation.setComponent(panelConfirmation);
-                textGUI.addWindowAndWait(fenetreConfirmation);
-            });
-
-            panelTemporaire.addComponent(btnPretSimule);
-            panel.addComponent(panelTemporaire);
 
             // Créer un thread de vérification pour voir si l'adversaire a annulé le combat
             demarrerVerificationAnnulationCombat(joueur, adversaire, fenetre);

@@ -1,5 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
+import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
@@ -8,8 +9,9 @@ import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,24 +37,25 @@ public class ServiceCombatImpl implements ServiceCombat {
     }
 
     @Override
-    public void initialiserCombat(Joueur joueur1, Joueur joueur2, List<Item> itemsSelectionnes) {
+    public void initialiserCombat(Joueur joueur1, Joueur joueur2) {
         System.out.println("DEBUG: Initialisation du combat entre " + joueur1.getPseudo() + " et " + joueur2.getPseudo());
-        // Création d'un ID unique pour ce combat
-        String combatId = joueur1.getId() + "-" + joueur2.getId() + "-" + System.currentTimeMillis();
 
-        // S'assurer que les joueurs ont bien leurs personnages avec le type correct depuis la BDD
+        // Vérifier si un combat existe déjà entre ces joueurs
+        int idAdversaire = combatDAO.verifierCombatEnCours(joueur1.getId());
+        if (idAdversaire > 0) {
+            System.out.println("DEBUG: Un combat existe déjà entre " + joueur1.getPseudo() + " et " + joueur2.getPseudo() + " - Pas de nouvelle insertion");
+            return; // Sortir sans créer de nouveau combat
+        }
+
+        // Recharger les joueurs depuis la base de données pour garantir la fraîcheur des données
         try {
-            // Recharger les joueurs depuis la base de données pour s'assurer d'avoir les bons personnages
             Joueur j1FromDB = joueurDAO.obtenirJoueurParId(joueur1.getId());
             Joueur j2FromDB = joueurDAO.obtenirJoueurParId(joueur2.getId());
 
-            // Vérifier si les objets ont été correctement chargés
             if (j1FromDB != null && j1FromDB.getPersonnage() != null) {
-                // Préserver l'identité des objets en copiant seulement les attributs nécessaires
                 joueur1.setPersonnage(j1FromDB.getPersonnage());
                 System.out.println("DEBUG: Personnage J1 chargé: " + joueur1.getPersonnage().getNom());
             }
-
             if (j2FromDB != null && j2FromDB.getPersonnage() != null) {
                 joueur2.setPersonnage(j2FromDB.getPersonnage());
                 System.out.println("DEBUG: Personnage J2 chargé: " + joueur2.getPersonnage().getNom());
@@ -61,11 +64,6 @@ public class ServiceCombatImpl implements ServiceCombat {
             System.err.println("DEBUG: Erreur lors du chargement des personnages: " + e.getMessage());
         }
 
-        // Réinitialiser les points de vie au début du combat
-        joueur1.getPersonnage().setPointsDeVie(100);
-        joueur2.getPersonnage().setPointsDeVie(100);
-
-        // Persister les points de vie initiaux
         try {
             joueurDAO.mettreAJourJoueur(joueur1);
             joueurDAO.mettreAJourJoueur(joueur2);
@@ -73,34 +71,29 @@ public class ServiceCombatImpl implements ServiceCombat {
             System.err.println("DEBUG: Erreur lors de l'initialisation des PV: " + e.getMessage());
         }
 
-        System.out.println("DEBUG: Points de vie initiaux: J1=" + joueur1.getPersonnage().getPointsDeVie() +
+        System.out.println("DEBUG: Points de vie de depart: J1=" + joueur1.getPersonnage().getPointsDeVie() +
                 ", J2=" + joueur2.getPersonnage().getPointsDeVie());
-
-        // Stockage des informations du combat
-        Map<String, Object> infoCombat = new HashMap<>();
-        infoCombat.put("joueur1", joueur1);
-        infoCombat.put("joueur2", joueur2);
-        infoCombat.put("items", itemsSelectionnes);
-        infoCombat.put("tourActuel", 1);
-        infoCombat.put("joueurActif", joueur1.getId()); // Le joueur1 commence
-        infoCombat.put("termine", false);
-        infoCombat.put("derniereMiseAJour", System.currentTimeMillis()); // Horodatage pour détecter les blocages
-
-        // Sauvegarder les PV initiaux pour référence
-        infoCombat.put("pvInitiauxJoueur1", 100.0);
-        infoCombat.put("pvInitiauxJoueur2", 100.0);
-
-        // Initialiser le stockage des actions et résultats
-        Map<String, String> actionsTour1 = new HashMap<>();
-        Map<String, String> resultatsTour1 = new HashMap<>();
-        actionsJoueurs.put(combatId + "-1", actionsTour1);
-        resultatsActions.put(combatId + "-1", resultatsTour1);
-
-        // Ajouter à la liste des combats en cours
-        combatsEnCours.put(combatId, infoCombat);
-
-        System.out.println("DEBUG: Combat initialisé avec ID: " + combatId);
+            
+        // REMARQUE: NE PAS INSÉRER DE NOUVEAU COMBAT ICI
+        // Comme un combat est déjà créé lors de l'acceptation de la demande,
+        // nous n'avons pas besoin d'un autre appel à ajouterCombatEnCours ici.
+        // L'appel ci-dessous est commenté pour éviter les doublons.
+        
+        /* NE PAS EXÉCUTER - Causera une duplication
+        String combatId = joueur1.getId() + "-" + joueur2.getId() + "-" + System.currentTimeMillis();
+        combatDAO.ajouterCombatEnCours(combatId, joueur1, joueur2,
+                1, // tourActuel
+                joueur1.getId(), // joueurActif (celui qui commence)
+                false, // termine
+                System.currentTimeMillis(), // derniereMiseAJour
+                joueur1.getPersonnage().getPointsDeVie(),
+                joueur2.getPersonnage().getPointsDeVie()
+        );
+        */
+        
+        System.out.println("DEBUG: Combat initialisé");
     }
+
 
     @Override
     public String executerAction(Joueur joueur, Joueur adversaire, String typeAction, int tour) {
@@ -211,6 +204,24 @@ public class ServiceCombatImpl implements ServiceCombat {
 
         // Changer le joueur actif (passer au joueur adverse)
         infoCombat.put("joueurActif", adversaire.getId());
+
+        // Réinitialiser les statuts "prêt" dans la base de données
+        try {
+            // Obtenir l'ID du combat dans la base de données
+            String idCombatBDD = combatDAO.obtenirIdCombatEnCours(joueur.getId());
+            if (idCombatBDD != null) {
+                // Préparer une requête SQL pour réinitialiser les statuts "prêt"
+                String sql = "UPDATE combats_en_cours SET joueur1_pret = 0, joueur2_pret = 0 WHERE id_combat = ?";
+                try (Connection conn = InitialiserAPP.getSQLConnexion();
+                     PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setString(1, idCombatBDD);
+                    stmt.executeUpdate();
+                    System.out.println("DEBUG: Statuts 'prêt' réinitialisés pour le combat " + idCombatBDD);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("DEBUG: Erreur lors de la réinitialisation des statuts 'prêt': " + e.getMessage());
+        }
 
         // Vérifier si le combat est terminé après l'action
         boolean combatTermine = estCombatTermine(joueur1, joueur2, tour);
@@ -564,6 +575,28 @@ public class ServiceCombatImpl implements ServiceCombat {
             return true;
         } catch (Exception e) {
             System.err.println("DEBUG: Erreur lors du transfert d'item: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean sontJoueursPrets(Joueur joueur1, Joueur joueur2) {
+        try {
+            // Obtenir l'ID du combat
+            String idCombat = combatDAO.obtenirIdCombatEnCours(joueur1.getId());
+            if (idCombat == null) {
+                // Essayer avec le joueur 2 si le premier n'a pas fonctionné
+                idCombat = combatDAO.obtenirIdCombatEnCours(joueur2.getId());
+                if (idCombat == null) {
+                    System.err.println("DEBUG: Aucun combat trouvé pour les joueurs " + joueur1.getId() + " et " + joueur2.getId());
+                    return false;
+                }
+            }
+            
+            // Vérifier si les deux joueurs sont prêts
+            return combatDAO.sontJoueursPrets(idCombat);
+        } catch (Exception e) {
+            System.err.println("DEBUG: Erreur lors de la vérification des joueurs prêts: " + e.getMessage());
             return false;
         }
     }

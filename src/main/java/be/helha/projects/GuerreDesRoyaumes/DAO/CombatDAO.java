@@ -1,6 +1,7 @@
 package be.helha.projects.GuerreDesRoyaumes.DAO;
 
 import be.helha.projects.GuerreDesRoyaumes.Model.Combat.Combat;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 
 import java.util.List;
@@ -54,15 +55,19 @@ public interface CombatDAO {
      */
     boolean supprimerDemandeCombat(int idDemandeur, int idAdversaire);
 
-    /**
-     * Ajoute un combat en cours dans la table CombatEnCours
-     * 
-     * @param idJoueur1 L'identifiant du premier joueur
-     * @param idJoueur2 L'identifiant du second joueur
-     * @return true si l'ajout a réussi, false sinon
-     */
-    boolean ajouterCombatEnCours(int idJoueur1, int idJoueur2);
-    
+    boolean ajouterCombatEnCours(
+            String idCombat,
+            Joueur joueur1,
+            Joueur joueur2,
+            int tourActuel,
+            int joueurActif,
+            boolean termine,
+            long derniereMiseAJour,
+            double pvInitiauxJoueur1,
+            double pvInitiauxJoueur2
+    );
+
+
     /**
      * Vérifie si un joueur est impliqué dans un combat en cours
      * 
@@ -96,4 +101,44 @@ public interface CombatDAO {
      * @return Le pseudonyme du joueur ou null si le joueur n'est pas trouvé
      */
     String obtenirPseudonyme(int idJoueur);
+    
+    /**
+     * Récupère le joueur actif (joueur1) d'un combat en cours
+     * 
+     * @param idCombat L'identifiant du combat
+     * @return Le joueur actif, ou null si le combat n'existe pas ou si le joueur n'est pas trouvé
+     */
+    Joueur recupererJoueurActif(String idCombat);
+    
+    /**
+     * Récupère l'adversaire (joueur2) d'un combat en cours
+     * 
+     * @param idCombat L'identifiant du combat
+     * @return L'adversaire, ou null si le combat n'existe pas ou si l'adversaire n'est pas trouvé
+     */
+    Joueur recupererAdversaire(String idCombat);
+
+    /**
+     * Récupère l'identifiant du combat en cours pour un joueur donné
+     * 
+     * @param idJoueur L'identifiant du joueur
+     * @return L'identifiant du combat en cours, ou null si aucun combat n'est trouvé
+     */
+    String obtenirIdCombatEnCours(int idJoueur);
+    
+    /**
+     * Met à jour le tour_actuel à 1 dans la table combats_en_cours pour indiquer que les deux joueurs sont prêts à combattre
+     * 
+     * @param idJoueur L'identifiant du joueur qui lance le combat
+     * @return true si la mise à jour a réussi, false sinon
+     */
+    boolean mettreAJourTourActuel(int idJoueur);
+
+    /**
+     * Vérifie si les deux joueurs sont prêts pour un combat donné
+     * 
+     * @param idCombat L'identifiant du combat
+     * @return true si les deux joueurs sont prêts, false sinon
+     */
+    boolean sontJoueursPrets(String idCombat);
 }

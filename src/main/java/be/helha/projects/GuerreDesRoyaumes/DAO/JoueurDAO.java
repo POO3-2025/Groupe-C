@@ -57,6 +57,8 @@ public interface JoueurDAO {
      */
     List<Joueur> obtenirJoueursActifs();
 
+    boolean estJoueurActif(int id);
+
     /**
      * Met à jour les informations d'un joueur existant.
      *

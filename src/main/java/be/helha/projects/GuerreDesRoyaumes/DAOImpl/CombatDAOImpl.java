@@ -1,18 +1,14 @@
 package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 
-import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
 import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
-import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
-import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.SQLConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Combat.Combat;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
-import com.mongodb.client.MongoDatabase;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import javax.sql.DataSource;
 import java.util.List;
 import java.util.ArrayList;
 import java.sql.*;
@@ -21,7 +17,7 @@ import java.sql.*;
 public class CombatDAOImpl implements CombatDAO {
 
     private Connection connection;
-    private String tableNameCombat = "joueur"; // Table pour gerer et lier les demandes de combat aux joueurs
+    private String tableNameJoueurs = "joueur"; // Table pour gerer et lier les demandes de combat aux joueurs
 
 
     public CombatDAOImpl() {
@@ -227,8 +223,8 @@ public class CombatDAOImpl implements CombatDAO {
                         "id_demandeur INT NOT NULL, " +
                         "id_adversaire INT NOT NULL, " +
                         "date_demande DATETIME DEFAULT GETDATE(), " +
-                        "FOREIGN KEY (id_demandeur) REFERENCES " + tableNameCombat + "(id_joueur), " +
-                        "FOREIGN KEY (id_adversaire) REFERENCES " + tableNameCombat + "(id_joueur), " +
+                        "FOREIGN KEY (id_demandeur) REFERENCES " + tableNameJoueurs + "(id_joueur), " +
+                        "FOREIGN KEY (id_adversaire) REFERENCES " + tableNameJoueurs + "(id_joueur), " +
                         "CONSTRAINT UC_demande UNIQUE (id_demandeur, id_adversaire))";
                 try (PreparedStatement stmt = connection.prepareStatement(sql)) {
                     stmt.executeUpdate();
@@ -300,9 +296,6 @@ public class CombatDAOImpl implements CombatDAO {
 
     @Override
     public boolean accepterDemandeCombat(int idDemandeur, int idAdversaire) {
-        // S'assurer que la table demandes_combat existe
-        creerTableDemandesCombatSiInexistante();
-
         // Vérifier que la demande existe
         String sqlCheck = "SELECT COUNT(*) FROM demandes_combat WHERE id_demandeur = ? AND id_adversaire = ?";
         try (PreparedStatement stmtCheck = connection.prepareStatement(sqlCheck)) {
@@ -320,7 +313,56 @@ public class CombatDAOImpl implements CombatDAO {
         }
 
         // Supprimer la demande car elle va être acceptée
-        return supprimerDemandeCombat(idDemandeur, idAdversaire);
+        boolean demandeSuppressee = supprimerDemandeCombat(idDemandeur, idAdversaire);
+        if (!demandeSuppressee) {
+            return false;
+        }
+
+        // Créer un nouveau combat en cours
+        try {
+            // Créer un ID de combat unique basé sur les IDs des joueurs
+            String idCombat = "combat_" + idDemandeur + "_" + idAdversaire + "_" + System.currentTimeMillis();
+            
+            // S'assurer que la table combats_en_cours existe
+            creerTableCombatsEnCoursSiInexistante();
+
+            // Vérifier d'abord si un combat existe déjà entre ces joueurs
+            String sqlCheckCombat = "SELECT COUNT(*) FROM combats_en_cours WHERE (id_joueur1 = ? AND id_joueur2 = ?) OR (id_joueur1 = ? AND id_joueur2 = ?)";
+            try (PreparedStatement stmtCheckCombat = connection.prepareStatement(sqlCheckCombat)) {
+                stmtCheckCombat.setInt(1, idDemandeur);
+                stmtCheckCombat.setInt(2, idAdversaire);
+                stmtCheckCombat.setInt(3, idAdversaire);
+                stmtCheckCombat.setInt(4, idDemandeur);
+                ResultSet rs = stmtCheckCombat.executeQuery();
+                if (rs.next() && rs.getInt(1) > 0) {
+                    // Un combat existe déjà
+                    System.out.println("DEBUG: Un combat existe déjà entre les joueurs " + idDemandeur + " et " + idAdversaire);
+                    return true;
+                }
+            }
+
+            // Insérer un nouveau combat en cours
+            String sqlInsert = "INSERT INTO combats_en_cours (id_combat, id_joueur1, id_joueur2, tour_actuel, joueur_actif, termine, derniere_mise_a_jour, pv_initiaux_joueur1, pv_initiaux_joueur2, joueur1_pret, joueur2_pret) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)";
+            try (PreparedStatement stmtInsert = connection.prepareStatement(sqlInsert)) {
+                stmtInsert.setString(1, idCombat);
+                stmtInsert.setInt(2, idDemandeur);
+                stmtInsert.setInt(3, idAdversaire);
+                stmtInsert.setInt(4, 0); // Tour 0 a la creation de la table le tour sera a 1 lorsque le combat sera lancée par le demandeur et l'adversaire
+                stmtInsert.setInt(5, idDemandeur); // Le demandeur commence
+                stmtInsert.setBoolean(6, false); // Combat non terminé
+                stmtInsert.setLong(7, System.currentTimeMillis());
+                stmtInsert.setDouble(8, 100.0); // Valeurs par défaut pour les PV
+                stmtInsert.setDouble(9, 100.0);
+                
+                int rowsAffected = stmtInsert.executeUpdate();
+                System.out.println("DEBUG: Combat en cours créé avec l'ID " + idCombat + " entre " + idDemandeur + " et " + idAdversaire);
+                return rowsAffected > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la création du combat en cours: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @Override
@@ -340,7 +382,7 @@ public class CombatDAOImpl implements CombatDAO {
             return false;
         }
     }
-    
+
     /**
      * Obtient le pseudonyme d'un joueur à partir de son ID
      * 
@@ -352,7 +394,7 @@ public class CombatDAOImpl implements CombatDAO {
             throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
         }
         
-        String sql = "SELECT pseudo FROM " + tableNameCombat + " WHERE id_joueur = ?";
+        String sql = "SELECT pseudo FROM " + tableNameJoueurs + " WHERE id_joueur = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, idJoueur);
             ResultSet rs = stmt.executeQuery();
@@ -377,13 +419,20 @@ public class CombatDAOImpl implements CombatDAO {
             if (!tables.next()) {
                 // La table n'existe pas, la créer (SQL Server syntax)
                 String sql = "CREATE TABLE combats_en_cours (" +
-                        "id INT IDENTITY(1,1) PRIMARY KEY, " +
+                        "id_combat VARCHAR(100) PRIMARY KEY, " +
                         "id_joueur1 INT NOT NULL, " +
                         "id_joueur2 INT NOT NULL, " +
-                        "date_debut DATETIME DEFAULT GETDATE(), " +
-                        "FOREIGN KEY (id_joueur1) REFERENCES " + tableNameCombat + "(id_joueur), " +
-                        "FOREIGN KEY (id_joueur2) REFERENCES " + tableNameCombat + "(id_joueur), " +
-                        "CONSTRAINT UC_combat UNIQUE (id_joueur1, id_joueur2))";
+                        "tour_actuel INT NOT NULL, " +
+                        "joueur_actif INT NOT NULL, " +
+                        "termine BIT NOT NULL, " +
+                        "derniere_mise_a_jour BIGINT NOT NULL, " +
+                        "pv_initiaux_joueur1 FLOAT NOT NULL, " +
+                        "pv_initiaux_joueur2 FLOAT NOT NULL, " +
+                        "joueur1_pret BIT NOT NULL DEFAULT 0, " +
+                        "joueur2_pret BIT NOT NULL DEFAULT 0, " +
+                        "FOREIGN KEY (id_joueur1) REFERENCES " + tableNameJoueurs + "(id_joueur), " +
+                        "FOREIGN KEY (id_joueur2) REFERENCES " + tableNameJoueurs + "(id_joueur)" +
+                        ")";
                 try (PreparedStatement stmt = connection.prepareStatement(sql)) {
                     stmt.executeUpdate();
                     System.out.println("DEBUG: Table combats_en_cours créée");
@@ -396,21 +445,27 @@ public class CombatDAOImpl implements CombatDAO {
     }
     
     @Override
-    public boolean ajouterCombatEnCours(int idJoueur1, int idJoueur2) {
+    public boolean ajouterCombatEnCours(
+            String idCombat,
+            Joueur joueur1,
+            Joueur joueur2,
+            int tourActuel,
+            int joueurActif,
+            boolean termine,
+            long derniereMiseAJour,
+            double pvInitiauxJoueur1,
+            double pvInitiauxJoueur2
+    ) {
         // S'assurer que la table combats_en_cours existe
         creerTableCombatsEnCoursSiInexistante();
 
         // Vérifier d'abord si un combat existe déjà
-        String sqlCheck = "SELECT COUNT(*) FROM combats_en_cours WHERE (id_joueur1 = ? AND id_joueur2 = ?) OR (id_joueur1 = ? AND id_joueur2 = ?)";
+        String sqlCheck = "SELECT COUNT(*) FROM combats_en_cours WHERE id_combat = ?";
         try (PreparedStatement stmtCheck = connection.prepareStatement(sqlCheck)) {
-            stmtCheck.setInt(1, idJoueur1);
-            stmtCheck.setInt(2, idJoueur2);
-            stmtCheck.setInt(3, idJoueur2);
-            stmtCheck.setInt(4, idJoueur1);
+            stmtCheck.setString(1, idCombat);
             ResultSet rs = stmtCheck.executeQuery();
             if (rs.next() && rs.getInt(1) > 0) {
-                // Un combat existe déjà
-                System.out.println("DEBUG: Un combat existe déjà entre les joueurs " + idJoueur1 + " et " + idJoueur2);
+                System.out.println("DEBUG: Un combat existe déjà avec l'ID " + idCombat);
                 return true;
             }
         } catch (SQLException e) {
@@ -418,27 +473,38 @@ public class CombatDAOImpl implements CombatDAO {
             return false;
         }
 
-        // Insérer le nouveau combat
-        String sql = "INSERT INTO combats_en_cours (id_joueur1, id_joueur2) VALUES (?, ?)";
+
+
+        String sql = "INSERT INTO combats_en_cours " +
+                "(id_combat, id_joueur1, id_joueur2, tour_actuel, joueur_actif, termine, derniere_mise_a_jour, pv_initiaux_joueur1, pv_initiaux_joueur2, joueur1_pret, joueur2_pret) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, idJoueur1);
-            stmt.setInt(2, idJoueur2);
+            stmt.setString(1, idCombat);
+            stmt.setInt(2, joueur1.getId());
+            stmt.setInt(3, joueur2.getId());
+            stmt.setInt(4, tourActuel);
+            stmt.setInt(5, joueurActif);
+            stmt.setBoolean(6, termine);
+            stmt.setLong(7, derniereMiseAJour);
+            stmt.setDouble(8, pvInitiauxJoueur1);
+            stmt.setDouble(9, pvInitiauxJoueur2);
+
             int rowsAffected = stmt.executeUpdate();
-            System.out.println("DEBUG: Combat en cours ajouté entre les joueurs " + idJoueur1 + " et " + idJoueur2);
+            System.out.println("DEBUG: Combat en cours ajouté avec l'ID " + idCombat);
             return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("Erreur lors de l'ajout du combat en cours: " + e.getMessage());
             return false;
         }
     }
-    
+
     @Override
     public int verifierCombatEnCours(int idJoueur) {
         // S'assurer que la table combats_en_cours existe
         creerTableCombatsEnCoursSiInexistante();
 
         // SQL Server n'utilise pas LIMIT mais TOP
-        String sql = "SELECT TOP 1 id_joueur1, id_joueur2 FROM combats_en_cours WHERE id_joueur1 = ? OR id_joueur2 = ? ORDER BY date_debut ASC";
+        String sql = "SELECT TOP 1 id_joueur1, id_joueur2 FROM combats_en_cours WHERE id_joueur1 = ? OR id_joueur2 = ? ORDER BY derniere_mise_a_jour DESC";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, idJoueur);
             stmt.setInt(2, idJoueur);
@@ -446,14 +512,17 @@ public class CombatDAOImpl implements CombatDAO {
             if (rs.next()) {
                 int idJoueur1 = rs.getInt("id_joueur1");
                 int idJoueur2 = rs.getInt("id_joueur2");
-                // Retourner l'ID de l'adversaire (pas celui du joueur)
-                int idAdversaire = (idJoueur1 == idJoueur) ? idJoueur2 : idJoueur1;
-                System.out.println("DEBUG: Combat en cours trouvé pour le joueur " + idJoueur + " contre " + idAdversaire);
-                return idAdversaire;
+                
+                // Retourner l'ID de l'autre joueur
+                int idAutreJoueur = (idJoueur1 == idJoueur) ? idJoueur2 : idJoueur1;
+                System.out.println("DEBUG: Combat en cours trouvé pour le joueur " + idJoueur + " avec " + idAutreJoueur);
+                return idAutreJoueur;
             }
+            System.out.println("DEBUG: Aucun combat en cours trouvé pour le joueur " + idJoueur);
             return 0; // Pas de combat en cours
         } catch (SQLException e) {
             System.err.println("Erreur lors de la vérification des combats en cours: " + e.getMessage());
+            e.printStackTrace();
             return 0; // En cas d'erreur
         }
     }
@@ -474,6 +543,76 @@ public class CombatDAOImpl implements CombatDAO {
             return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("Erreur lors de la suppression du combat en cours: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Met à jour le statut "prêt" du joueur qui lance le combat et le tour_actuel à 1 
+     * si les deux joueurs sont prêts à combattre
+     * 
+     * @param idJoueur L'identifiant du joueur qui lance le combat
+     * @return true si la mise à jour a réussi, false sinon
+     */
+    @Override
+    public boolean mettreAJourTourActuel(int idJoueur) {
+        // S'assurer que la table combats_en_cours existe
+        creerTableCombatsEnCoursSiInexistante();
+
+        try {
+            // Étape 1: Récupérer les informations du combat pour identifier quel joueur est joueur1 ou joueur2
+            String sqlSelect = "SELECT id_combat, id_joueur1, id_joueur2, joueur1_pret, joueur2_pret FROM combats_en_cours WHERE id_joueur1 = ? OR id_joueur2 = ?";
+            String idCombat = null;
+            boolean isJoueur1 = false;
+            boolean joueur1Pret = false;
+            boolean joueur2Pret = false;
+            
+            try (PreparedStatement stmtSelect = connection.prepareStatement(sqlSelect)) {
+                stmtSelect.setInt(1, idJoueur);
+                stmtSelect.setInt(2, idJoueur);
+                ResultSet rs = stmtSelect.executeQuery();
+                
+                if (rs.next()) {
+                    idCombat = rs.getString("id_combat");
+                    int idJoueur1 = rs.getInt("id_joueur1");
+                    isJoueur1 = (idJoueur == idJoueur1);
+                    joueur1Pret = rs.getBoolean("joueur1_pret");
+                    joueur2Pret = rs.getBoolean("joueur2_pret");
+                } else {
+                    System.err.println("Aucun combat trouvé pour le joueur " + idJoueur);
+                    return false;
+                }
+            }
+            
+            // Étape 2: Mettre à jour le statut "prêt" pour le joueur concerné
+            String sqlUpdate;
+            if (isJoueur1) {
+                sqlUpdate = "UPDATE combats_en_cours SET joueur1_pret = 1 WHERE id_combat = ?";
+                joueur1Pret = true;
+            } else {
+                sqlUpdate = "UPDATE combats_en_cours SET joueur2_pret = 1 WHERE id_combat = ?";
+                joueur2Pret = true;
+            }
+            
+            try (PreparedStatement stmtUpdate = connection.prepareStatement(sqlUpdate)) {
+                stmtUpdate.setString(1, idCombat);
+                stmtUpdate.executeUpdate();
+                System.out.println("DEBUG: Statut 'prêt' mis à jour pour le joueur " + idJoueur);
+            }
+            
+            // Étape 3: Si les deux joueurs sont prêts, mettre à jour le tour_actuel à 1
+            if (joueur1Pret && joueur2Pret) {
+                String sqlUpdateTour = "UPDATE combats_en_cours SET tour_actuel = 1 WHERE id_combat = ?";
+                try (PreparedStatement stmtUpdateTour = connection.prepareStatement(sqlUpdateTour)) {
+                    stmtUpdateTour.setString(1, idCombat);
+                    stmtUpdateTour.executeUpdate();
+                    System.out.println("DEBUG: Les deux joueurs sont prêts, tour_actuel mis à jour à 1 pour le combat " + idCombat);
+                }
+            }
+            
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la mise à jour du statut 'prêt' ou du tour actuel: " + e.getMessage());
             return false;
         }
     }
@@ -523,6 +662,198 @@ public class CombatDAOImpl implements CombatDAO {
             }
         } catch (SQLException e) {
             System.err.println("Erreur lors de l'application de la sanction financière: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public Joueur recupererJoueurActif(String idCombat) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+        
+        try {
+            // S'assurer que la table combats_en_cours existe
+            creerTableCombatsEnCoursSiInexistante();
+            
+            // Récupérer l'id_joueur1 du combat
+            String sql = "SELECT id_joueur1 FROM combats_en_cours WHERE id_combat = ?";
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setString(1, idCombat);
+                ResultSet rs = stmt.executeQuery();
+                
+                if (rs.next()) {
+                    int idJoueur1 = rs.getInt("id_joueur1");
+                    
+                    // Récupérer le joueur correspondant en utilisant JoueurDAO
+                    JoueurDAOImpl joueurDAO = JoueurDAOImpl.getInstance();
+                    return joueurDAO.obtenirJoueurParId(idJoueur1);
+                } else {
+                    System.out.println("DEBUG: Aucun combat trouvé avec l'ID " + idCombat);
+                    return null;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération du joueur actif: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public Joueur recupererAdversaire(String idCombat) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+        
+        try {
+            // S'assurer que la table combats_en_cours existe
+            creerTableCombatsEnCoursSiInexistante();
+            
+            // Récupérer l'id_joueur2 du combat
+            String sql = "SELECT id_joueur2 FROM combats_en_cours WHERE id_combat = ?";
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setString(1, idCombat);
+                ResultSet rs = stmt.executeQuery();
+                
+                if (rs.next()) {
+                    int idJoueur2 = rs.getInt("id_joueur2");
+                    
+                    // Récupérer le joueur correspondant en utilisant JoueurDAO
+                    JoueurDAOImpl joueurDAO = JoueurDAOImpl.getInstance();
+                    return joueurDAO.obtenirJoueurParId(idJoueur2);
+                } else {
+                    System.out.println("DEBUG: Aucun combat trouvé avec l'ID " + idCombat);
+                    return null;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération de l'adversaire: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public String obtenirIdCombatEnCours(int idJoueur) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+        
+        try {
+            // S'assurer que la table combats_en_cours existe
+            creerTableCombatsEnCoursSiInexistante();
+            
+            // Récupérer l'ID du combat où le joueur est impliqué
+            String sql = "SELECT id_combat FROM combats_en_cours WHERE id_joueur1 = ? OR id_joueur2 = ? ORDER BY derniere_mise_a_jour DESC";
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setInt(1, idJoueur);
+                stmt.setInt(2, idJoueur);
+                ResultSet rs = stmt.executeQuery();
+                
+                if (rs.next()) {
+                    String idCombat = rs.getString("id_combat");
+                    System.out.println("DEBUG: Combat en cours trouvé pour le joueur " + idJoueur + " : " + idCombat);
+                    return idCombat;
+                } else {
+                    System.out.println("DEBUG: Aucun combat en cours trouvé pour le joueur " + idJoueur);
+                    return null;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération de l'ID du combat en cours: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Récupère le joueur actif du premier combat en cours trouvé dans la base de données
+     * Cette méthode est fournie pour la compatibilité avec le code existant
+     *
+     * @return Le joueur actif du premier combat en cours, ou null si aucun combat n'est trouvé
+     */
+    public Joueur recupererJoueurActif() {
+        try {
+            // On récupère tous les combats en cours et on prend le premier
+            String sql = "SELECT TOP 1 id_combat FROM combats_en_cours ORDER BY derniere_mise_a_jour DESC";
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                ResultSet rs = stmt.executeQuery();
+                
+                if (rs.next()) {
+                    String idCombat = rs.getString("id_combat");
+                    return recupererJoueurActif(idCombat);
+                } else {
+                    System.out.println("DEBUG: Aucun combat en cours trouvé");
+                    return null;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération du joueur actif: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Récupère l'adversaire du premier combat en cours trouvé dans la base de données
+     * Cette méthode est fournie pour la compatibilité avec le code existant
+     *
+     * @return L'adversaire du premier combat en cours, ou null si aucun combat n'est trouvé
+     */
+    public Joueur recupererAdversaire() {
+        try {
+            // On récupère tous les combats en cours et on prend le premier
+            String sql = "SELECT TOP 1 id_combat FROM combats_en_cours ORDER BY derniere_mise_a_jour DESC";
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                ResultSet rs = stmt.executeQuery();
+                
+                if (rs.next()) {
+                    String idCombat = rs.getString("id_combat");
+                    return recupererAdversaire(idCombat);
+                } else {
+                    System.out.println("DEBUG: Aucun combat en cours trouvé");
+                    return null;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération de l'adversaire: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Vérifie si les deux joueurs sont prêts pour un combat donné
+     * 
+     * @param idCombat L'identifiant du combat
+     * @return true si les deux joueurs sont prêts, false sinon
+     */
+    @Override
+    public boolean sontJoueursPrets(String idCombat) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+        
+        String sql = "SELECT joueur1_pret, joueur2_pret FROM combats_en_cours WHERE id_combat = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, idCombat);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                boolean joueur1Pret = rs.getBoolean("joueur1_pret");
+                boolean joueur2Pret = rs.getBoolean("joueur2_pret");
+                
+                System.out.println("DEBUG: Statut des joueurs pour le combat " + idCombat + 
+                        " - Joueur1 prêt: " + joueur1Pret + ", Joueur2 prêt: " + joueur2Pret);
+                
+                return joueur1Pret && joueur2Pret;
+            }
+            
+            System.out.println("DEBUG: Combat non trouvé: " + idCombat);
+            return false;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la vérification des statuts 'prêt': " + e.getMessage());
             return false;
         }
     }
