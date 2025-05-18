@@ -1,8 +1,17 @@
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAO.CombatSessionMongoDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatSessionMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DTO.CombatResolver;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
+import be.helha.projects.GuerreDesRoyaumes.Model.Combat.CombatSession;
+import be.helha.projects.GuerreDesRoyaumes.Model.Combat.CombatStatus;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Potion;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +29,8 @@ public class ServiceCombatImpl implements ServiceCombat {
     private final JoueurDAO joueurDAO;
     private final CombatDAO combatDAO;
     private final Random random = new Random();
+    private final CombatSessionMongoDAO sessionDAO;
+    private final CombatResolver combatResolver;
 
     // Stockage temporaire des combats en cours avec thread-safety
     private Map<String, Map<String, Object>> combatsEnCours = new ConcurrentHashMap<>();
@@ -29,544 +40,509 @@ public class ServiceCombatImpl implements ServiceCombat {
     private Map<String, Map<String, String>> resultatsActions = new ConcurrentHashMap<>();
 
     @Autowired
-    public ServiceCombatImpl(JoueurDAO joueurDAO, CombatDAO combatDAO) {
+    public ServiceCombatImpl(JoueurDAO joueurDAO, CombatDAO combatDAO, CombatSessionMongoDAO sessionDAO, CombatResolver combatResolver) {
         this.joueurDAO = joueurDAO;
         this.combatDAO = combatDAO;
+        this.sessionDAO = sessionDAO;
+        this.combatResolver = combatResolver;
+    }
+    
+    // Pour les tests
+    public CombatDAO getCombatDAO() {
+        return this.combatDAO;
     }
 
     @Override
     public void initialiserCombat(Joueur joueur1, Joueur joueur2, List<Item> itemsSelectionnes) {
-        System.out.println("DEBUG: Initialisation du combat entre " + joueur1.getPseudo() + " et " + joueur2.getPseudo());
-        // Création d'un ID unique pour ce combat
-        String combatId = joueur1.getId() + "-" + joueur2.getId() + "-" + System.currentTimeMillis();
-
-        // S'assurer que les joueurs ont bien leurs personnages avec le type correct depuis la BDD
         try {
-            // Recharger les joueurs depuis la base de données pour s'assurer d'avoir les bons personnages
-            Joueur j1FromDB = joueurDAO.obtenirJoueurParId(joueur1.getId());
-            Joueur j2FromDB = joueurDAO.obtenirJoueurParId(joueur2.getId());
-
-            // Vérifier si les objets ont été correctement chargés
-            if (j1FromDB != null && j1FromDB.getPersonnage() != null) {
-                // Préserver l'identité des objets en copiant seulement les attributs nécessaires
-                joueur1.setPersonnage(j1FromDB.getPersonnage());
-                System.out.println("DEBUG: Personnage J1 chargé: " + joueur1.getPersonnage().getNom());
+            // Vérifier si les joueurs sont valides
+            if (joueur1 == null || joueur2 == null) {
+                System.err.println("initialiserCombat: L'un des joueurs est null - joueur1: " + 
+                                  (joueur1 == null ? "null" : joueur1.getPseudo()) + 
+                                  ", joueur2: " + (joueur2 == null ? "null" : joueur2.getPseudo()));
+                throw new IllegalArgumentException("Les joueurs ne peuvent pas être null");
             }
-
-            if (j2FromDB != null && j2FromDB.getPersonnage() != null) {
-                joueur2.setPersonnage(j2FromDB.getPersonnage());
-                System.out.println("DEBUG: Personnage J2 chargé: " + joueur2.getPersonnage().getNom());
+            
+            // Vérifier si les personnages sont initialisés
+            if (joueur1.getPersonnage() == null || joueur2.getPersonnage() == null) {
+                System.err.println("initialiserCombat: L'un des personnages est null - joueur1: " + 
+                                  joueur1.getPseudo() + " (personnage: " + (joueur1.getPersonnage() == null ? "null" : "ok") + 
+                                  "), joueur2: " + joueur2.getPseudo() + " (personnage: " + 
+                                  (joueur2.getPersonnage() == null ? "null" : "ok") + ")");
+                throw new IllegalArgumentException("Les personnages des joueurs doivent être initialisés");
             }
+            
+            // Rechercher si un combat existe déjà entre ces joueurs
+            String sessionId = sessionDAO.trouverSessionId(joueur1.getId(), joueur2.getId());
+            
+            if (sessionId != null) {
+                // Combat existant, vérifier s'il est terminé
+                CombatSession session = sessionDAO.chargerSession(sessionId);
+                
+                if (session != null && session.getStatus() != CombatStatus.TERMINE && session.getStatus() != CombatStatus.ABANDONNE) {
+                    System.out.println("Un combat est déjà en cours entre ces joueurs");
+                    return;
+                }
+            }
+            
+            // Créer une nouvelle session de combat
+            String nouveauSessionId = sessionDAO.creerSession(joueur1, joueur2);
+            
+            if (nouveauSessionId == null) {
+                throw new RuntimeException("Échec de la création de la session de combat");
+            }
+            
+            System.out.println("Combat initialisé entre " + joueur1.getPseudo() + " et " + joueur2.getPseudo());
+            
+            // Mettre à jour le statut de la session
+            sessionDAO.mettreAJourStatus(nouveauSessionId, CombatStatus.EN_COURS);
+            
         } catch (Exception e) {
-            System.err.println("DEBUG: Erreur lors du chargement des personnages: " + e.getMessage());
+            System.err.println("Erreur lors de l'initialisation du combat: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Erreur lors de l'initialisation du combat", e);
         }
-
-        // Réinitialiser les points de vie au début du combat
-        joueur1.getPersonnage().setPointsDeVie(100);
-        joueur2.getPersonnage().setPointsDeVie(100);
-
-        // Persister les points de vie initiaux
-        try {
-            joueurDAO.mettreAJourJoueur(joueur1);
-            joueurDAO.mettreAJourJoueur(joueur2);
-        } catch (Exception e) {
-            System.err.println("DEBUG: Erreur lors de l'initialisation des PV: " + e.getMessage());
-        }
-
-        System.out.println("DEBUG: Points de vie initiaux: J1=" + joueur1.getPersonnage().getPointsDeVie() +
-                ", J2=" + joueur2.getPersonnage().getPointsDeVie());
-
-        // Stockage des informations du combat
-        Map<String, Object> infoCombat = new HashMap<>();
-        infoCombat.put("joueur1", joueur1);
-        infoCombat.put("joueur2", joueur2);
-        infoCombat.put("items", itemsSelectionnes);
-        infoCombat.put("tourActuel", 1);
-        infoCombat.put("joueurActif", joueur1.getId()); // Le joueur1 commence
-        infoCombat.put("termine", false);
-        infoCombat.put("derniereMiseAJour", System.currentTimeMillis()); // Horodatage pour détecter les blocages
-
-        // Sauvegarder les PV initiaux pour référence
-        infoCombat.put("pvInitiauxJoueur1", 100.0);
-        infoCombat.put("pvInitiauxJoueur2", 100.0);
-
-        // Initialiser le stockage des actions et résultats
-        Map<String, String> actionsTour1 = new HashMap<>();
-        Map<String, String> resultatsTour1 = new HashMap<>();
-        actionsJoueurs.put(combatId + "-1", actionsTour1);
-        resultatsActions.put(combatId + "-1", resultatsTour1);
-
-        // Ajouter à la liste des combats en cours
-        combatsEnCours.put(combatId, infoCombat);
-
-        System.out.println("DEBUG: Combat initialisé avec ID: " + combatId);
     }
 
     @Override
     public String executerAction(Joueur joueur, Joueur adversaire, String typeAction, int tour) {
-        System.out.println("DEBUG: Exécution action - Joueur: " + joueur.getPseudo() +
-                ", Action: " + typeAction + ", Tour: " + tour);
-
-        // Trouver l'ID du combat
-        String combatId = trouverCombatId(joueur, adversaire);
-        if (combatId == null) {
-            System.err.println("DEBUG: Combat non trouvé");
-            return "Combat non trouvé";
-        }
-
-        // Récupérer les informations du combat
-        Map<String, Object> infoCombat = combatsEnCours.get(combatId);
-
-        // Vérifier si le combat est déjà terminé
-        if ((boolean) infoCombat.getOrDefault("termine", false)) {
-            System.err.println("DEBUG: Combat déjà terminé");
-            return "Le combat est déjà terminé";
-        }
-
-        // Vérifier si c'est le tour du joueur
-        int joueurActif = (int) infoCombat.get("joueurActif");
-        if (joueur.getId() != joueurActif) {
-            System.err.println("DEBUG: Ce n'est pas le tour de " + joueur.getPseudo() +
-                    ", tour actuel: " + joueurActif);
-            return "Ce n'est pas votre tour de jouer";
-        }
-
-        // Enregistrer l'action du joueur pour ce tour
-        String actionsTourKey = combatId + "-" + tour;
-        String resultatsTourKey = combatId + "-" + tour;
-
-        Map<String, String> actionsTour = actionsJoueurs.getOrDefault(actionsTourKey, new HashMap<>());
-        Map<String, String> resultatsTour = resultatsActions.getOrDefault(resultatsTourKey, new HashMap<>());
-
-        // Récupérer les joueurs dans l'ordre correct
-        Joueur joueur1 = (Joueur) infoCombat.get("joueur1");
-        Joueur joueur2 = (Joueur) infoCombat.get("joueur2");
-
-        System.out.println("DEBUG: État avant action - J1 PV: " + joueur1.getPersonnage().getPointsDeVie() +
-                ", J2 PV: " + joueur2.getPersonnage().getPointsDeVie());
-
-        // Exécuter l'action du joueur et calculer le résultat
-        String resultat = "";
-        if (typeAction.equals("attaque")) {
-            int degats = calculerDegats(joueur, adversaire, typeAction);
-
-            // Appliquer les dégâts à l'adversaire
-            double pvActuels = adversaire.getPersonnage().getPointsDeVie();
-            double nouveauxPV = Math.max(0, pvActuels - degats);
-            adversaire.getPersonnage().setPointsDeVie(nouveauxPV);
-
-            // Mettre à jour le DAO pour persister les changements
-            try {
-                joueurDAO.mettreAJourJoueur(adversaire);
-            } catch (Exception e) {
-                System.err.println("DEBUG: Erreur lors de la mise à jour de l'adversaire: " + e.getMessage());
+        try {
+            if (joueur == null || adversaire == null) {
+                return "Erreur: Joueur ou adversaire non valide";
             }
-
-            resultat = "Vous avez attaqué et infligé " + degats + " points de dégâts";
-
-            // Stocker le résultat pour l'adversaire
-            String resultatAdversaire = "L'adversaire a attaqué et vous a infligé " + degats + " points de dégâts";
-            resultatsTour.put(String.valueOf(adversaire.getId()), resultatAdversaire);
-
-        } else if (typeAction.equals("defense")) {
-            resultat = "Vous vous êtes mis en posture défensive";
-
-            // Stocker le résultat pour l'adversaire
-            String resultatAdversaire = "L'adversaire s'est mis en posture défensive";
-            resultatsTour.put(String.valueOf(adversaire.getId()), resultatAdversaire);
-
-        } else if (typeAction.equals("special")) {
-            int degats = calculerDegats(joueur, adversaire, typeAction);
-
-            // Appliquer les dégâts à l'adversaire
-            double pvActuels = adversaire.getPersonnage().getPointsDeVie();
-            double nouveauxPV = Math.max(0, pvActuels - degats);
-            adversaire.getPersonnage().setPointsDeVie(nouveauxPV);
-
-            // Mettre à jour le DAO pour persister les changements
-            try {
-                joueurDAO.mettreAJourJoueur(adversaire);
-            } catch (Exception e) {
-                System.err.println("DEBUG: Erreur lors de la mise à jour de l'adversaire: " + e.getMessage());
+            
+            // Rechercher la session de combat
+            String sessionId = sessionDAO.trouverSessionId(joueur.getId(), adversaire.getId());
+            
+            if (sessionId == null) {
+                return "Erreur: Aucun combat en cours entre ces joueurs";
             }
-
-            resultat = "Vous avez utilisé une compétence spéciale et infligé " + degats + " points de dégâts";
-
-            // Stocker le résultat pour l'adversaire
-            String resultatAdversaire = "L'adversaire a utilisé une compétence spéciale et vous a infligé " + degats + " points de dégâts";
-            resultatsTour.put(String.valueOf(adversaire.getId()), resultatAdversaire);
-        }
-
-        // Enregistrer l'action du joueur
-        actionsTour.put(String.valueOf(joueur.getId()), typeAction);
-        actionsJoueurs.put(actionsTourKey, actionsTour);
-
-        // Stocker le résultat pour le joueur actuel
-        resultatsTour.put(String.valueOf(joueur.getId()), resultat);
-        resultatsActions.put(resultatsTourKey, resultatsTour);
-
-        System.out.println("DEBUG: Action exécutée - Résultat: " + resultat);
-        System.out.println("DEBUG: État après action - J1 PV: " + joueur1.getPersonnage().getPointsDeVie() +
-                ", J2 PV: " + joueur2.getPersonnage().getPointsDeVie());
-
-        // Changer le joueur actif (passer au joueur adverse)
-        infoCombat.put("joueurActif", adversaire.getId());
-
-        // Vérifier si le combat est terminé après l'action
-        boolean combatTermine = estCombatTermine(joueur1, joueur2, tour);
-        if (combatTermine) {
-            infoCombat.put("termine", true);
-            System.out.println("DEBUG: Combat terminé après l'action de " + joueur.getPseudo());
-        }
-
-        // Si le tour est terminé (les deux joueurs ont joué), préparer le tour suivant
-        boolean tourTermine = actionsTour.containsKey(String.valueOf(joueur1.getId())) &&
-                actionsTour.containsKey(String.valueOf(joueur2.getId()));
-
-        if (tourTermine) {
-            int nouveauTour = tour + 1;
-            infoCombat.put("tourActuel", nouveauTour);
-
-            // Préparer le stockage pour le prochain tour
-            Map<String, String> actionsProchainTour = new HashMap<>();
-            Map<String, String> resultatsProchainTour = new HashMap<>();
-            actionsJoueurs.put(combatId + "-" + nouveauTour, actionsProchainTour);
-            resultatsActions.put(combatId + "-" + nouveauTour, resultatsProchainTour);
-
-            // Revenir au joueur1 pour le tour suivant
-            infoCombat.put("joueurActif", joueur1.getId());
-
-            System.out.println("DEBUG: Tour " + tour + " terminé, passage au tour " + nouveauTour);
-        }
-
-        return resultat;
-    }
-
-    /**
-     * Obtient le résultat de l'action adverse pour le joueur spécifié
-     */
-    @Override
-    public String obtenirResultatActionAdverse(Joueur joueur, Joueur adversaire, int tour) {
-        String combatId = trouverCombatId(joueur, adversaire);
-        if (combatId == null) {
-            return "Combat non trouvé";
-        }
-
-        String resultatsTourKey = combatId + "-" + tour;
-        Map<String, String> resultatsTour = resultatsActions.getOrDefault(resultatsTourKey, new HashMap<>());
-
-        String resultat = resultatsTour.getOrDefault(String.valueOf(joueur.getId()), "Aucun résultat disponible");
-        System.out.println("DEBUG: Résultat action adverse pour " + joueur.getPseudo() + ": " + resultat);
-        return resultat;
-    }
-
-    /**
-     * Vérifie si c'est le tour du joueur spécifié de jouer
-     */
-    @Override
-    public boolean estTourDuJoueur(Joueur joueur, Joueur adversaire) {
-        String combatId = trouverCombatId(joueur, adversaire);
-        if (combatId == null) {
-            System.err.println("DEBUG: Combat non trouvé lors de la vérification du tour");
-            return false;
-        }
-
-        Map<String, Object> infoCombat = combatsEnCours.get(combatId);
-        int joueurActif = (int) infoCombat.get("joueurActif");
-        int tourActuel = (int) infoCombat.get("tourActuel");
-
-        boolean estSonTour = joueur.getId() == joueurActif;
-        System.out.println("DEBUG: Vérification tour - Joueur: " + joueur.getPseudo() +
-                ", Tour actuel: " + tourActuel + ", Est son tour: " + estSonTour);
-        return estSonTour;
-    }
-
-    @Override
-    public int getTourActuel(Joueur joueur, Joueur adversaire) {
-        String combatId = trouverCombatId(joueur, adversaire);
-        if (combatId == null) {
-            return 1; // Valeur par défaut
-        }
-
-        Map<String, Object> infoCombat = combatsEnCours.get(combatId);
-        return (int) infoCombat.get("tourActuel");
-    }
-
-    private String trouverCombatId(Joueur joueur1, Joueur joueur2) {
-        for (String combatId : combatsEnCours.keySet()) {
-            Map<String, Object> infoCombat = combatsEnCours.get(combatId);
-            Joueur j1 = (Joueur) infoCombat.get("joueur1");
-            Joueur j2 = (Joueur) infoCombat.get("joueur2");
-
-            if ((j1.getId() == joueur1.getId() && j2.getId() == joueur2.getId()) ||
-                    (j1.getId() == joueur2.getId() && j2.getId() == joueur1.getId())) {
-                return combatId;
+            
+            // Vérifier si c'est bien le tour du joueur
+            if (!sessionDAO.estTourDuJoueur(sessionId, joueur.getId())) {
+                return "Erreur: Ce n'est pas votre tour";
             }
+            
+            // Valider que le tour correspond
+            int tourActuel = sessionDAO.obtenirTourActuel(sessionId);
+            if (tour != tourActuel) {
+                return "Erreur: Tour incorrect. Tour actuel: " + tourActuel;
+            }
+            
+            // Créer les paramètres pour l'action
+            Map<String, Object> parametres = new HashMap<>();
+            
+            // Sauvegarder l'action
+            boolean actionSauvegardee = sessionDAO.sauvegarderAction(sessionId, joueur.getId(), tour, typeAction, parametres);
+            
+            if (!actionSauvegardee) {
+                return "Erreur: Impossible de sauvegarder l'action";
+            }
+            
+            // Vérifier si les actions des deux joueurs sont complètes
+            if (sessionDAO.actionsCompletes(sessionId, tour)) {
+                // Résoudre les actions si les deux joueurs ont soumis leur action
+                declencherResolution(sessionId, tour);
+            }
+            
+            return "Action '" + typeAction + "' exécutée avec succès";
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'exécution de l'action: " + e.getMessage());
+            e.printStackTrace();
+            return "Erreur lors de l'exécution de l'action: " + e.getMessage();
         }
-        return null;
+    }
+    
+    @Override
+    public String executerActionAvecItem(Joueur joueur, Joueur adversaire, String typeAction, Item item, int tour) {
+        try {
+            if (joueur == null || adversaire == null || item == null) {
+                return "Erreur: Joueur, adversaire ou item non valide";
+            }
+            
+            // Rechercher la session de combat
+            String sessionId = sessionDAO.trouverSessionId(joueur.getId(), adversaire.getId());
+            
+            if (sessionId == null) {
+                return "Erreur: Aucun combat en cours entre ces joueurs";
+            }
+            
+            // Vérifier si c'est bien le tour du joueur
+            if (!sessionDAO.estTourDuJoueur(sessionId, joueur.getId())) {
+                return "Erreur: Ce n'est pas votre tour";
+            }
+            
+            // Valider que le tour correspond
+            int tourActuel = sessionDAO.obtenirTourActuel(sessionId);
+            if (tour != tourActuel) {
+                return "Erreur: Tour incorrect. Tour actuel: " + tourActuel;
+            }
+            
+            // Créer les paramètres pour l'action
+            Map<String, Object> parametres = new HashMap<>();
+            parametres.put("itemId", item.getId());
+            parametres.put("itemType", item.getType());
+            parametres.put("itemNom", item.getNom());
+            
+            if (item instanceof Arme) {
+                parametres.put("degats", ((Arme) item).getDegats());
+            } else if (item instanceof Bouclier) {
+                parametres.put("defense", ((Bouclier) item).getDefense());
+            } else if (item instanceof Potion) {
+                Potion potion = (Potion) item;
+                parametres.put("soin", potion.getSoin());
+                parametres.put("degats", potion.getDegats());
+            }
+            
+            // Sauvegarder l'action
+            boolean actionSauvegardee = sessionDAO.sauvegarderAction(sessionId, joueur.getId(), tour, "utiliser_item", parametres);
+            
+            if (!actionSauvegardee) {
+                return "Erreur: Impossible de sauvegarder l'action";
+            }
+            
+            // Consommer l'item (le retirer de l'inventaire)
+            joueur.getPersonnage().getInventaire().enleverItem(item, 1);
+            joueurDAO.mettreAJourJoueur(joueur);
+            
+            // Vérifier si les actions des deux joueurs sont complètes
+            if (sessionDAO.actionsCompletes(sessionId, tour)) {
+                // Résoudre les actions si les deux joueurs ont soumis leur action
+                declencherResolution(sessionId, tour);
+            }
+            
+            return "Action avec item '" + item.getNom() + "' exécutée avec succès";
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'exécution de l'action avec item: " + e.getMessage());
+            e.printStackTrace();
+            return "Erreur lors de l'exécution de l'action avec item: " + e.getMessage();
+        }
+    }
+    
+    private void declencherResolution(String sessionId, int tour) {
+        try {
+            // Mettre à jour le statut de la session
+            sessionDAO.mettreAJourStatus(sessionId, CombatStatus.RESOLUTION);
+            
+            // Déclencher la résolution des actions
+            boolean resolutionReussie = combatResolver.resoudreActions(sessionId, tour);
+            
+            if (!resolutionReussie) {
+                System.err.println("Erreur lors de la résolution des actions pour le tour " + tour);
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors du déclenchement de la résolution: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void enregistrerVictoire(Joueur joueur) {
         try {
-            // Incrémenter le nombre de victoires
-            joueur.setVictoires(joueur.getVictoires() + 1);
-
-            // Mise à jour dans la base de données
-            joueurDAO.mettreAJourJoueur(joueur);
-            System.out.println("DEBUG: Victoire enregistrée pour " + joueur.getPseudo());
+            combatDAO.enregistrerVictoire(joueur);
         } catch (Exception e) {
             System.err.println("Erreur lors de l'enregistrement de la victoire: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     @Override
     public void terminerCombat(Joueur joueur1, Joueur joueur2, Joueur vainqueur) {
-        if (vainqueur != null) {
-            enregistrerVictoire(vainqueur);
-        }
-
-        // Supprimer le combat des combats en cours
-        String combatId = trouverCombatId(joueur1, joueur2);
-        if (combatId != null) {
-            combatsEnCours.remove(combatId);
-
-            // Nettoyer les actions et résultats stockés
-            for (int tour = 1; tour <= 5; tour++) {
-                actionsJoueurs.remove(combatId + "-" + tour);
-                resultatsActions.remove(combatId + "-" + tour);
+        try {
+            // Rechercher la session de combat
+            String sessionId = sessionDAO.trouverSessionId(joueur1.getId(), joueur2.getId());
+            
+            if (sessionId == null) {
+                System.err.println("Aucun combat en cours entre ces joueurs");
+                return;
             }
-
-            System.out.println("DEBUG: Combat terminé et nettoyé");
+            
+            // Archiver la session
+            boolean archivageReussi = sessionDAO.archiverSession(sessionId);
+            
+            if (!archivageReussi) {
+                System.err.println("Erreur lors de l'archivage de la session de combat");
+            }
+            
+            // Enregistrer le résultat dans la base SQL
+            if (vainqueur != null) {
+                combatDAO.enregistrerVictoire(vainqueur);
+                
+                // Enregistrer la défaite pour l'autre joueur
+                if (vainqueur.getId() == joueur1.getId()) {
+                    combatDAO.enregistrerDefaite(joueur2);
+                } else {
+                    combatDAO.enregistrerDefaite(joueur1);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la terminaison du combat: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     @Override
     public boolean estCombatTermine(Joueur joueur1, Joueur joueur2, int tourActuel) {
-        boolean termine = tourActuel >= 5 ||
-                joueur1.getPersonnage().getPointsDeVie() <= 0 ||
-                joueur2.getPersonnage().getPointsDeVie() <= 0;
-
-        if (termine) {
-            System.out.println("DEBUG: Combat terminé - Tour: " + tourActuel +
-                    ", PV J1: " + joueur1.getPersonnage().getPointsDeVie() +
-                    ", PV J2: " + joueur2.getPersonnage().getPointsDeVie());
-        }
-
-        return termine;
-    }
-
-    @Override
-    public int calculerDegats(Joueur attaquant, Joueur defenseur, String typeAttaque) {
-        // Calcul de base des dégâts selon les caractéristiques du personnage
-        int baseAttaque = (int)(attaquant.getPersonnage().getDegats() * 2);
-
-        // Ajouter un élément aléatoire
-        int variation = random.nextInt(20) - 10; // Entre -10 et +10
-
-        // Si c'est une attaque spéciale, augmenter les dégâts
-        if ("special".equals(typeAttaque)) {
-            baseAttaque = (int)(baseAttaque * 1.5);
-        }
-
-        // Calculer les dégâts finaux (minimum 5)
-        int degats = Math.max(5, baseAttaque + variation);
-        System.out.println("DEBUG: Calcul dégâts - Base: " + baseAttaque + ", Variation: " + variation + ", Final: " + degats);
-        return degats;
-    }
-
-    @Override
-    public int calculerDefense(Joueur defenseur, int degats) {
-        // Réduction des dégâts en fonction de la résistance du personnage
-        int reduction = (int)(defenseur.getPersonnage().getResistance() / 2);
-
-        // Ajouter un élément aléatoire à la réduction
-        int variationReduction = random.nextInt(10);
-
-        // Calculer les dégâts réduits (minimum 1)
-        int degatsReduits = Math.max(1, degats - reduction - variationReduction);
-        System.out.println("DEBUG: Calcul défense - Dégâts initiaux: " + degats +
-                ", Réduction: " + reduction + ", Variation: " + variationReduction +
-                ", Dégâts finaux: " + degatsReduits);
-        return degatsReduits;
-    }
-
-    /**
-     * Méthode publique pour débloquer un combat en forçant le changement de tour
-     * Uniquement pour usage en mode développement
-     *
-     * @param joueur Le joueur actuel
-     * @param adversaire L'adversaire
-     * @return true si le déblocage a réussi, false sinon
-     */
-    @Override
-    public boolean forcerChangementTour(Joueur joueur, Joueur adversaire) {
         try {
-            System.out.println("DEBUG: DÉBUT forçage du changement de tour pour " + joueur.getPseudo());
-            // Trouver l'ID du combat
-            String combatId = trouverCombatId(joueur, adversaire);
-            if (combatId == null) {
-                System.err.println("DEBUG: Impossible de trouver le combat pour forcer le changement de tour");
-                return false;
+            // Rechercher la session de combat
+            String sessionId = sessionDAO.trouverSessionId(joueur1.getId(), joueur2.getId());
+            
+            if (sessionId == null) {
+                return true; // Si pas de combat, considérer comme terminé
             }
-
-            // Récupérer les informations du combat
-            Map<String, Object> infoCombat = combatsEnCours.get(combatId);
-
-            // Débogage pour comprendre l'état du combat
-            Joueur joueur1 = (Joueur) infoCombat.get("joueur1");
-            Joueur joueur2 = (Joueur) infoCombat.get("joueur2");
-            int tourActuel = (int) infoCombat.get("tourActuel");
-            int joueurActifId = (int) infoCombat.get("joueurActif");
-
-            System.out.println("DEBUG: État du combat:");
-            System.out.println("  - Combat ID: " + combatId);
-            System.out.println("  - Tour: " + tourActuel);
-            System.out.println("  - Joueur actif ID: " + joueurActifId);
-            System.out.println("  - Joueur1: " + joueur1.getPseudo() + " (ID: " + joueur1.getId() + ", PV: " + joueur1.getPersonnage().getPointsDeVie() + ")");
-            System.out.println("  - Joueur2: " + joueur2.getPseudo() + " (ID: " + joueur2.getId() + ", PV: " + joueur2.getPersonnage().getPointsDeVie() + ")");
-
-            // Vérifier si le combat est bloqué (absence d'activité pendant une période)
-            long derniereMiseAJour = (long) infoCombat.getOrDefault("derniereMiseAJour", 0L);
-            long tempsActuel = System.currentTimeMillis();
-            boolean combatInactif = (tempsActuel - derniereMiseAJour) > 30000; // 30 secondes
-
-            if (combatInactif) {
-                System.out.println("DEBUG: Combat inactif détecté - Déblocage automatique");
+            
+            // Charger la session
+            CombatSession session = sessionDAO.chargerSession(sessionId);
+            
+            if (session == null) {
+                return true;
             }
-
-            // MÉTHODE PLUS EFFICACE DE DÉBLOCAGE:
-            // 1. Force directement le tour pour le joueur qui le demande
-            // 2. Simule une action défensive pour l'adversaire si nécessaire
-
-            // Si l'adversaire est actif mais n'a pas joué, simuler son action
-            if (joueurActifId != joueur.getId()) {
-                // Déterminer qui est l'adversaire actif actuellement
-                Joueur joueurActif = (joueurActifId == joueur1.getId()) ? joueur1 : joueur2;
-
-                // Simuler une action défensive pour l'adversaire
-                String actionsTourKey = combatId + "-" + tourActuel;
-                Map<String, String> actionsTour = actionsJoueurs.getOrDefault(actionsTourKey, new HashMap<>());
-
-                if (!actionsTour.containsKey(String.valueOf(joueurActifId))) {
-                    System.out.println("DEBUG: Simulation d'une action défensive pour " + joueurActif.getPseudo());
-
-                    // Exécuter directement une action défensive pour l'adversaire
-                    String resultat = executerAction(joueurActif, joueur, "defense", tourActuel);
-                    System.out.println("DEBUG: Action simulée: " + resultat);
-                }
-            }
-
-            // Maintenant forcer le tour pour le joueur qui demande le déblocage
-            infoCombat.put("joueurActif", joueur.getId());
-            infoCombat.put("derniereMiseAJour", System.currentTimeMillis());
-
-            // S'assurer que les points de vie actuels sont correctement stockés
-            try {
-                // Récupérer les valeurs les plus récentes
-                Joueur j1FromDB = joueurDAO.obtenirJoueurParId(joueur1.getId());
-                Joueur j2FromDB = joueurDAO.obtenirJoueurParId(joueur2.getId());
-
-                if (j1FromDB != null && j1FromDB.getPersonnage() != null) {
-                    joueur1.getPersonnage().setPointsDeVie(j1FromDB.getPersonnage().getPointsDeVie());
-                }
-
-                if (j2FromDB != null && j2FromDB.getPersonnage() != null) {
-                    joueur2.getPersonnage().setPointsDeVie(j2FromDB.getPersonnage().getPointsDeVie());
-                }
-
-                // Mettre à jour les objets dans infoCombat
-                infoCombat.put("joueur1", joueur1);
-                infoCombat.put("joueur2", joueur2);
-            } catch (Exception e) {
-                System.err.println("DEBUG: Erreur lors de la mise à jour des PV: " + e.getMessage());
-            }
-
-            System.out.println("DEBUG: Tour forcé pour " + joueur.getPseudo() + " (ID: " + joueur.getId() + ")");
-
-            return true;
+            
+            return session.estTermine();
         } catch (Exception e) {
-            System.err.println("DEBUG: Erreur lors du forçage du changement de tour: " + e.getMessage());
+            System.err.println("Erreur lors de la vérification de fin de combat: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
     @Override
-    public CombatDAO getCombatDAO() {
-        return this.combatDAO;
+    public int calculerDegats(Joueur attaquant, Joueur defenseur, String typeAttaque) {
+        // Méthode de calcul de dégâts simplifiée
+        // Utilisée pour les cas où nous devons calculer les dégâts en dehors du resolver
+        try {
+            if (attaquant == null || defenseur == null || attaquant.getPersonnage() == null || defenseur.getPersonnage() == null) {
+                return 0;
+            }
+            
+            double degatsBase = attaquant.getPersonnage().getDegats();
+            double defenseBase = defenseur.getPersonnage().getResistance() / 100.0;
+            
+            // Modifier les dégâts selon le type d'attaque
+            if ("special".equals(typeAttaque)) {
+                degatsBase *= 1.5; // Bonus pour les attaques spéciales
+            }
+            
+            // Appliquer la défense
+            double degatsFinaux = degatsBase * (1 - defenseBase);
+            
+            // Variation aléatoire de +/- 10%
+            double variation = 0.9 + (random.nextDouble() * 0.2);
+            degatsFinaux *= variation;
+            
+            return (int) Math.max(1, degatsFinaux);
+        } catch (Exception e) {
+            System.err.println("Erreur lors du calcul des dégâts: " + e.getMessage());
+            e.printStackTrace();
+            return 1; // Dégâts minimaux en cas d'erreur
+        }
     }
 
     @Override
-    public boolean transfererItemsCoffreVersInventaire(Joueur joueur, Item item, int quantite) {
-        if (joueur == null || item == null || quantite <= 0) {
-            System.err.println("DEBUG: Paramètres invalides pour le transfert d'item");
-            return false;
-        }
-        
-        if (joueur.getPersonnage() == null) {
-            System.err.println("DEBUG: Personnage non initialisé pour " + joueur.getPseudo());
-            return false;
-        }
-        
-        if (joueur.getCoffre() == null) {
-            System.err.println("DEBUG: Coffre non initialisé pour " + joueur.getPseudo());
-            return false;
-        }
-        
-        // Vérifier si l'inventaire de combat est bien initialisé
-        if (joueur.getPersonnage().getInventaire() == null) {
-            joueur.getPersonnage().setInventaire(new be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire());
-        }
-        
-        // Vérifier si l'item existe dans le coffre avec la quantité demandée
-        boolean itemTrouve = false;
-        for (be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot slot : joueur.getCoffre().getSlots()) {
-            if (slot != null && slot.getItem() != null && slot.getItem().getId() == item.getId()) {
-                if (slot.getQuantity() >= quantite) {
-                    itemTrouve = true;
-                    break;
-                }
-            }
-        }
-        
-        if (!itemTrouve) {
-            System.err.println("DEBUG: Item non trouvé dans le coffre ou quantité insuffisante");
-            return false;
-        }
-        
-        // Transférer l'item du coffre vers l'inventaire
+    public int calculerDefense(Joueur defenseur, int degats) {
         try {
-            // Enlever l'item du coffre
-            boolean itemEnleve = joueur.getCoffre().enleverItem(item, quantite);
-            
-            if (!itemEnleve) {
-                System.err.println("DEBUG: Échec de l'enlèvement de l'item du coffre");
-                return false;
+            if (defenseur == null || defenseur.getPersonnage() == null) {
+                return degats;
             }
             
-            // Ajouter l'item à l'inventaire de combat
-            boolean itemAjoute = joueur.getPersonnage().getInventaire().ajouterItem(item, quantite);
+            double defenseBase = defenseur.getPersonnage().getResistance() / 100.0;
             
-            if (!itemAjoute) {
-                // Si l'ajout à l'inventaire échoue, remettre l'item dans le coffre
-                joueur.getCoffre().ajouterItem(item, quantite);
-                System.err.println("DEBUG: Échec de l'ajout de l'item à l'inventaire de combat, l'item a été remis dans le coffre");
-                return false;
-            }
+            // Réduction des dégâts grâce à la défense
+            double degatsReduits = degats * (1 - defenseBase);
             
-            // Mettre à jour le joueur dans la base de données
-            joueurDAO.mettreAJourJoueur(joueur);
-            
-            System.out.println("DEBUG: Item " + item.getNom() + " (quantité: " + quantite + 
-                    ") transféré du coffre vers l'inventaire de combat de " + joueur.getPseudo());
-            
-            return true;
+            return (int) Math.max(0, degatsReduits);
         } catch (Exception e) {
-            System.err.println("DEBUG: Erreur lors du transfert d'item: " + e.getMessage());
+            System.err.println("Erreur lors du calcul de la défense: " + e.getMessage());
+            e.printStackTrace();
+            return degats; // Pas de réduction en cas d'erreur
+        }
+    }
+
+    @Override
+    public boolean estTourDuJoueur(Joueur joueur, Joueur adversaire) {
+        try {
+            // Si l'adversaire est null, on ne peut pas vérifier le tour
+            // Dans ce cas, on considère que c'est le tour du joueur actuel pour éviter les erreurs
+            if (adversaire == null) {
+                System.out.println("DEBUG: Adversaire null dans estTourDuJoueur, considéré comme tour du joueur");
+                return true;
+            }
+            
+            // Rechercher la session de combat
+            String sessionId = sessionDAO.trouverSessionId(joueur.getId(), adversaire.getId());
+            
+            if (sessionId == null) {
+                // Si pas de session trouvée, on considère que c'est le tour du joueur actuel
+                System.out.println("DEBUG: Pas de session trouvée dans estTourDuJoueur, considéré comme tour du joueur");
+                return true;
+            }
+            
+            return sessionDAO.estTourDuJoueur(sessionId, joueur.getId());
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la vérification du tour du joueur: " + e.getMessage());
+            e.printStackTrace();
+            // En cas d'erreur, considérer que c'est le tour du joueur pour éviter un blocage
+            return true;
+        }
+    }
+    
+    @Override
+    public String obtenirResultatActionAdverse(Joueur joueur, Joueur adversaire, int tour) {
+        try {
+            // Rechercher la session de combat
+            String sessionId = sessionDAO.trouverSessionId(joueur.getId(), adversaire.getId());
+            
+            if (sessionId == null) {
+                return "Aucun combat en cours";
+            }
+            
+            // Obtenir les résultats du tour
+            Map<String, Object> resultats = sessionDAO.obtenirResultatTour(sessionId, tour);
+            
+            if (resultats.isEmpty()) {
+                return "Aucun résultat disponible";
+            }
+            
+            // Construire un message descriptif
+            StringBuilder message = new StringBuilder();
+            
+            // Identifier qui est joueur1 et joueur2 dans la session
+            CombatSession session = sessionDAO.chargerSession(sessionId);
+            boolean joueurEstJ1 = session.getJoueur1Id() == joueur.getId();
+            
+            int joueurId = joueur.getId();
+            int adversaireId = adversaire.getId();
+            
+            String actionJoueur = (String) resultats.get(joueurEstJ1 ? "actionJoueur1" : "actionJoueur2");
+            String actionAdversaire = (String) resultats.get(joueurEstJ1 ? "actionJoueur2" : "actionJoueur1");
+            
+            double degatsJoueur = ((Number) resultats.getOrDefault(joueurEstJ1 ? "degatsJoueur1" : "degatsJoueur2", 0)).doubleValue();
+            double degatsAdversaire = ((Number) resultats.getOrDefault(joueurEstJ1 ? "degatsJoueur2" : "degatsJoueur1", 0)).doubleValue();
+            
+            double healingJoueur = ((Number) resultats.getOrDefault(joueurEstJ1 ? "healingJoueur1" : "healingJoueur2", 0)).doubleValue();
+            double healingAdversaire = ((Number) resultats.getOrDefault(joueurEstJ1 ? "healingJoueur2" : "healingJoueur1", 0)).doubleValue();
+            
+            // Décrivez ce que l'adversaire a fait
+            message.append("Votre adversaire a choisi: ").append(actionAdversaire).append("\n");
+            
+            if ("special".equals(actionAdversaire)) {
+                String nomCompetence = (String) resultats.get(joueurEstJ1 ? "competenceJoueur2" : "competenceJoueur1");
+                message.append("Il a utilisé la compétence: ").append(nomCompetence).append("\n");
+            } else if ("utiliser_item".equals(actionAdversaire)) {
+                String nomItem = (String) resultats.get(joueurEstJ1 ? "itemJoueur2" : "itemJoueur1");
+                message.append("Il a utilisé l'item: ").append(nomItem).append("\n");
+            }
+            
+            if (degatsAdversaire > 0) {
+                message.append("Il vous a infligé ").append(String.format("%.1f", degatsAdversaire)).append(" points de dégâts.\n");
+            }
+            
+            if (healingAdversaire > 0) {
+                message.append("Il s'est soigné de ").append(String.format("%.1f", healingAdversaire)).append(" points de vie.\n");
+            }
+            
+            if (degatsJoueur > 0) {
+                message.append("Vous lui avez infligé ").append(String.format("%.1f", degatsJoueur)).append(" points de dégâts.\n");
+            }
+            
+            if (healingJoueur > 0) {
+                message.append("Vous vous êtes soigné de ").append(String.format("%.1f", healingJoueur)).append(" points de vie.\n");
+            }
+            
+            // Points de vie après le tour
+            double pvJoueur = ((Number) resultats.get(joueurEstJ1 ? "pvJoueur1" : "pvJoueur2")).doubleValue();
+            double pvAdversaire = ((Number) resultats.get(joueurEstJ1 ? "pvJoueur2" : "pvJoueur1")).doubleValue();
+            
+            message.append("\nPoints de vie après ce tour:\n");
+            message.append("- Vous: ").append(String.format("%.1f", pvJoueur)).append("\n");
+            message.append("- Adversaire: ").append(String.format("%.1f", pvAdversaire));
+            
+            return message.toString();
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'obtention du résultat de l'action adverse: " + e.getMessage());
+            e.printStackTrace();
+            return "Erreur lors de l'obtention du résultat";
+        }
+    }
+    
+    @Override
+    public boolean forcerChangementTour(Joueur joueur, Joueur adversaire) {
+        try {
+            // Rechercher la session de combat
+            String sessionId = sessionDAO.trouverSessionId(joueur.getId(), adversaire.getId());
+            
+            if (sessionId == null) {
+                return false;
+            }
+            
+            // Charger la session
+            CombatSession session = sessionDAO.chargerSession(sessionId);
+            
+            if (session == null) {
+                return false;
+            }
+            
+            // Forcer le changement de joueur actif
+            int joueurActifId = session.getJoueurActifId();
+            int nouveauJoueurActifId = (joueurActifId == joueur.getId()) ? adversaire.getId() : joueur.getId();
+            
+            session.setJoueurActifId(nouveauJoueurActifId);
+            session.setStatus(CombatStatus.EN_COURS);
+            
+            return sessionDAO.sauvegarderSession(session);
+        } catch (Exception e) {
+            System.err.println("Erreur lors du forçage du changement de tour: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    @Override
+    public int getTourActuel(Joueur joueur, Joueur adversaire) {
+        try {
+            // Rechercher la session de combat
+            String sessionId = sessionDAO.trouverSessionId(joueur.getId(), adversaire.getId());
+            
+            if (sessionId == null) {
+                return 0;
+            }
+            
+            return sessionDAO.obtenirTourActuel(sessionId);
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'obtention du tour actuel: " + e.getMessage());
+            e.printStackTrace();
+            return 0;
+        }
+    }
+    
+    @Override
+    public boolean transfererItemsCoffreVersInventaire(Joueur joueur, Item item, int quantite) {
+        try {
+            if (joueur == null || item == null || quantite <= 0) {
+                return false;
+            }
+            
+            // Vérifier si le joueur a le personnage et l'inventaire initialisés
+            if (joueur.getPersonnage() == null || joueur.getPersonnage().getInventaire() == null) {
+                return false;
+            }
+            
+            // Transférer l'item du coffre vers l'inventaire de combat
+            if (joueur.getCoffre().enleverItem(item, quantite)) {
+                joueur.getPersonnage().getInventaire().ajouterItem(item, quantite);
+                // Mettre à jour le joueur dans la base de données
+                joueurDAO.mettreAJourJoueur(joueur);
+                return true;
+            }
+            
+            return false;
+        } catch (Exception e) {
+            System.err.println("Erreur lors du transfert d'items: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
 }
+
 
 

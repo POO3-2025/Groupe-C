@@ -37,6 +37,12 @@ import java.util.ArrayList;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CompetenceMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.*;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CompetenceServiceImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAO.CombatSessionMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatSessionMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DTO.CombatResolver;
+import be.helha.projects.GuerreDesRoyaumes.DTO.SkillManager;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.FileAttenteCombatMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAO.FileAttenteCombatDAO;
 
 public class EcranPrincipal {
 
@@ -884,9 +890,13 @@ public class EcranPrincipal {
             }
 
             // Initialisation du service de combat
-            // Créer une instance de CombatDAOImpl
+            // Créer les dépendances nécessaires
             be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAO = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
-            ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO);
+            CombatSessionMongoDAO sessionDAO = CombatSessionMongoDAOImpl.getInstance();
+            CombatResolver combatResolver = new CombatResolver(joueurDAO, sessionDAO);
+                    
+            // Créer le service combat avec tous les paramètres requis
+            ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO, sessionDAO, combatResolver);
 
             // Afficher l'écran de sélection d'adversaire
             new EcranSelectionAdversaire(joueurDAO, textGUI, screen, joueur.getPseudo(), serviceCombat).afficher();
@@ -1080,18 +1090,29 @@ public class EcranPrincipal {
             Button btnLancerCombat = new Button("Lancer le Combat", () -> {
                 fenetreFinale.close();
                 
-                // Initialisation du service de combat
                 try {
                     // Appliquer les compétences achetées
                     competenceService.appliquerCompetences(joueur);
                     
+                    // Créer les dépendances nécessaires pour le service de combat
                     be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAO = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
-                    ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO);
+                    CombatSessionMongoDAO sessionDAO = CombatSessionMongoDAOImpl.getInstance();
+                    CombatResolver combatResolver = new CombatResolver(joueurDAO, sessionDAO);
                     
-                    // Lancement du combat
-                    new EcranCombat(joueurDAO, textGUI, screen, joueur, null, serviceCombat).afficher();
+                    // Créer le service combat avec tous les paramètres requis
+                    ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO, sessionDAO, combatResolver);
+                    
+                    // Créer l'instance de FileAttenteCombatDAO
+                    FileAttenteCombatDAO fileAttenteCombatDAO = FileAttenteCombatMongoDAOImpl.getInstance(joueurDAO);
+                    
+                    // Rediriger vers l'écran de file d'attente de combat
+                    afficherMessageSucces("Préparation au combat terminée. Recherche d'un adversaire...");
+                    
+                    new EcranFileAttenteCombat(joueurDAO, textGUI, screen, joueur, serviceCombat, fileAttenteCombatDAO).afficher();
                 } catch (Exception e) {
                     afficherMessageErreur("Erreur lors de l'initialisation du combat: " + e.getMessage());
+                    e.printStackTrace();
+                    afficher(); // Retour à l'écran principal en cas d'erreur
                 }
             });
             

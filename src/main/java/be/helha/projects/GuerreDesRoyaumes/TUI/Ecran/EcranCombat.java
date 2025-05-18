@@ -1,6 +1,8 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
+import be.helha.projects.GuerreDesRoyaumes.DAO.CombatSessionMongoDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.DTO.SkillManager;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
 import com.googlecode.lanterna.gui2.*;
@@ -23,15 +25,20 @@ public class EcranCombat {
     private boolean actionAdversaireRecue = false;
     private String actionAdversaire = null;
     private int compteurVerifications = 0;
+    // Ajouter ces dépendances
+    private final CombatSessionMongoDAO sessionDAO;
+    private final SkillManager skillManager;
 
     public EcranCombat(JoueurDAO joueurDAO, WindowBasedTextGUI textGUI, Screen screen,
-                       Joueur joueur, Joueur adversaire, ServiceCombat serviceCombat) {
+                       Joueur joueur, Joueur adversaire, ServiceCombat serviceCombat, CombatSessionMongoDAO sessionDAO, SkillManager skillManager) {
         this.joueurDAO = joueurDAO;
         this.textGUI = textGUI;
         this.screen = screen;
         this.joueur = joueur;
         this.adversaire = adversaire;
         this.serviceCombat = serviceCombat;
+        this.sessionDAO = sessionDAO;
+        this.skillManager = skillManager;
     }
 
     public void afficher() {

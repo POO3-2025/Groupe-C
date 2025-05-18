@@ -25,6 +25,17 @@ public interface ServiceCombat {
     String executerAction(Joueur joueur, Joueur adversaire, String typeAction, int tour);
 
     /**
+     * Exécute une action avec un item pour un tour de combat
+     * @param joueur Le joueur qui effectue l'action
+     * @param adversaire L'adversaire
+     * @param typeAction Le type d'action (utiliser_item)
+     * @param item L'item à utiliser
+     * @param tour Le numéro du tour actuel
+     * @return Un message décrivant le résultat de l'action
+     */
+    String executerActionAvecItem(Joueur joueur, Joueur adversaire, String typeAction, Item item, int tour);
+
+    /**
      * Enregistre une victoire pour un joueur
      */
     void enregistrerVictoire(Joueur joueur);
@@ -99,4 +110,6 @@ public interface ServiceCombat {
      * @return true si le transfert a réussi, false sinon
      */
     boolean transfererItemsCoffreVersInventaire(Joueur joueur, Item item, int quantite);
+
+
 }

@@ -1,6 +1,10 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAO.CombatSessionMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatSessionMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DTO.SkillManager;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
@@ -89,7 +93,18 @@ public class EcranPreparationCombat {
                 panelConfirmation.addComponent(new EmptySpace());
                 panelConfirmation.addComponent(new Button("Commencer le combat", () -> {
                     fenetreConfirmation.close();
-                    new EcranCombat(joueurDAO, textGUI, screen, joueur, adversaire, serviceCombat).afficher();
+                    try {
+                        // Obtenir les instances des dépendances nécessaires
+                        CombatSessionMongoDAO sessionDAO = CombatSessionMongoDAOImpl.getInstance();
+                        SkillManager skillManager = new SkillManager();
+                        
+                        // Appeler le constructeur d'EcranCombat avec tous les paramètres requis
+                        new EcranCombat(joueurDAO, textGUI, screen, joueur, adversaire, serviceCombat, 
+                                       sessionDAO, skillManager).afficher();
+                    } catch (MongoDBConnectionException e) {
+                        afficherMessageErreur("Erreur de connexion à MongoDB: " + e.getMessage());
+                        retourEcranPrincipal();
+                    }
                 }));
 
                 fenetreConfirmation.setComponent(panelConfirmation);
@@ -411,5 +426,10 @@ public class EcranPreparationCombat {
                 .addButton(MessageDialogButton.OK)
                 .build()
                 .showDialog(textGUI);
+    }
+
+    // Méthode pour retourner à l'écran principal
+    private void retourEcranPrincipal() {
+        new EcranPrincipal(null, joueurDAO, joueur.getPseudo(), screen).afficher();
     }
 }
