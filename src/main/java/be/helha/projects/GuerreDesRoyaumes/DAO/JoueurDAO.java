@@ -2,7 +2,6 @@ package be.helha.projects.GuerreDesRoyaumes.DAO;
 
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 

@@ -489,6 +489,7 @@ public class JoueurDAOImpl implements JoueurDAO {
                     stmtPersonnage.setInt(2, joueur.getId());
                     stmtPersonnage.executeUpdate();
                     System.out.println("Association joueur-personnage mise à jour: Personnage ID=" + personnageId);
+
                 }
             }
         } catch (SQLException e) {

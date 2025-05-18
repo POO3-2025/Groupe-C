@@ -3,12 +3,10 @@ package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
 import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.InventairePersonnageMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.*;
 import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
@@ -33,9 +31,18 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
-import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CompetenceMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.*;
+import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CompetenceServiceImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.InventairePersonnageMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.Competence;
+import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CompetenceServiceImpl;
 
 public class EcranPrincipal {
@@ -251,8 +258,8 @@ public class EcranPrincipal {
         // Tenter de récupérer le personnage depuis MongoDB
         Personnage personnageMongo = null;
         try {
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO =
-                be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl.getInstance();
+            PersonnageMongoDAOImpl personnageMongoDAO =
+                PersonnageMongoDAOImpl.getInstance();
             personnageMongo = personnageMongoDAO.obtenirPersonnageParJoueurId(joueur.getId());
 
             // Toujours mettre à jour le personnage depuis MongoDB s'il existe
@@ -1099,7 +1106,93 @@ public class EcranPrincipal {
                         Joueur adversaire = combatDAO.recupererAdversaire(idCombat);
                         
                         if (joueur1 != null && adversaire != null) {
-                            new EcranCombat(joueurDAO, textGUI, screen, joueur1, adversaire, serviceCombat).afficher();
+                            try {
+                                // Déterminer quel joueur est le joueur local (celui qui joue dans ce terminal)
+                                // et quel joueur est l'adversaire distant
+                                Joueur joueurLocal;
+                                Joueur joueurDistant;
+                                
+                                // Si le joueur actuel est joueur1, garder l'ordre actuel
+                                // Sinon, inverser les rôles pour que chaque joueur se voie lui-même comme joueur principal
+                                if (joueur.getId() == joueur1.getId()) {
+                                    joueurLocal = joueur1;
+                                    joueurDistant = adversaire;
+                                    System.out.println("Je suis le joueur1: " + joueurLocal.getPseudo());
+                                } else {
+                                    joueurLocal = adversaire;
+                                    joueurDistant = joueur1;
+                                    System.out.println("Je suis le joueur2: " + joueurLocal.getPseudo());
+                                }
+                                
+                                // Récupérer les personnages
+                                PersonnageMongoDAOImpl personnageDAO = PersonnageMongoDAOImpl.getInstance();
+                                Personnage personnageLocal = personnageDAO.obtenirPersonnageParJoueurId(joueurLocal.getId());
+                                Personnage personnageDistant = personnageDAO.obtenirPersonnageParJoueurId(joueurDistant.getId());
+                                
+                                // Attacher les personnages aux joueurs
+                                if (personnageLocal != null) {
+                                    joueurLocal.setPersonnage(personnageLocal);
+                                    System.out.println("Personnage local chargé: " + personnageLocal.getNom());
+                                } else {
+                                    afficherMessageErreur("Impossible de récupérer votre personnage");
+                                    return;
+                                }
+                                
+                                if (personnageDistant != null) {
+                                    joueurDistant.setPersonnage(personnageDistant);
+                                    System.out.println("Personnage distant chargé: " + personnageDistant.getNom());
+                                } else {
+                                    afficherMessageErreur("Impossible de récupérer le personnage de l'adversaire");
+                                    return;
+                                }
+                                
+                                // Récupérer les inventaires (s'ils ne sont pas déjà attachés aux personnages)
+                                if (joueurLocal.getPersonnage().getInventaire() == null || joueurDistant.getPersonnage().getInventaire() == null) {
+                                    InventairePersonnageMongoDAOImpl inventaireDAO = InventairePersonnageMongoDAOImpl.getInstance();
+                                    
+                                    // Pour le joueur local
+                                    List<Item> itemsLocal = inventaireDAO.obtenirItemsInventaire(joueurLocal.getPseudo());
+                                    if (joueurLocal.getPersonnage().getInventaire() == null) {
+                                        joueurLocal.getPersonnage().setInventaire(new Inventaire());
+                                    }
+                                    for (Item item : itemsLocal) {
+                                        joueurLocal.getPersonnage().getInventaire().ajouterItem(item, 1);
+                                    }
+                                    
+                                    // Pour le joueur distant
+                                    List<Item> itemsDistant = inventaireDAO.obtenirItemsInventaire(joueurDistant.getPseudo());
+                                    if (joueurDistant.getPersonnage().getInventaire() == null) {
+                                        joueurDistant.getPersonnage().setInventaire(new Inventaire());
+                                    }
+                                    for (Item item : itemsDistant) {
+                                        joueurDistant.getPersonnage().getInventaire().ajouterItem(item, 1);
+                                    }
+                                }
+                                
+                                // Récupérer les compétences achetées
+                                List<Competence> competencesLocal = competenceService.obtenirCompetencesJoueur(joueurLocal);
+                                List<Competence> competencesDistant = competenceService.obtenirCompetencesJoueur(joueurDistant);
+                                
+                                // Attacher les compétences aux joueurs
+                                Map<String, Competence> mapCompetencesLocal = new HashMap<>();
+                                for (Competence comp : competencesLocal) {
+                                    mapCompetencesLocal.put(comp.getId(), comp);
+                                }
+                                joueurLocal.setCompetencesAchetees(mapCompetencesLocal);
+                                
+                                Map<String, Competence> mapCompetencesDistant = new HashMap<>();
+                                for (Competence comp : competencesDistant) {
+                                    mapCompetencesDistant.put(comp.getId(), comp);
+                                }
+                                joueurDistant.setCompetencesAchetees(mapCompetencesDistant);
+                                
+                                // Lancer l'écran de combat avec les joueurs complets
+                                // Le joueur local est toujours en premier, l'adversaire en second
+                                new EcranCombat(joueurDAO, textGUI, screen, joueurLocal, joueurDistant, serviceCombat).afficher();
+                            } catch (Exception e) {
+                                afficherMessageErreur("Erreur lors de la préparation du combat: " + e.getMessage());
+                                e.printStackTrace();
+                            }
                         } else {
                             afficherMessageErreur("Impossible de récupérer les informations des joueurs du combat.");
                         }

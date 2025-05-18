@@ -61,4 +61,4 @@ public interface CompetenceService {
      * @return La liste de toutes les compétences disponibles
      */
     List<Competence> obtenirToutesCompetences();
-} 
+}

@@ -68,4 +68,5 @@ public interface CompetenceMongoDAO {
      * @return Le nombre de compétences que possède le joueur
      */
     int compterCompetences(int joueurId);
-} 
+
+}

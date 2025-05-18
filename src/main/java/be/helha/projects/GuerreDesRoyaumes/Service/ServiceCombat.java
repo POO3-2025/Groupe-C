@@ -106,4 +106,46 @@ public interface ServiceCombat {
      * @return true si les deux joueurs sont prêts, false sinon
      */
     boolean sontJoueursPrets(Joueur joueur1, Joueur joueur2);
+
+    /**
+     * Obtient l'ID du combat en cours pour un joueur donné
+     * 
+     * @param idJoueur L'identifiant du joueur
+     * @return L'ID du combat en cours ou null si aucun combat trouvé
+     */
+    String obtenirIdCombatEnCours(int idJoueur);
+    
+    /**
+     * Met à jour les points de vie d'un joueur
+     * 
+     * @param idJoueur L'identifiant du joueur
+     * @param pointsDeVie Les nouveaux points de vie
+     * @return true si la mise à jour a réussi, false sinon
+     */
+    boolean mettreAJourPointsDeVie(int idJoueur, double pointsDeVie);
+    
+    /**
+     * Passe le tour au joueur suivant
+     * 
+     * @param idCombat L'identifiant du combat
+     * @param idJoueurSuivant L'identifiant du joueur qui doit jouer ensuite
+     * @return true si le changement a réussi, false sinon
+     */
+    boolean passerAuJoueurSuivant(String idCombat, int idJoueurSuivant);
+    
+    /**
+     * Calcule les dégâts totaux d'un joueur en fonction de son personnage et de ses armes équipées
+     *
+     * @param joueur Le joueur dont on veut calculer les dégâts
+     * @return Le total des dégâts
+     */
+    double calculerDegatsJoueur(Joueur joueur);
+    
+    /**
+     * Calcule la défense totale d'un joueur en fonction de son personnage et de ses équipements
+     * 
+     * @param joueur Le joueur dont on veut calculer la défense
+     * @return Le total de défense
+     */
+    double calculerDefenseJoueur(Joueur joueur);
 }

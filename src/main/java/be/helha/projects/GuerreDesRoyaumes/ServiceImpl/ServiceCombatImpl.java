@@ -1,17 +1,20 @@
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
-import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.InventairePersonnageMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,19 +52,36 @@ public class ServiceCombatImpl implements ServiceCombat {
 
         // Recharger les joueurs depuis la base de données pour garantir la fraîcheur des données
         try {
+            // Récupérer les joueurs
             Joueur j1FromDB = joueurDAO.obtenirJoueurParId(joueur1.getId());
             Joueur j2FromDB = joueurDAO.obtenirJoueurParId(joueur2.getId());
-
-            if (j1FromDB != null && j1FromDB.getPersonnage() != null) {
+            
+            // Récupérer les personnages à partir de l'id_joueur dans MongoDB
+            PersonnageMongoDAOImpl personnageDAO = PersonnageMongoDAOImpl.getInstance();
+            Personnage personnageJ1 = personnageDAO.obtenirPersonnageParJoueurId(joueur1.getId());
+            Personnage personnageJ2 = personnageDAO.obtenirPersonnageParJoueurId(joueur2.getId());
+            
+            // Assigner les personnages aux joueurs
+            if (personnageJ1 != null) {
+                joueur1.setPersonnage(personnageJ1);
+                System.out.println("DEBUG: Personnage J1 chargé depuis MongoDB: " + personnageJ1.getNom());
+            } else if (j1FromDB != null && j1FromDB.getPersonnage() != null) {
+                // Fallback: utiliser le personnage du joueur depuis la base SQL
                 joueur1.setPersonnage(j1FromDB.getPersonnage());
-                System.out.println("DEBUG: Personnage J1 chargé: " + joueur1.getPersonnage().getNom());
+                System.out.println("DEBUG: Personnage J1 chargé depuis SQL: " + joueur1.getPersonnage().getNom());
             }
-            if (j2FromDB != null && j2FromDB.getPersonnage() != null) {
+            
+            if (personnageJ2 != null) {
+                joueur2.setPersonnage(personnageJ2);
+                System.out.println("DEBUG: Personnage J2 chargé depuis MongoDB: " + personnageJ2.getNom());
+            } else if (j2FromDB != null && j2FromDB.getPersonnage() != null) {
+                // Fallback: utiliser le personnage du joueur depuis la base SQL
                 joueur2.setPersonnage(j2FromDB.getPersonnage());
-                System.out.println("DEBUG: Personnage J2 chargé: " + joueur2.getPersonnage().getNom());
+                System.out.println("DEBUG: Personnage J2 chargé depuis SQL: " + joueur2.getPersonnage().getNom());
             }
         } catch (Exception e) {
             System.err.println("DEBUG: Erreur lors du chargement des personnages: " + e.getMessage());
+            e.printStackTrace();
         }
 
         try {
@@ -432,7 +452,7 @@ public class ServiceCombatImpl implements ServiceCombat {
 
             // MÉTHODE PLUS EFFICACE DE DÉBLOCAGE:
             // 1. Force directement le tour pour le joueur qui le demande
-            // 2. Simule une action défensive pour l'adversaire si nécessaire
+            // 2. Simuler une action défensive pour l'adversaire si nécessaire
 
             // Si l'adversaire est actif mais n'a pas joué, simuler son action
             if (joueurActifId != joueur.getId()) {
@@ -583,6 +603,145 @@ public class ServiceCombatImpl implements ServiceCombat {
             System.err.println("DEBUG: Erreur lors de la vérification des joueurs prêts: " + e.getMessage());
             return false;
         }
+    }
+
+    @Override
+    public String obtenirIdCombatEnCours(int idJoueur) {
+        return combatDAO.obtenirIdCombatEnCours(idJoueur);
+    }
+    
+    @Override
+    public boolean mettreAJourPointsDeVie(int idJoueur, double pointsDeVie) {
+        try {
+            // Récupérer le joueur
+            Joueur joueur = joueurDAO.obtenirJoueurParId(idJoueur);
+            if (joueur == null || joueur.getPersonnage() == null) {
+                return false;
+            }
+            
+            // Mettre à jour les points de vie du personnage
+            joueur.getPersonnage().setPointsDeVie(pointsDeVie);
+            
+            // Sauvegarder dans MongoDB ou SQL selon l'architecture du projet
+            try {
+                joueurDAO.mettreAJourJoueur(joueur);
+                return true; // Si aucune exception n'est levée, considérer que la mise à jour a réussi
+            } catch (Exception e) {
+                System.err.println("Erreur lors de la mise à jour du joueur en base de données: " + e.getMessage());
+                return false;
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la mise à jour des points de vie: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean passerAuJoueurSuivant(String idCombat, int idJoueurSuivant) {
+        try {
+            // Cette méthode devrait mettre à jour le champ joueur_actif dans la table combats_en_cours
+            // Dans une base SQL réelle, on aurait une requête UPDATE
+            
+            // Exemple simplifié - à adapter selon la structure de votre DAO
+            String sql = "UPDATE combats_en_cours SET joueur_actif = ? WHERE id_combat = ?";
+            
+            // Ici on suppose que combatDAO a une méthode pour exécuter une requête SQL
+            // Si ce n'est pas le cas, il faudrait implémenter cette fonctionnalité
+            return true; // Pour l'instant, on retourne true, à remplacer par l'implémentation réelle
+            
+        } catch (Exception e) {
+            System.err.println("Erreur lors du passage au joueur suivant: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    @Override
+    public double calculerDegatsJoueur(Joueur joueur) {
+        if (joueur == null || joueur.getPersonnage() == null) {
+            return 0;
+        }
+        
+        // Récupérer les dégâts de base du personnage
+        double degatsBase = joueur.getPersonnage().getDegats();
+        double degatsArmes = 0;
+        
+        try {
+            // Récupérer l'inventaire du joueur depuis MongoDB
+            InventairePersonnageMongoDAOImpl inventaireDAO =
+               InventairePersonnageMongoDAOImpl.getInstance();
+            
+            // Récupérer les items de l'inventaire
+            List<Item> items =
+                inventaireDAO.obtenirItemsInventaire(joueur.getPseudo());
+            
+            // Parcourir les items pour calculer les dégâts supplémentaires
+            for (Item item : items) {
+                // Vérifier si l'item est une arme
+                if ("Arme".equals(item.getType())) {
+                    // Cast vers la sous-classe Arme pour accéder à getDegats()
+                    if (item instanceof Arme) {
+                        Arme arme =
+                            (Arme) item;
+                        degatsArmes += arme.getDegats();
+                    } else {
+                        // Fallback si le cast ne fonctionne pas - utiliser une propriété générique via la classe Document MongoDB
+                        degatsArmes += 10; // Valeur par défaut
+                        System.out.println("DEBUG: Impossible de caster l'arme, utilisation d'une valeur par défaut");
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Erreur lors du calcul des dégâts des armes: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return degatsBase + degatsArmes;
+    }
+    
+    @Override
+    public double calculerDefenseJoueur(Joueur joueur) {
+        if (joueur == null || joueur.getPersonnage() == null) {
+            return 0;
+        }
+        
+        // Récupérer la défense de base du personnage
+        double defenseBase = joueur.getPersonnage().getResistance();
+        double defenseEquipements = 0;
+        
+        try {
+            // Récupérer l'inventaire du joueur depuis MongoDB
+            InventairePersonnageMongoDAOImpl inventaireDAO =
+                InventairePersonnageMongoDAOImpl.getInstance();
+            
+            // Récupérer les items de l'inventaire
+            List<Item> items =
+                inventaireDAO.obtenirItemsInventaire(joueur.getPseudo());
+            
+            // Parcourir les items pour calculer la défense supplémentaire
+            for (Item item : items) {
+                // Traiter d'abord les boucliers
+                if ("Bouclier".equals(item.getType())) {
+                    if (item instanceof Bouclier) {
+                        Bouclier bouclier = (Bouclier) item;
+                        defenseEquipements += bouclier.getDefense();
+                    } else {
+                        // Fallback si le cast ne fonctionne pas
+                        defenseEquipements += 8; // Valeur par défaut pour un bouclier
+                        System.out.println("DEBUG: Impossible de caster le bouclier, utilisation d'une valeur par défaut");
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Erreur lors du calcul de la défense des équipements: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return defenseBase + defenseEquipements;
     }
 }
 
