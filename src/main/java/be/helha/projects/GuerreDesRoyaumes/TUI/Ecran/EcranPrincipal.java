@@ -1081,9 +1081,12 @@ public class EcranPrincipal {
                 
                 // Initialisation du service de combat
                 try {
-
                     CombatDAOImpl combatDAO = new CombatDAOImpl();
                     ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO);
+                    
+                    // Mettre à jour le statut "prêt" du joueur et vérifier si le combat peut commencer
+                    boolean joueurPret = combatDAO.mettreAJourTourActuel(joueur.getId());
+                    System.out.println("Joueur " + joueur.getPseudo() + " prêt pour le combat: " + joueurPret);
                     
                     // Récupérer l'ID du combat en cours
                     String idCombat = combatDAO.obtenirIdCombatEnCours(joueur.getId());

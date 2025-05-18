@@ -205,23 +205,7 @@ public class ServiceCombatImpl implements ServiceCombat {
         // Changer le joueur actif (passer au joueur adverse)
         infoCombat.put("joueurActif", adversaire.getId());
 
-        // Réinitialiser les statuts "prêt" dans la base de données
-        try {
-            // Obtenir l'ID du combat dans la base de données
-            String idCombatBDD = combatDAO.obtenirIdCombatEnCours(joueur.getId());
-            if (idCombatBDD != null) {
-                // Préparer une requête SQL pour réinitialiser les statuts "prêt"
-                String sql = "UPDATE combats_en_cours SET joueur1_pret = 0, joueur2_pret = 0 WHERE id_combat = ?";
-                try (Connection conn = InitialiserAPP.getSQLConnexion();
-                     PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    stmt.setString(1, idCombatBDD);
-                    stmt.executeUpdate();
-                    System.out.println("DEBUG: Statuts 'prêt' réinitialisés pour le combat " + idCombatBDD);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("DEBUG: Erreur lors de la réinitialisation des statuts 'prêt': " + e.getMessage());
-        }
+
 
         // Vérifier si le combat est terminé après l'action
         boolean combatTermine = estCombatTermine(joueur1, joueur2, tour);

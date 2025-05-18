@@ -559,6 +559,8 @@ public class CombatDAOImpl implements CombatDAO {
         // S'assurer que la table combats_en_cours existe
         creerTableCombatsEnCoursSiInexistante();
 
+
+
         try {
             // Étape 1: Récupérer les informations du combat pour identifier quel joueur est joueur1 ou joueur2
             String sqlSelect = "SELECT id_combat, id_joueur1, id_joueur2, joueur1_pret, joueur2_pret FROM combats_en_cours WHERE id_joueur1 = ? OR id_joueur2 = ?";
@@ -607,6 +609,20 @@ public class CombatDAOImpl implements CombatDAO {
                     stmtUpdateTour.setString(1, idCombat);
                     stmtUpdateTour.executeUpdate();
                     System.out.println("DEBUG: Les deux joueurs sont prêts, tour_actuel mis à jour à 1 pour le combat " + idCombat);
+                }
+
+                // Réinitialiser les statuts "prêt" dans la base de données
+                try {
+                        // Préparer une requête SQL pour réinitialiser les statuts "prêt"
+                        String sql = "UPDATE combats_en_cours SET joueur1_pret = 0, joueur2_pret = 0 WHERE id_combat = ?";
+                    try (PreparedStatement stmtUpdateTour = connection.prepareStatement(sqlUpdateTour)) {
+                        stmtUpdateTour.setString(1, idCombat);
+                        stmtUpdateTour.executeUpdate();
+                            System.out.println("DEBUG: Statuts 'prêt' réinitialisés pour le combat " + idCombat);
+                        }
+
+                } catch (Exception e) {
+                    System.err.println("DEBUG: Erreur lors de la réinitialisation des statuts 'prêt': " + e.getMessage());
                 }
             }
             
