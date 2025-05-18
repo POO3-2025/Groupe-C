@@ -9,6 +9,7 @@ import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 public abstract class Personnage {
     private String nom;
     private double vie;
+    private double pointsDeVieMAX;
     private double degats;
     private double resistance;
     private Inventaire inventaire;
@@ -17,6 +18,7 @@ public abstract class Personnage {
     public Personnage(String nom, int vie, int degats, int resistance, Inventaire inventaire) {
         this.nom = nom;
         this.vie = vie;
+        pointsDeVieMAX = vie;
         this.degats = degats;
         this.resistance = resistance;
         this.inventaire = inventaire;
@@ -42,6 +44,9 @@ public abstract class Personnage {
     public Inventaire getInventaire() {
         return inventaire;
     }
+    public double getPointsDeVieMAX() {
+        return pointsDeVieMAX;
+    }
 
     // Alias pour getVie pour compatibilité avec le reste du code
     public double getPointsDeVie() {
@@ -63,6 +68,9 @@ public abstract class Personnage {
     }
     public void setInventaire(Inventaire inventaire) {
         this.inventaire = inventaire;
+    }
+    public void setPointsDeVieMAX(double pointsDeVieMAX) {
+        this.pointsDeVieMAX = pointsDeVieMAX;
     }
 
     // Alias pour setVie pour compatibilité avec le reste du code

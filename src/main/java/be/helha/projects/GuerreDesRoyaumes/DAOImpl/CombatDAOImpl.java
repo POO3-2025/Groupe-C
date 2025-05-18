@@ -873,6 +873,29 @@ public class CombatDAOImpl implements CombatDAO {
             return false;
         }
     }
+
+    /**
+     * Supprime un combat en cours à partir de son ID
+     * 
+     * @param idCombat L'identifiant du combat à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
+    public boolean supprimerCombatEnCours(String idCombat) {
+        // S'assurer que la table combats_en_cours existe
+        creerTableCombatsEnCoursSiInexistante();
+
+        String sql = "DELETE FROM combats_en_cours WHERE id_combat = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, idCombat);
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("DEBUG: Combat en cours supprimé avec ID " + idCombat + ", " + rowsAffected + " lignes affectées");
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la suppression du combat en cours par ID: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
 
 

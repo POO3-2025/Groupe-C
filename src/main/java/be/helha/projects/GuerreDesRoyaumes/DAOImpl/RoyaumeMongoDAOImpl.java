@@ -154,4 +154,36 @@ public class RoyaumeMongoDAOImpl implements RoyaumeMongoDAO {
             throw new RuntimeException("Échec de la désérialisation: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Augmente le niveau du royaume d'un joueur de 1
+     *
+     * @param joueurId L'identifiant du joueur propriétaire du royaume
+     * @return true si le niveau a été augmenté avec succès, false sinon
+     */
+    public boolean augmenterNiveauRoyaume(int joueurId) {
+        try {
+            // Récupérer le royaume actuel
+            Royaume royaume = obtenirRoyaumeParJoueurId(joueurId);
+            
+            if (royaume == null) {
+                System.err.println("Aucun royaume trouvé pour le joueur ID: " + joueurId);
+                return false;
+            }
+            
+            // Augmenter le niveau de 1
+            int nouveauNiveau = royaume.getNiveau() + 1;
+            royaume.setNiveau(nouveauNiveau);
+            
+            // Mettre à jour le royaume dans MongoDB
+            mettreAJourRoyaume(royaume, joueurId);
+            
+            System.out.println("Niveau du royaume pour le joueur ID " + joueurId + " augmenté à " + nouveauNiveau);
+            return true;
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'augmentation du niveau du royaume: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 } 

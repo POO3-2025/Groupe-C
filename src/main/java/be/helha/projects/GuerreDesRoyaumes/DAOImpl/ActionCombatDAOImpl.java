@@ -638,4 +638,31 @@ public class ActionCombatDAOImpl implements ActionCombatDAO {
             return new java.util.HashMap<>(); // Retourner une map vide en cas d'erreur
         }
     }
+
+    /**
+     * Supprime tous les états de personnage liés à un combat spécifique
+     * 
+     * @param idCombat L'identifiant du combat
+     * @return true si la suppression a réussi, false sinon
+     */
+    public boolean supprimerEtatsPersonnage(String idCombat) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans ActionCombatDAOImpl");
+        }
+        
+        String sql = "DELETE FROM action_etats_personnage WHERE id_combat = ?";
+        
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, idCombat);
+            
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("Suppression des états de personnage pour le combat " + idCombat + ": " + rowsAffected + " entrées supprimées");
+            return true;
+            
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la suppression des états de personnage: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
