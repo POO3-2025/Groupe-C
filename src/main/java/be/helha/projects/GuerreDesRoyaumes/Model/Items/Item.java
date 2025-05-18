@@ -14,6 +14,7 @@ public abstract class Item {
     private int quantiteMax;
     private String type;
     private int prix;
+    private String description;
 
     /**
      * Constructeur complet.
@@ -30,6 +31,7 @@ public abstract class Item {
         this.quantiteMax = quantiteMax;
         this.type = type;
         this.prix = prix;
+        this.description = "";
     }
 
     // --- Getters ---
@@ -67,6 +69,9 @@ public abstract class Item {
      */
     public int getPrix() {
         return prix;
+    }
+    public String getDescription() {
+        return description;
     }
 
     // --- Setters ---
@@ -114,6 +119,9 @@ public abstract class Item {
      */
     public void setPrix(int prix) {
         this.prix = prix;
+    }
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     /**
