@@ -81,4 +81,20 @@ public interface JoueurDAO {
      * @param estActif true si le joueur est connecté, false sinon
      */
     void definirStatutConnexion(int id, boolean estActif);
+
+    /**
+     * Incrémente le compteur de victoires d'un joueur de 1
+     *
+     * @param id L'identifiant du joueur
+     * @return true si l'opération a réussi, false sinon
+     */
+    boolean incrementerVictoires(int id);
+
+    /**
+     * Incrémente le compteur de défaites d'un joueur de 1
+     *
+     * @param id L'identifiant du joueur
+     * @return true si l'opération a réussi, false sinon
+     */
+    boolean incrementerDefaites(int id);
 }

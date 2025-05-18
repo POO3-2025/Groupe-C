@@ -44,6 +44,8 @@ public class EcranCombat {
     private List<Competence> competencesUtilisees = Collections.emptyList();
     // Pour suivre l'état de la fenêtre
     private boolean fenetreAttenteActive = false;
+    // Pour suivre la compétence activée pendant le combat
+    private Competence competenceActive = null;
 
     public EcranCombat(JoueurDAO joueurDAO, WindowBasedTextGUI textGUI, Screen screen,
                        Joueur joueur, Joueur adversaire, ServiceCombat serviceCombat) {
@@ -664,6 +666,15 @@ public class EcranCombat {
                 return;
             }
             
+            // Vérifier d'abord si le combat a été marqué comme terminé
+            CombatDAOImpl combatDAO = new CombatDAOImpl();
+            boolean combatTermine = combatDAO.estCombatTermine(idCombat);
+            if (combatTermine) {
+                System.out.println("Le combat a été terminé par l'adversaire. Affichage des résultats finaux...");
+                terminerCombat();
+                return;
+            }
+            
             // Récupérer les stats actuels depuis la table action_etats_personnage
             ActionCombatDAOImpl actionCombatDAO = ActionCombatDAOImpl.getInstance();
             
@@ -727,6 +738,22 @@ public class EcranCombat {
         // Définir que la fenêtre est active
         fenetreAttenteActive = true;
 
+        // Vérifier d'abord si le combat est terminé
+        try {
+            String idCombat = serviceCombat.obtenirIdCombatEnCours(joueur.getId());
+            if (idCombat != null) {
+                CombatDAOImpl combatDAO = new CombatDAOImpl();
+                if (combatDAO.estCombatTermine(idCombat)) {
+                    // Si le combat est terminé, afficher les résultats finaux
+                    fenetreAttenteActive = false;
+                    terminerCombat();
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la vérification du statut du combat: " + e.getMessage());
+        }
+
         Panel panel = new Panel(new GridLayout(1));
         panel.addComponent(new Label("Votre action pour le tour " + tourActuel + " est enregistrée."));
         panel.addComponent(new Label("En attente de l'action de l'adversaire..."));
@@ -742,10 +769,29 @@ public class EcranCombat {
         panel.addComponent(new EmptySpace());
         
         // Bouton pour actualiser manuellement les points de vie
+        final Window fenetreFinale = fenetre; // Créer une référence finale
         panel.addComponent(new Button("Actualiser l'état du combat", () -> {
             rafraichirPointsDeVie();
             pvJoueurLabel.setText("PV " + joueur.getPseudo() + ": " + joueur.getPersonnage().getPointsDeVie());
             pvAdversaireLabel.setText("PV " + adversaire.getPseudo() + ": " + adversaire.getPersonnage().getPointsDeVie());
+            
+            // Vérifier si le combat est terminé
+            try {
+                String idCombat = serviceCombat.obtenirIdCombatEnCours(joueur.getId());
+                if (idCombat != null) {
+                    CombatDAOImpl combatDAO = new CombatDAOImpl();
+                    if (combatDAO.estCombatTermine(idCombat)) {
+                        // Si le combat est terminé, afficher les résultats finaux
+                        fenetreFinale.close();
+                        fenetreAttenteActive = false;
+                        afficherMessageSucces("Le combat a été terminé. Affichage des résultats...");
+                        terminerCombat();
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Erreur lors de la vérification du statut du combat: " + e.getMessage());
+            }
             
             // Récupérer également les points de défense pour l'affichage
             try {
@@ -770,7 +816,7 @@ public class EcranCombat {
             
             // Vérifier si le combat est terminé après la mise à jour
             if (estCombatTermine()) {
-                fenetre.close();
+                fenetreFinale.close();
                 fenetreAttenteActive = false;
                 terminerCombat();
                 return;
@@ -786,9 +832,27 @@ public class EcranCombat {
             pvJoueurLabel.setText("PV " + joueur.getPseudo() + ": " + joueur.getPersonnage().getPointsDeVie());
             pvAdversaireLabel.setText("PV " + adversaire.getPseudo() + ": " + adversaire.getPersonnage().getPointsDeVie());
             
+            // Vérifier si le combat est terminé
+            try {
+                String idCombat = serviceCombat.obtenirIdCombatEnCours(joueur.getId());
+                if (idCombat != null) {
+                    CombatDAOImpl combatDAO = new CombatDAOImpl();
+                    if (combatDAO.estCombatTermine(idCombat)) {
+                        // Si le combat est terminé, afficher les résultats finaux
+                        fenetreFinale.close();
+                        fenetreAttenteActive = false;
+                        afficherMessageSucces("Le combat a été terminé. Affichage des résultats...");
+                        terminerCombat();
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Erreur lors de la vérification du statut du combat: " + e.getMessage());
+            }
+            
             // Vérifier si le combat est terminé après la mise à jour
             if (estCombatTermine()) {
-                fenetre.close();
+                fenetreFinale.close();
                 fenetreAttenteActive = false;
                 terminerCombat();
                 return;
@@ -798,7 +862,7 @@ public class EcranCombat {
             try {
                 String resultatAction = serviceCombat.obtenirResultatActionAdverse(joueur, adversaire, tourActuel);
                 if (resultatAction != null && !resultatAction.equals("Aucun résultat disponible")) {
-                    fenetre.close();
+                    fenetreFinale.close();
                     fenetreAttenteActive = false;
                     afficherMessageSucces("Action adversaire: " + resultatAction);
                     
@@ -849,9 +913,27 @@ public class EcranCombat {
                     pvJoueurLabel.setText("PV " + joueur.getPseudo() + ": " + joueur.getPersonnage().getPointsDeVie());
                     pvAdversaireLabel.setText("PV " + adversaire.getPseudo() + ": " + adversaire.getPersonnage().getPointsDeVie());
                     
+                    // Vérifier si le combat est terminé
+                    try {
+                        String idCombat = serviceCombat.obtenirIdCombatEnCours(joueur.getId());
+                        if (idCombat != null) {
+                            CombatDAOImpl combatDAO = new CombatDAOImpl();
+                            if (combatDAO.estCombatTermine(idCombat) && fenetreAttenteActive) {
+                                // Si le combat est terminé, afficher les résultats finaux
+                                fenetreFinale.close();
+                                fenetreAttenteActive = false;
+                                timerPV.cancel(); // Arrêter les timers
+                                terminerCombat();
+                                return;
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Ignorer silencieusement
+                    }
+                    
                     // Vérifier si le combat est terminé suite à cette mise à jour
                     if (estCombatTermine() && fenetreAttenteActive) {
-                        fenetre.close();
+                        fenetreFinale.close();
                         fenetreAttenteActive = false;
                         timerPV.cancel(); // Arrêter les timers
                         terminerCombat();
@@ -867,10 +949,26 @@ public class EcranCombat {
             public void run() {
                 textGUI.getGUIThread().invokeLater(() -> {
                     try {
+                        // Vérifier si le combat est terminé
+                        String idCombat = serviceCombat.obtenirIdCombatEnCours(joueur.getId());
+                        if (idCombat != null) {
+                            CombatDAOImpl combatDAO = new CombatDAOImpl();
+                            if (combatDAO.estCombatTermine(idCombat) && fenetreAttenteActive) {
+                                // Si le combat est terminé, afficher les résultats finaux
+                                fenetreFinale.close();
+                                fenetreAttenteActive = false;
+                                timer.cancel(); // Arrêter le timer
+                                timerPV.cancel(); // Arrêter le timer de vérification de PV
+                                terminerCombat();
+                                return;
+                            }
+                        }
+                        
+                        // Continuer avec la vérification de l'action
                         String resultatAction = serviceCombat.obtenirResultatActionAdverse(joueur, adversaire, tourActuel);
                         if (resultatAction != null && !resultatAction.equals("Aucun résultat disponible")) {
                             if (fenetreAttenteActive) {
-                                fenetre.close();
+                                fenetreFinale.close();
                                 fenetreAttenteActive = false;
                                 timer.cancel(); // Arrêter le timer de vérification d'action
                                 timerPV.cancel(); // Arrêter le timer de vérification de PV
@@ -902,9 +1000,27 @@ public class EcranCombat {
     }
 
     private boolean estCombatTermine() {
-        return joueur.getPersonnage().getPointsDeVie() <= 0 ||
-               adversaire.getPersonnage().getPointsDeVie() <= 0 ||
-               tourActuel > MAX_TOURS;
+        // Vérifier d'abord par les conditions locales standard
+        boolean termineParPointsDeVie = joueur.getPersonnage().getPointsDeVie() <= 0 ||
+                                        adversaire.getPersonnage().getPointsDeVie() <= 0;
+        boolean termineParTours = tourActuel > MAX_TOURS;
+        
+        if (termineParPointsDeVie || termineParTours) {
+            return true;
+        }
+        
+        // Vérifier ensuite si le combat est marqué comme terminé dans la base de données
+        try {
+            String idCombat = serviceCombat.obtenirIdCombatEnCours(joueur.getId());
+            if (idCombat != null) {
+                CombatDAOImpl combatDAO = new CombatDAOImpl();
+                return combatDAO.estCombatTermine(idCombat);
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la vérification du statut du combat: " + e.getMessage());
+        }
+        
+        return false;
     }
 
     private void terminerCombat() {
@@ -925,26 +1041,70 @@ public class EcranCombat {
                 
                 // Distribution des récompenses et mise à jour des statistiques
                 if (vainqueur != null) {
-                    // Mise à jour des statistiques du vainqueur
-                    vainqueur.ajouterArgent(500); // Ajouter 500 TerraCoins
-                    vainqueur.setVictoires(vainqueur.getVictoires() + 1); // Incrémenter les victoires
-                    joueurDAO.mettreAJourJoueur(vainqueur);
+                    // Montant de base des récompenses
+                    int recompenseBase = 500;
+                    int recompenseFinale = recompenseBase;
+                    
+                    // Vérifier si la compétence d'argent double est active
+                    boolean argentDouble = false;
+                    if (competenceActive != null && 
+                        (competenceActive.getNom().equalsIgnoreCase("ArgentDouble") ||
+                         competenceActive.getNom().equalsIgnoreCase("Double Argent") ||
+                         competenceActive.getDescription().toLowerCase().contains("doubl") && 
+                         competenceActive.getDescription().toLowerCase().contains("argent"))) {
+                        recompenseFinale = recompenseBase * 2;
+                        argentDouble = true;
+                        System.out.println("Compétence ArgentDouble active: récompense doublée à " + recompenseFinale + " TerraCoins");
+                    }
+                    
+                    // Mise à jour des statistiques du vainqueur dans la base de données
+                    System.out.println("Mise à jour des statistiques pour le vainqueur: " + vainqueur.getPseudo());
+                    
+                    // 1. Ajout des TerraCoins au vainqueur
+                    int argentAvant = vainqueur.getArgent();
+                    vainqueur.ajouterArgent(recompenseFinale);
+                    int argentApres = vainqueur.getArgent();
+                    System.out.println("TerraCoins du vainqueur: " + argentAvant + " -> " + argentApres + " (+" + recompenseFinale + ")");
+                    
+                    // 2. Incrémentation des victoires directement dans la base de données
+                    boolean victoireIncrementee = joueurDAO.incrementerVictoires(vainqueur.getId());
+                    if (victoireIncrementee) {
+                        // Mettre à jour l'objet local pour refléter le changement dans la base de données
+                        vainqueur.setVictoires(vainqueur.getVictoires() + 1);
+                        System.out.println("Victoires du vainqueur incrémentées à " + vainqueur.getVictoires());
+                    } else {
+                        System.err.println("Échec de l'incrémentation des victoires pour " + vainqueur.getPseudo());
+                    }
+                    
+                    // 3. Mise à jour des données d'argent dans la base de données
+                   joueurDAO.mettreAJourJoueur(vainqueur);
+                    System.out.println("Mise à jour de l'argent du vainqueur dans la base de données: ");
                     
                     // Mise à jour des statistiques du perdant
                     Joueur perdant = (vainqueur.getId() == joueur.getId()) ? adversaire : joueur;
-                    perdant.setDefaites(perdant.getDefaites() + 1); // Incrémenter les défaites
-                    joueurDAO.mettreAJourJoueur(perdant);
+                    
+                    // Incrémentation des défaites directement dans la base de données
+                    boolean defaiteIncrementee = joueurDAO.incrementerDefaites(perdant.getId());
+                    if (defaiteIncrementee) {
+                        // Mettre à jour l'objet local pour refléter le changement dans la base de données
+                        perdant.setDefaites(perdant.getDefaites() + 1);
+                        System.out.println("Défaites du perdant " + perdant.getPseudo() + " incrémentées à " + perdant.getDefaites());
+                    } else {
+                        System.err.println("Échec de l'incrémentation des défaites pour " + perdant.getPseudo());
+                    }
                     
                     // Augmenter le niveau du royaume du vainqueur dans MongoDB
                     try {
                         RoyaumeMongoDAOImpl royaumeDAO = RoyaumeMongoDAOImpl.getInstance();
-                        royaumeDAO.augmenterNiveauRoyaume(vainqueur.getId());
-                        System.out.println("Niveau du royaume de " + vainqueur.getPseudo() + " augmenté");
+                        boolean niveauAugmente = royaumeDAO.augmenterNiveauRoyaume(vainqueur.getId());
+                        System.out.println("Augmentation du niveau du royaume de " + vainqueur.getPseudo() + ": " + (niveauAugmente ? "Réussie" : "Échouée"));
                     } catch (Exception e) {
                         System.err.println("Erreur lors de l'augmentation du niveau du royaume: " + e.getMessage());
+                        e.printStackTrace();
                     }
                 } else {
                     // En cas de match nul, pas de changement aux statistiques
+                    System.out.println("Match nul, aucune modification des statistiques");
                 }
                 
                 // Mettre les deux joueurs inactifs
@@ -959,17 +1119,22 @@ public class EcranCombat {
                 // Nettoyer les tables
                 try {
                     ActionCombatDAOImpl actionCombatDAO = ActionCombatDAOImpl.getInstance();
-                    actionCombatDAO.supprimerActionsCombat(idCombat);
-                    actionCombatDAO.supprimerEtatsPersonnage(idCombat);
+                    boolean actionsNettoyees = actionCombatDAO.supprimerActionsCombat(idCombat);
+                    boolean etatsNettoyees = actionCombatDAO.supprimerEtatsPersonnage(idCombat);
                     CombatDAOImpl combatDAO = new CombatDAOImpl();
-                    combatDAO.supprimerCombatEnCours(idCombat);
-                    System.out.println("Tables de combat nettoyées avec succès");
+                    boolean combatNettoye = combatDAO.supprimerCombatEnCours(idCombat);
+                    
+                    System.out.println("Nettoyage des tables de combat: " +
+                                      "Actions: " + (actionsNettoyees ? "OK" : "Échec") + ", " +
+                                      "États: " + (etatsNettoyees ? "OK" : "Échec") + ", " +
+                                      "Combat: " + (combatNettoye ? "OK" : "Échec"));
                 } catch (Exception e) {
                     System.err.println("Erreur lors du nettoyage des tables: " + e.getMessage());
                 }
             }
         } catch (Exception e) {
             System.err.println("Erreur lors de la terminaison du combat: " + e.getMessage());
+            e.printStackTrace();
         }
 
         // Créer une fenêtre plus élaborée pour la fin du combat
@@ -1069,8 +1234,28 @@ public class EcranCombat {
             recompensesPanel.addComponent(new Label("━━━━━━ RÉCOMPENSES ━━━━━━").addStyle(SGR.BOLD));
             recompensesPanel.addComponent(new EmptySpace());
             
+            // Vérifier si le bonus d'argent double est actif
+            int recompenseBase = 500;
+            int recompenseFinale = recompenseBase;
+            boolean argentDouble = false;
+            
+            if (competenceActive != null && 
+                (competenceActive.getNom().equalsIgnoreCase("ArgentDouble") ||
+                 competenceActive.getNom().equalsIgnoreCase("Double Argent") ||
+                 competenceActive.getDescription().toLowerCase().contains("doubl") && 
+                 competenceActive.getDescription().toLowerCase().contains("argent"))) {
+                recompenseFinale = recompenseBase * 2;
+                argentDouble = true;
+            }
+            
             // Afficher les récompenses obtenues
-            recompensesPanel.addComponent(new Label("✦ +500 TerraCoins").setForegroundColor(TextColor.ANSI.YELLOW));
+            if (argentDouble) {
+                recompensesPanel.addComponent(new Label("✦ +" + recompenseBase + " TerraCoins × 2 = +" + recompenseFinale + " TerraCoins").setForegroundColor(TextColor.ANSI.YELLOW));
+                recompensesPanel.addComponent(new Label("   (Bonus de compétence ArgentDouble)").setForegroundColor(TextColor.ANSI.CYAN));
+            } else {
+                recompensesPanel.addComponent(new Label("✦ +" + recompenseFinale + " TerraCoins").setForegroundColor(TextColor.ANSI.YELLOW));
+            }
+            
             recompensesPanel.addComponent(new Label("✦ +1 victoire ajoutée à votre palmarès").setForegroundColor(TextColor.ANSI.GREEN));
             recompensesPanel.addComponent(new Label("✦ Niveau de royaume augmenté!").setForegroundColor(TextColor.ANSI.CYAN));
             
@@ -1127,7 +1312,35 @@ public class EcranCombat {
     }
 
     private void retourMenuPrincipal() {
-        // TODO: Implémentation pour retourner au menu principal
+        // Obtenir l'ID du combat en cours
+        String idCombat = null;
+        try {
+            idCombat = serviceCombat.obtenirIdCombatEnCours(joueur.getId());
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la récupération de l'ID du combat: " + e.getMessage());
+        }
+        
+        // Nettoyer les tables et mettre à jour le statut des joueurs
+        if (idCombat != null) {
+            try {
+                // Mettre les deux joueurs inactifs et pas prêts
+                joueurDAO.definirStatutConnexion(joueur.getId(), false);
+                joueurDAO.definirStatutConnexion(adversaire.getId(), false);
+                System.out.println("Statut des joueurs mis à inactif");
+                
+                // Nettoyer les tables liées au combat
+                ActionCombatDAOImpl actionCombatDAO = ActionCombatDAOImpl.getInstance();
+                actionCombatDAO.supprimerActionsCombat(idCombat);
+                actionCombatDAO.supprimerEtatsPersonnage(idCombat);
+                CombatDAOImpl combatDAO = new CombatDAOImpl();
+                combatDAO.supprimerCombatEnCours(idCombat);
+                System.out.println("Tables de combat nettoyées avec succès lors du retour au menu principal");
+            } catch (Exception e) {
+                System.err.println("Erreur lors du nettoyage des tables: " + e.getMessage());
+            }
+        }
+        
+        // Redirection vers l'écran principal
         new EcranPrincipal(null, joueurDAO, joueur.getPseudo(), screen).afficher();
     }
 
@@ -1432,6 +1645,23 @@ public class EcranCombat {
         // Marquer la fenêtre d'attente comme active
         fenetreAttenteActive = true;
         
+        // Vérifier si le combat a été terminé
+        try {
+            String idCombat = serviceCombat.obtenirIdCombatEnCours(joueur.getId());
+            if (idCombat != null) {
+                CombatDAOImpl combatDAO = new CombatDAOImpl();
+                if (combatDAO.estCombatTermine(idCombat)) {
+                    // Si le combat est terminé, afficher les résultats finaux
+                    System.out.println("Combat terminé détecté pendant l'attente. Affichage des résultats...");
+                    fenetreAttenteActive = false;
+                    terminerCombat();
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la vérification du statut du combat: " + e.getMessage());
+        }
+        
         // Créer une fenêtre d'attente améliorée
         Window fenetre = new BasicWindow("⌛ En attente de " + adversaire.getPseudo() + " ⌛");
         fenetre.setHints(Collections.singletonList(Window.Hint.CENTERED));
@@ -1485,11 +1715,30 @@ public class EcranCombat {
         panelPrincipal.addComponent(conseilsPanel);
         panelPrincipal.addComponent(new EmptySpace());
         
-                    // Bouton pour actualiser manuellement
+        // Bouton pour actualiser manuellement
+        final Window fenetreFinale = fenetre; // Créer une référence finale
         panelPrincipal.addComponent(new Button("Actualiser maintenant", () -> {
             // Incrémenter le compteur de vérifications manuelles
             compteurVerifications++;
             compteurLabel.setText("Vérifications effectuées: " + compteurVerifications);
+            
+            // Vérifier si le combat est terminé
+            try {
+                String idCombat = serviceCombat.obtenirIdCombatEnCours(joueur.getId());
+                if (idCombat != null) {
+                    CombatDAOImpl combatDAO = new CombatDAOImpl();
+                    if (combatDAO.estCombatTermine(idCombat)) {
+                        // Si le combat est terminé, afficher les résultats finaux
+                        fenetreFinale.close();
+                        fenetreAttenteActive = false;
+                        afficherMessageSucces("Le combat a été terminé. Affichage des résultats...");
+                        terminerCombat();
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Erreur lors de la vérification du statut du combat: " + e.getMessage());
+            }
             
             // Vérifier si l'adversaire a joué
             try {
@@ -1500,7 +1749,7 @@ public class EcranCombat {
                     
                     if (adversairePret) {
                         // L'adversaire a joué son tour
-                        fenetre.close();
+                        fenetreFinale.close();
                         fenetreAttenteActive = false;
                         
                         String resultatAction = serviceCombat.obtenirResultatActionAdverse(joueur, adversaire, tourActuel);
@@ -1542,6 +1791,25 @@ public class EcranCombat {
                         textGUI.getGUIThread().invokeLater(() -> {
                             labelAttente.setText(animations[animIndex[0]]);
                             animIndex[0] = (animIndex[0] + 1) % animations.length;
+                            
+                            // Vérifier périodiquement si le combat est terminé
+                            try {
+                                String idCombat = serviceCombat.obtenirIdCombatEnCours(joueur.getId());
+                                if (idCombat != null) {
+                                    CombatDAOImpl combatDAO = new CombatDAOImpl();
+                                    if (combatDAO.estCombatTermine(idCombat)) {
+                                        // Si le combat est terminé, fermer la fenêtre et afficher les résultats
+                                        fenetreFinale.close();
+                                        fenetreAttenteActive = false;
+                                        animationTimer.cancel();
+                                        textGUI.getGUIThread().invokeLater(() -> {
+                                            terminerCombat();
+                                        });
+                                    }
+                                }
+                            } catch (Exception e) {
+                                // Ignorer silencieusement les erreurs dans le timer
+                            }
                         });
                     } catch (Exception e) {
                         // Ignorer les erreurs d'animation
