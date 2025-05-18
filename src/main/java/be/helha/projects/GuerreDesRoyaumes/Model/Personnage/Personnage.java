@@ -105,11 +105,6 @@ public abstract class Personnage {
         this.vie = vie;
     }
 
-    /**
-     * Alias pour setVie, utilisé pour compatibilité.
-     *
-     * @param pointsDeVie Nouveaux points de vie.
-     */
 
 
     public void setDegats(double degats) {
@@ -172,4 +167,11 @@ public abstract class Personnage {
     public String toString() {
         return nom + " vie = " + vie + " degats = " + degats + " resistance = " + resistance;
     }
-}
+
+    // Alias pour setVie pour compatibilité avec le reste du code
+    public void setPointsDeVie(double pointsDeVie) {
+        this.vie = pointsDeVie;
+    }
+
+    }
+
