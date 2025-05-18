@@ -4,6 +4,7 @@ import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManag
 import be.helha.projects.GuerreDesRoyaumes.Controller.CombatController;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.InventairePersonnageMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
@@ -19,6 +20,7 @@ import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceBoutique;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CoffreServiceMongoImpl;
+import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.InventaireServiceImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceBoutiqueImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceCombatImpl;
 import com.googlecode.lanterna.TerminalSize;
@@ -30,6 +32,11 @@ import com.googlecode.lanterna.screen.Screen;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.ArrayList;
+
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CompetenceMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.*;
+import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CompetenceServiceImpl;
 
 public class EcranPrincipal {
 
@@ -132,7 +139,11 @@ public class EcranPrincipal {
             if (serviceAuthentification != null) {
                 serviceAuthentification.deconnecterJoueur(joueur.getPseudo());
             }
+            // Fermer la fenêtre actuelle
             fenetre.close();
+            
+            // Au lieu de fermer l'application, revenir à l'écran d'authentification
+            new EcranAuthentification(serviceAuthentification, textGUI, screen, joueurDAO).afficher();
         }));
 
         fenetre.setComponent(panel);
@@ -327,16 +338,6 @@ public class EcranPrincipal {
 
         // Boutons d'action
         Panel boutonsPanel = new Panel(new GridLayout(3));
-        boutonsPanel.addComponent(new Button("Modifier Profil", () -> {
-            fenetre.close();
-            afficherEcranGestionProfil(joueur);
-        }));
-
-        boutonsPanel.addComponent(new Button("Choisir Personnage", () -> {
-            fenetre.close();
-            afficherEcranChoixPersonnage(joueur);
-        }));
-
         boutonsPanel.addComponent(new Button("Retour", () -> {
             fenetre.close();
             afficher();
@@ -428,7 +429,7 @@ public class EcranPrincipal {
         textGUI.addWindowAndWait(fenetre);
     }
 
-    private void afficherEcranGestionCoffre(Joueur joueur) {
+    public void afficherEcranGestionCoffre(Joueur joueur, boolean estModeCombat) {
         // Implémentation pour la gestion du coffre avec MongoDB
         CoffreServiceMongoImpl coffreService = CoffreServiceMongoImpl.getInstance();
 
@@ -443,12 +444,20 @@ public class EcranPrincipal {
 
             // Créer et afficher l'écran de gestion du coffre
             Panel panel = new Panel(new GridLayout(1));
-            Window fenetre = new BasicWindow("Gestion du Coffre - " + joueur.getPseudo());
+            Window fenetre = null;
+            if (estModeCombat) {
+                 fenetre = new BasicWindow("Préparation au combat - Sélection d'items - " + joueur.getPseudo());
+            } else {
+                 fenetre = new BasicWindow("Gestion du Coffre - " + joueur.getPseudo());
+            }
             fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
+            
+            // Utiliser une référence finale à la fenêtre pour les lambdas
+            final Window fenetreFinale = fenetre;
 
             // En-tête
             panel.addComponent(new Label("═══ Coffre de " + joueur.getPseudo() + " ═══"));
-            panel.addComponent(new Label("Or disponible: " + joueur.getArgent() + " TerraCoins"));
+            panel.addComponent(new Label("TerraCoins disponible: " + joueur.getArgent() + " TerraCoins"));
             panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
 
             // Afficher le contenu du coffre
@@ -490,6 +499,10 @@ public class EcranPrincipal {
             } else {
                 panel.addComponent(contenuPanel);
 
+                if(!estModeCombat) {
+                    panel.addComponent(new Label("Valeur totale: " + valeurTotale + " TerraCoins" + " | Valeur de vente: " + valeurVente + " TerraCoins"));
+                }
+
                 // Afficher la valeur totale et la valeur de vente
                 panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
                 panel.addComponent(new Label("Valeur totale du coffre: " + valeurTotale + " TerraCoins"));
@@ -499,7 +512,12 @@ public class EcranPrincipal {
                 panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
                 panel.addComponent(new Label("Options:"));
 
+
                 Panel optionsPanel = new Panel(new GridLayout(2));
+                if(estModeCombat) {
+                    panel.addComponent(new Label("Sélectionnez jusqu'à 5 items pour le combat:"));
+                }
+
                 optionsPanel.addComponent(new Label("ID Item:"));
                 TextBox idBox = new TextBox();
                 optionsPanel.addComponent(idBox);
@@ -510,8 +528,84 @@ public class EcranPrincipal {
 
                 panel.addComponent(optionsPanel);
 
-                Panel boutonsPanel = new Panel(new GridLayout(3));
+                Panel boutonsPanel = new Panel(new GridLayout(estModeCombat ? 2 : 3));
 
+                if (estModeCombat) {
+                    // Mode combat afficher bouton transferer item et confirmer
+                    Button btnTransferer = new Button("Équiper", () -> {
+                        try {
+                            int itemId = Integer.parseInt(idBox.getText());
+                            
+                            // Initialiser le service d'inventaire
+                            InventaireServiceImpl inventaireService = InventaireServiceImpl.getInstance();
+                            
+                            // Transfert vers l'inventaire de combat - Obtenir l'item
+                            Item item = inventaireService.transfererDuCoffreVersInventaire(joueur, itemId);
+
+                            // Le transfert a réussi puisqu'aucune exception n'a été levée
+                            afficherMessageSucces(item.getNom() + " équipé!");
+                            fenetreFinale.close();
+                            afficherEcranGestionCoffre(joueur, true);
+                            
+                        } catch (NumberFormatException e) {
+                            afficherMessageErreur("Veuillez entrer un ID d'item valide.");
+                        } catch (Exception e) {
+                            // Capturer toutes les erreurs de transfert et les afficher dans Lanterna
+                            afficherMessageErreur(e.getMessage());
+                        }
+                    });
+
+                    Button btnConfirmer = new Button("Confirmer", () -> {
+                        if(joueur.getPersonnage().getInventaire().getSlots().isEmpty()) {
+                            // Afficher une boîte de dialogue de confirmation
+                            MessageDialogBuilder confirmDialog = new MessageDialogBuilder()
+                                    .setTitle("Confirmation")
+                                    .setText("Êtes-vous sûr de vouloir lancer le combat sans items?")
+                                    .addButton(MessageDialogButton.Yes)
+                                    .addButton(MessageDialogButton.No);
+
+                            MessageDialogButton reponse = confirmDialog.build().showDialog(textGUI);
+                            
+                            if (reponse == MessageDialogButton.No) {
+                                // Si l'utilisateur choisit "Non", réafficher l'écran de gestion du coffre en mode combat
+                                fenetreFinale.close();
+                                afficherEcranGestionCoffre(joueur, true);
+                                return;
+                            }
+                            // Si l'utilisateur choisit "Oui", continuer le combat sans items
+                        }
+
+                        // Passer à l'écran de sélection des compétences avant de lancer le combat
+                        fenetreFinale.close();
+                        afficherEcranGestionCompetences(joueur);
+                    });
+
+                    // Ajouter les boutons dans l'ordre souhaité : Équiper, Confirmer, puis Annuler
+                    boutonsPanel.addComponent(btnTransferer);
+                    boutonsPanel.addComponent(btnConfirmer);
+                    boutonsPanel.addComponent(new Button("Annuler", () -> {
+                        // Afficher une boîte de dialogue de confirmation
+                        MessageDialogBuilder confirmDialog = new MessageDialogBuilder()
+                                .setTitle("Confirmation")
+                                .setText("Êtes-vous sûr de vouloir annuler la préparation au combat?")
+                                .addButton(MessageDialogButton.Yes)
+                                .addButton(MessageDialogButton.No);
+
+                        MessageDialogButton reponse = confirmDialog.build().showDialog(textGUI);
+                        
+                        if (reponse == MessageDialogButton.Yes) {
+                            // Si l'utilisateur choisit "Oui", on vide l'inventaire de combat et les compétences
+                            annulerPreparationCombat(joueur);
+                            
+                            // Revenir à l'écran principal
+                            fenetreFinale.close();
+                            afficher();
+                        } else {
+                            // Si l'utilisateur choisit "Non", rester sur l'écran de préparation au combat
+                            // Ne rien faire, l'écran reste affiché
+                        }
+                    }));
+                } else {
                 // Bouton Retirer Item
                 boutonsPanel.addComponent(new Button("Retirer", () -> {
                     try {
@@ -524,8 +618,8 @@ public class EcranPrincipal {
                         if (success) {
                             afficherMessageSucces("Item retiré avec succès");
                             // Fermer et réafficher l'écran pour actualiser
-                            fenetre.close();
-                            afficherEcranGestionCoffre(joueur);
+                            fenetreFinale.close();
+                            afficherEcranGestionCoffre(joueur, false);
                         } else {
                             afficherMessageErreur("Erreur lors du retrait de l'item");
                         }
@@ -578,8 +672,8 @@ public class EcranPrincipal {
                                 afficherMessageSucces("Item vendu avec succès! Vous avez gagné " + prixVente + " TerraCoins.");
 
                                 // Fermer et réafficher l'écran pour actualiser
-                                fenetre.close();
-                                afficherEcranGestionCoffre(joueur);
+                                fenetreFinale.close();
+                                afficherEcranGestionCoffre(joueur, false);
                             } else {
                                 afficherMessageErreur("Erreur lors de la vente de l'item");
                             }
@@ -612,22 +706,26 @@ public class EcranPrincipal {
                                                   valeurVente + " TerraCoins.");
 
                             // Fermer et réafficher l'écran pour actualiser
-                            fenetre.close();
-                            afficherEcranGestionCoffre(joueur);
+                            fenetreFinale.close();
+                            afficherEcranGestionCoffre(joueur, false);
                         } else {
                             afficherMessageErreur("Erreur lors de la vente des items");
                         }
                     }
-                }));
+                }));}
 
                 panel.addComponent(boutonsPanel);
             }
 
             panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-            panel.addComponent(new Button("Retour", () -> {
-                fenetre.close();
-                afficher(); // Retour à l'écran principal
-            }));
+            if (estModeCombat) {
+                // En mode combat, on a déjà un bouton Annuler dans le panel des boutons
+            } else {
+                panel.addComponent(new Button("Retour", () -> {
+                    fenetreFinale.close();
+                    afficher(); // Retour à l'écran principal
+                }));
+            }
 
             fenetre.setComponent(panel);
             textGUI.addWindowAndWait(fenetre);
@@ -635,6 +733,11 @@ public class EcranPrincipal {
             afficherMessageErreur("Erreur lors du chargement du coffre : " + e.getMessage());
             afficher(); // Retour à l'écran principal en cas d'erreur
         }
+    }
+
+    // Surcharge de la méthode pour faciliter l'appel sans préciser le mode combat
+    public void afficherEcranGestionCoffre(Joueur joueur) {
+        afficherEcranGestionCoffre(joueur, false);
     }
 
     private void afficherEcranBoutique(Joueur joueur) {
@@ -807,6 +910,263 @@ public class EcranPrincipal {
                 .setText(message)
                 .addButton(MessageDialogButton.OK);
         dialogBuilder.build().showDialog(textGUI);
+    }
+
+    /**
+     * Vide l'inventaire de combat et replace tous les items dans le coffre
+     * @param joueur Le joueur dont l'inventaire doit être vidé
+     * @return true si l'opération a réussi, false sinon
+     */
+    private boolean viderInventaireCombatVersCoffre(Joueur joueur) {
+        try {
+            if (joueur == null || joueur.getPersonnage() == null || joueur.getPersonnage().getInventaire() == null) {
+                return false;
+            }
+            
+            // Obtenir le DAO d'inventaire pour accéder aux items
+            InventairePersonnageMongoDAOImpl inventaireDAO = InventairePersonnageMongoDAOImpl.getInstance();
+            
+            // Récupérer les items dans l'inventaire de combat
+            List<Item> itemsInventaire = inventaireDAO.obtenirItemsInventaire(joueur.getPseudo());
+            
+            if (itemsInventaire.isEmpty()) {
+                // Si l'inventaire est déjà vide, rien à faire
+                return true;
+            }
+            
+            // Créer une copie de la liste pour éviter les problèmes de modification pendant l'itération
+            List<Item> itemsACopier = new ArrayList<>(itemsInventaire);
+            
+            // Initialiser le service d'inventaire
+            InventaireServiceImpl inventaireService = InventaireServiceImpl.getInstance();
+            
+            // Pour chaque item, le transférer vers le coffre
+            for (Item item : itemsACopier) {
+                try {
+                    inventaireService.transfererDeInventaireVersCoffre(joueur, item.getId());
+                } catch (Exception e) {
+                    // Consigner l'erreur mais continuer avec les autres items
+                    System.err.println("Erreur lors du transfert de l'item " + item.getNom() + ": " + e.getMessage());
+                }
+            }
+            
+            // Vérifier si tous les items ont été transférés
+            itemsInventaire = inventaireDAO.obtenirItemsInventaire(joueur.getPseudo());
+            return itemsInventaire.isEmpty();
+            
+        } catch (Exception e) {
+            System.err.println("Erreur lors du vidage de l'inventaire de combat: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Affiche l'écran de sélection des compétences de combat
+     * @param joueur Le joueur qui va combattre
+     */
+    public void afficherEcranGestionCompetences(Joueur joueur) {
+        try {
+            // Initialiser le service de compétences
+            CompetenceServiceImpl competenceService = CompetenceServiceImpl.getInstance();
+            
+            // Créer la fenêtre
+            Window fenetre = new BasicWindow("Compétences de Combat - " + joueur.getPseudo());
+            fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
+            
+            // Utiliser une référence finale à la fenêtre pour les lambdas
+            final Window fenetreFinale = fenetre;
+            
+            Panel panel = new Panel(new GridLayout(1));
+            
+            // En-tête
+            panel.addComponent(new Label("═══ Compétences de Combat ═══"));
+            panel.addComponent(new Label("TerraCoins disponibles: " + joueur.getArgent() + " TerraCoins"));
+            panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
+            
+            // Obtenir les compétences déjà achetées
+            List<Competence> competencesAchetees = competenceService.obtenirCompetencesJoueur(joueur);
+            
+            // Afficher les compétences déjà achetées
+            if (!competencesAchetees.isEmpty()) {
+                panel.addComponent(new Label("Compétences déjà achetées:"));
+                Panel competencesPanel = new Panel(new GridLayout(3));
+                competencesPanel.addComponent(new Label("Nom"));
+                competencesPanel.addComponent(new Label("Description"));
+                competencesPanel.addComponent(new Label("Prix"));
+                
+                for (Competence competence : competencesAchetees) {
+                    competencesPanel.addComponent(new Label(competence.getNom()));
+                    competencesPanel.addComponent(new Label(competence.getDescription()));
+                    competencesPanel.addComponent(new Label(String.valueOf(competence.getPrix())));
+                }
+                
+                panel.addComponent(competencesPanel);
+                panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
+            } else {
+                panel.addComponent(new Label("Vous n'avez pas encore acheté de compétences."));
+                panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
+            }
+            
+            // Vérifier si le joueur peut acheter de nouvelles compétences
+            boolean peutAcheter = competenceService.peutAcheterNouvelleCompetence(joueur);
+            
+            if (peutAcheter) {
+                panel.addComponent(new Label("Compétences disponibles à l'achat:"));
+                
+                // Obtenir toutes les compétences disponibles
+                List<Competence> toutesCompetences = competenceService.obtenirToutesCompetences();
+                
+                // Filtrer les compétences déjà achetées
+                List<Competence> competencesDisponibles = new ArrayList<>();
+                for (Competence competence : toutesCompetences) {
+                    boolean dejaAchetee = false;
+                    for (Competence competenceAchetee : competencesAchetees) {
+                        if (competence.getId().equals(competenceAchetee.getId())) {
+                            dejaAchetee = true;
+                            break;
+                        }
+                    }
+                    if (!dejaAchetee) {
+                        competencesDisponibles.add(competence);
+                    }
+                }
+                
+                if (!competencesDisponibles.isEmpty()) {
+                    // Créer un panel pour les compétences disponibles
+                    Panel competencesDispoPanel = new Panel(new GridLayout(4));
+                    competencesDispoPanel.addComponent(new Label("Nom"));
+                    competencesDispoPanel.addComponent(new Label("Description"));
+                    competencesDispoPanel.addComponent(new Label("Prix"));
+                    competencesDispoPanel.addComponent(new Label("Action"));
+                    
+                    for (Competence competence : competencesDisponibles) {
+                        competencesDispoPanel.addComponent(new Label(competence.getNom()));
+                        competencesDispoPanel.addComponent(new Label(competence.getDescription()));
+                        competencesDispoPanel.addComponent(new Label(String.valueOf(competence.getPrix())));
+                        
+                        Button btnAcheter = new Button("Acheter", () -> {
+                            try {
+                                boolean succes = competenceService.acheterCompetence(joueur, competence);
+                                if (succes) {
+                                    afficherMessageSucces("Compétence " + competence.getNom() + " achetée avec succès!");
+                                    // Rafraîchir l'écran
+                                    fenetreFinale.close();
+                                    afficherEcranGestionCompetences(joueur);
+                                }
+                            } catch (Exception e) {
+                                afficherMessageErreur(e.getMessage());
+                            }
+                        });
+                        
+                        // Désactiver le bouton si le joueur n'a pas assez d'argent
+                        if (joueur.getArgent() < competence.getPrix()) {
+                            btnAcheter.setEnabled(false);
+                        }
+                        
+                        competencesDispoPanel.addComponent(btnAcheter);
+                    }
+                    
+                    panel.addComponent(competencesDispoPanel);
+                } else {
+                    panel.addComponent(new Label("Vous avez déjà acheté toutes les compétences disponibles."));
+                }
+            } else {
+                panel.addComponent(new Label("Vous avez atteint le nombre maximum de compétences (4)."));
+            }
+            
+            panel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
+            
+            // Bouton pour continuer vers le combat
+            Button btnLancerCombat = new Button("Lancer le Combat", () -> {
+                fenetreFinale.close();
+                
+                // Initialisation du service de combat
+                try {
+                    // Appliquer les compétences achetées
+                    competenceService.appliquerCompetences(joueur);
+                    
+                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAO = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
+                    ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO);
+                    
+                    // Lancement du combat
+                    new EcranCombat(joueurDAO, textGUI, screen, joueur, null, serviceCombat).afficher();
+                } catch (Exception e) {
+                    afficherMessageErreur("Erreur lors de l'initialisation du combat: " + e.getMessage());
+                }
+            });
+            
+            // Bouton pour annuler et revenir à la sélection d'items
+            Button btnRetourItems = new Button("Revenir à la Sélection d'Items", () -> {
+                fenetreFinale.close();
+                afficherEcranGestionCoffre(joueur, true);
+            });
+            
+            // Bouton pour annuler la préparation au combat
+            Button btnAnnuler = new Button("Annuler le Combat", () -> {
+                // Afficher une boîte de dialogue de confirmation
+                MessageDialogBuilder confirmDialog = new MessageDialogBuilder()
+                        .setTitle("Confirmation")
+                        .setText("Êtes-vous sûr de vouloir annuler la préparation au combat?")
+                        .addButton(MessageDialogButton.Yes)
+                        .addButton(MessageDialogButton.No);
+
+                MessageDialogButton reponse = confirmDialog.build().showDialog(textGUI);
+                
+                if (reponse == MessageDialogButton.Yes) {
+                    // Si l'utilisateur choisit "Oui", vider l'inventaire de combat et les compétences
+                    annulerPreparationCombat(joueur);
+                    
+                    // Revenir à l'écran principal
+                    fenetreFinale.close();
+                    afficher();
+                }
+                // Si l'utilisateur choisit "Non", ne rien faire
+            });
+            
+            // Panel pour les boutons d'action
+            Panel boutonsPanel = new Panel(new GridLayout(3));
+            boutonsPanel.addComponent(btnLancerCombat);
+            boutonsPanel.addComponent(btnRetourItems);
+            boutonsPanel.addComponent(btnAnnuler);
+            
+            panel.addComponent(boutonsPanel);
+            
+            fenetre.setComponent(panel);
+            textGUI.addWindowAndWait(fenetre);
+        } catch (Exception e) {
+            afficherMessageErreur("Erreur lors de l'affichage de l'écran de gestion des compétences: " + e.getMessage());
+            e.printStackTrace();
+            afficher(); // Retour à l'écran principal en cas d'erreur
+        }
+    }
+
+    /**
+     * Vide l'inventaire de combat et les compétences achetées du joueur.
+     * @param joueur Le joueur dont l'inventaire et les compétences doivent être vidés
+     */
+    private void annulerPreparationCombat(Joueur joueur) {
+        try {
+            // Vider l'inventaire de combat
+            boolean vidageInventaire = viderInventaireCombatVersCoffre(joueur);
+            
+            // Vider les compétences
+            CompetenceServiceImpl competenceService = CompetenceServiceImpl.getInstance();
+            boolean reinitCompetences = competenceService.reinitialiserCompetences(joueur);
+            
+            if (!vidageInventaire) {
+                afficherMessageErreur("Certains items n'ont pas pu être retransférés vers le coffre.");
+            }
+            
+            if (!reinitCompetences) {
+                afficherMessageErreur("Les compétences n'ont pas pu être réinitialisées.");
+            }
+            
+            if (vidageInventaire && reinitCompetences) {
+                afficherMessageSucces("Préparation au combat annulée avec succès.");
+            }
+        } catch (Exception e) {
+            afficherMessageErreur("Erreur lors de l'annulation de la préparation au combat: " + e.getMessage());
+        }
     }
 
 }

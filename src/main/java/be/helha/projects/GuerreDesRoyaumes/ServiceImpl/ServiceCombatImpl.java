@@ -494,7 +494,78 @@ public class ServiceCombatImpl implements ServiceCombat {
 
     @Override
     public CombatDAO getCombatDAO() {
-        return combatDAO;
+        return this.combatDAO;
+    }
+
+    @Override
+    public boolean transfererItemsCoffreVersInventaire(Joueur joueur, Item item, int quantite) {
+        if (joueur == null || item == null || quantite <= 0) {
+            System.err.println("DEBUG: Paramètres invalides pour le transfert d'item");
+            return false;
+        }
+        
+        if (joueur.getPersonnage() == null) {
+            System.err.println("DEBUG: Personnage non initialisé pour " + joueur.getPseudo());
+            return false;
+        }
+        
+        if (joueur.getCoffre() == null) {
+            System.err.println("DEBUG: Coffre non initialisé pour " + joueur.getPseudo());
+            return false;
+        }
+        
+        // Vérifier si l'inventaire de combat est bien initialisé
+        if (joueur.getPersonnage().getInventaire() == null) {
+            joueur.getPersonnage().setInventaire(new be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire());
+        }
+        
+        // Vérifier si l'item existe dans le coffre avec la quantité demandée
+        boolean itemTrouve = false;
+        for (be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot slot : joueur.getCoffre().getSlots()) {
+            if (slot != null && slot.getItem() != null && slot.getItem().getId() == item.getId()) {
+                if (slot.getQuantity() >= quantite) {
+                    itemTrouve = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!itemTrouve) {
+            System.err.println("DEBUG: Item non trouvé dans le coffre ou quantité insuffisante");
+            return false;
+        }
+        
+        // Transférer l'item du coffre vers l'inventaire
+        try {
+            // Enlever l'item du coffre
+            boolean itemEnleve = joueur.getCoffre().enleverItem(item, quantite);
+            
+            if (!itemEnleve) {
+                System.err.println("DEBUG: Échec de l'enlèvement de l'item du coffre");
+                return false;
+            }
+            
+            // Ajouter l'item à l'inventaire de combat
+            boolean itemAjoute = joueur.getPersonnage().getInventaire().ajouterItem(item, quantite);
+            
+            if (!itemAjoute) {
+                // Si l'ajout à l'inventaire échoue, remettre l'item dans le coffre
+                joueur.getCoffre().ajouterItem(item, quantite);
+                System.err.println("DEBUG: Échec de l'ajout de l'item à l'inventaire de combat, l'item a été remis dans le coffre");
+                return false;
+            }
+            
+            // Mettre à jour le joueur dans la base de données
+            joueurDAO.mettreAJourJoueur(joueur);
+            
+            System.out.println("DEBUG: Item " + item.getNom() + " (quantité: " + quantite + 
+                    ") transféré du coffre vers l'inventaire de combat de " + joueur.getPseudo());
+            
+            return true;
+        } catch (Exception e) {
+            System.err.println("DEBUG: Erreur lors du transfert d'item: " + e.getMessage());
+            return false;
+        }
     }
 }
 

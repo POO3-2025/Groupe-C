@@ -1,5 +1,6 @@
 package be.helha.projects.GuerreDesRoyaumes.Service;
 
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 
 /**
@@ -13,9 +14,10 @@ public interface InventaireService {
      *
      * @param joueur Le joueur concerné
      * @param itemId L'ID de l'item à transférer
-     * @return true si le transfert a réussi, false sinon
+     * @return L'item transféré, ou null si le transfert a échoué
+     * @throws Exception Si une erreur survient pendant le transfert
      */
-    boolean transfererDuCoffreVersInventaire(Joueur joueur, int itemId);
+    Item transfererDuCoffreVersInventaire(Joueur joueur, int itemId) throws Exception;
 
     /**
      * Transfère un item de l'inventaire de combat vers le coffre
@@ -23,6 +25,7 @@ public interface InventaireService {
      * @param joueur Le joueur concerné
      * @param itemId L'ID de l'item à transférer
      * @return true si le transfert a réussi, false sinon
+     * @throws Exception Si une erreur survient pendant le transfert
      */
-    boolean transfererDeInventaireVersCoffre(Joueur joueur, int itemId);
+    boolean transfererDeInventaireVersCoffre(Joueur joueur, int itemId) throws Exception;
 }

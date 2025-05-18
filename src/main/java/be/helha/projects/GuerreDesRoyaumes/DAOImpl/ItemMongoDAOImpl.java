@@ -53,12 +53,29 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
             while (cursor.hasNext()) {
                 Document doc = cursor.next();
                 System.out.println("Document trouvé: " + doc.toJson());
-                Item item = convertirDocumentEnItem(doc);
-                if (item != null) {
-                    System.out.println("Item converti avec succès: ID=" + item.getId() + ", Nom=" + item.getNom() + ", Type=" + item.getClass().getSimpleName());
-                    items.add(item);
+                
+                // Traitement spécial pour le champ _id qui peut causer des problèmes
+                if (doc.containsKey("_id")) {
+                    // Créer une copie du document sans le champ _id
+                    Document docSansId = new Document(doc);
+                    docSansId.remove("_id");
+                    
+                    // Utiliser le document sans _id pour la conversion
+                    Item item = convertirDocumentEnItem(docSansId);
+                    if (item != null) {
+                        System.out.println("Item converti avec succès: ID=" + item.getId() + ", Nom=" + item.getNom() + ", Type=" + item.getClass().getSimpleName());
+                        items.add(item);
+                    } else {
+                        System.err.println("Échec de la conversion du document en item: " + docSansId.toJson());
+                    }
                 } else {
-                    System.err.println("Échec de la conversion du document en item: " + doc.toJson());
+                    Item item = convertirDocumentEnItem(doc);
+                    if (item != null) {
+                        System.out.println("Item converti avec succès: ID=" + item.getId() + ", Nom=" + item.getNom() + ", Type=" + item.getClass().getSimpleName());
+                        items.add(item);
+                    } else {
+                        System.err.println("Échec de la conversion du document en item: " + doc.toJson());
+                    }
                 }
             }
             System.out.println("Nombre total d'items récupérés: " + items.size());
@@ -72,19 +89,63 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
 
     private Item convertirDocumentEnItem(Document doc) {
         try {
-            // Récupération du Gson configuré avec les adapters
-            Gson gson = GsonObjectIdAdapter.getGson();
-
-            //Conversion Document → JSON
-            String json = doc.toJson();
-
-            //Désérialisation avec gestion du polymorphisme
-            return gson.fromJson(json, Item.class);
+            // Afficher le document pour debug
+            System.out.println("Conversion du document en item: " + doc.toJson());
+            
+            // Vérifier que le document contient les champs requis
+            if (!doc.containsKey("id") || !doc.containsKey("nom") || !doc.containsKey("type")) {
+                System.err.println("Document incomplet, champs requis manquants (id, nom, type)");
+                return null;
+            }
+            
+            // Extraire les champs communs
+            int id = doc.getInteger("id");
+            String nom = doc.getString("nom");
+            String type = doc.getString("type");
+            int prix = 0;
+            if (doc.containsKey("prix")) {
+                prix = doc.getInteger("prix");
+            }
+            int quantiteMax = 1;
+            if (doc.containsKey("quantiteMax")) {
+                quantiteMax = doc.getInteger("quantiteMax");
+            }
+            
+            // Créer l'objet approprié en fonction du type
+            if ("Arme".equals(type)) {
+                double degats = 0;
+                if (doc.containsKey("degats")) {
+                    degats = getAsDouble(doc, "degats");
+                }
+                System.out.println("Création d'une Arme: " + nom + " avec dégâts: " + degats);
+                return new Arme(id, nom, quantiteMax, prix, degats);
+            } else if ("Bouclier".equals(type)) {
+                double defense = 0;
+                if (doc.containsKey("defense")) {
+                    defense = getAsDouble(doc, "defense");
+                }
+                System.out.println("Création d'un Bouclier: " + nom + " avec défense: " + defense);
+                return new Bouclier(id, nom, quantiteMax, prix, defense);
+            } else if ("Potion".equals(type)) {
+                double soin = 0;
+                if (doc.containsKey("soin")) {
+                    soin = getAsDouble(doc, "soin");
+                }
+                double degats = 0;
+                if (doc.containsKey("degats")) {
+                    degats = getAsDouble(doc, "degats");
+                }
+                System.out.println("Création d'une Potion: " + nom + " avec soin: " + soin + " et dégâts: " + degats);
+                return new Potion(id, nom, quantiteMax, prix, degats, soin);
+            } else {
+                System.err.println("Type d'item non reconnu: " + type);
+                return null;
+            }
         } catch (Exception e) {
             //Gestion robuste des erreurs
-            System.err.println("Erreur lors de la conversion du document en item. Document: " + doc.toJson());
+            System.err.println("Erreur lors de la conversion du document en item: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("Échec critique de la désérialisation", e);
+            return null;
         }
     }
 

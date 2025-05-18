@@ -1,12 +1,15 @@
 package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
+import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
+import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
+import com.googlecode.lanterna.gui2.table.Table;
 import com.googlecode.lanterna.screen.Screen;
 
 import java.util.ArrayList;
@@ -21,6 +24,8 @@ public class EcranPreparationCombat {
     private final ServiceCombat serviceCombat;
     private boolean estHote;
     private List<Item> itemsSelectionnes;
+    private Joueur joueur;
+    private Joueur adversaire;
 
     public EcranPreparationCombat(JoueurDAO joueurDAO, WindowBasedTextGUI textGUI, Screen screen,
                                   String pseudoJoueur, String pseudoAdversaire, ServiceCombat serviceCombat) {
@@ -45,10 +50,11 @@ public class EcranPreparationCombat {
 
         panel.addComponent(new Label("Préparation au combat contre: " + pseudoAdversaire));
         panel.addComponent(new EmptySpace());
+
         // Récupérer les informations des joueurs
         try {
-            Joueur joueur = joueurDAO.obtenirJoueurParPseudo(pseudoJoueur);
-            Joueur adversaire = joueurDAO.obtenirJoueurParPseudo(pseudoAdversaire);
+            joueur = joueurDAO.obtenirJoueurParPseudo(pseudoJoueur);
+            adversaire = joueurDAO.obtenirJoueurParPseudo(pseudoAdversaire);
 
             if (joueur == null || adversaire == null) {
                 throw new RuntimeException("Impossible de récupérer les informations des joueurs");
@@ -56,6 +62,15 @@ public class EcranPreparationCombat {
 
             // Initialiser le combat
             serviceCombat.initialiserCombat(joueur, adversaire, new ArrayList<>());
+
+            // Ajout du bouton "Préparer mon combat"
+            Button btnPreparerCombat = new Button("Préparer mon combat", () -> {
+                //ici afficher l'ecran de gestiond de coffre en mode combat
+                fenetre.close();
+                new EcranPrincipal(null, joueurDAO, joueur.getPseudo(), screen).afficherEcranGestionCoffre(joueur, true);
+            });
+            panel.addComponent(btnPreparerCombat);
+            panel.addComponent(new EmptySpace());
 
             // En mode développement, attendre la confirmation de l'utilisateur
             panel.addComponent(new Label("Préparation complète!"));
@@ -163,6 +178,178 @@ public class EcranPreparationCombat {
     }
     
     /**
+     * Affiche l'écran de gestion d'inventaire de combat
+     */
+    private void afficherEcranGestionInventaireDeCombat() {
+        Window fenetre = new BasicWindow("Gestion de l'inventaire de combat");
+        fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
+
+        Panel mainPanel = new Panel(new GridLayout(1));
+        mainPanel.addComponent(new Label("Préparez votre inventaire de combat"));
+        mainPanel.addComponent(new EmptySpace());
+
+        // Créer un panel avec deux colonnes pour le coffre et l'inventaire
+        Panel inventairePanel = new Panel(new GridLayout(2));
+
+        // Colonne du coffre
+        Panel coffrePanel = new Panel(new GridLayout(1));
+        coffrePanel.addComponent(new Label("Coffre:"));
+        
+        // Table pour afficher les items du coffre
+        Table<String> tableCoffre = new Table<>("ID", "Nom", "Type", "Détails");
+        tableCoffre.setVisibleRows(8);
+        coffrePanel.addComponent(tableCoffre);
+
+        // Colonne de l'inventaire de combat
+        Panel inventaireColPanel = new Panel(new GridLayout(1));
+        inventaireColPanel.addComponent(new Label("Inventaire de combat:"));
+        
+        // Table pour afficher les items de l'inventaire de combat
+        Table<String> tableInventaire = new Table<>("ID", "Nom", "Type", "Détails");
+        tableInventaire.setVisibleRows(8);
+        inventaireColPanel.addComponent(tableInventaire);
+
+        // Boutons pour transférer des items
+        Panel transferPanel = new Panel(new GridLayout(2));
+        
+        // TextBox pour entrer l'ID de l'item à transférer
+        TextBox textBoxIdItem = new TextBox(new TerminalSize(5, 1));
+        transferPanel.addComponent(new Label("ID de l'item:"));
+        transferPanel.addComponent(textBoxIdItem);
+        
+        // TextBox pour entrer la quantité à transférer
+        TextBox textBoxQuantite = new TextBox(new TerminalSize(5, 1));
+        transferPanel.addComponent(new Label("Quantité:"));
+        transferPanel.addComponent(textBoxQuantite);
+        
+        mainPanel.addComponent(transferPanel);
+
+        // Boutons d'action
+        Panel boutonsPanel = new Panel(new GridLayout(2));
+        
+        Button btnAjouterInventaire = new Button("Ajouter à l'inventaire de combat", () -> {
+            try {
+                int itemId = Integer.parseInt(textBoxIdItem.getText());
+                int quantite = Integer.parseInt(textBoxQuantite.getText());
+                
+                // Trouver l'item dans le coffre
+                Item itemSelectionne = null;
+                for (Slot slot : joueur.getCoffre().getSlots()) {
+                    if (slot != null && slot.getItem() != null && slot.getItem().getId() == itemId) {
+                        itemSelectionne = slot.getItem();
+                        break;
+                    }
+                }
+                
+                if (itemSelectionne != null) {
+                    // Transférer l'item vers l'inventaire de combat
+                    serviceCombat.transfererItemsCoffreVersInventaire(joueur, itemSelectionne, quantite);
+                    
+                    // Mettre à jour les tableaux
+                    rafraichirTables(tableCoffre, tableInventaire);
+                    
+                    afficherMessageInfo("Item ajouté à l'inventaire de combat");
+                } else {
+                    afficherMessageErreur("Item non trouvé dans le coffre");
+                }
+                
+                // Réinitialiser les champs
+                textBoxIdItem.setText("");
+                textBoxQuantite.setText("");
+            } catch (NumberFormatException e) {
+                afficherMessageErreur("Veuillez entrer des valeurs numériques valides");
+            } catch (Exception e) {
+                afficherMessageErreur("Erreur: " + e.getMessage());
+            }
+        });
+        
+        Button btnRetour = new Button("Retour", fenetre::close);
+        
+        boutonsPanel.addComponent(btnAjouterInventaire);
+        boutonsPanel.addComponent(btnRetour);
+        
+        // Ajouter les deux colonnes au panel d'inventaire
+        inventairePanel.addComponent(coffrePanel);
+        inventairePanel.addComponent(inventaireColPanel);
+        
+        // Ajouter tout au panel principal
+        mainPanel.addComponent(inventairePanel);
+        mainPanel.addComponent(boutonsPanel);
+        
+        // Charger les données initiales
+        rafraichirTables(tableCoffre, tableInventaire);
+        
+        fenetre.setComponent(mainPanel);
+        textGUI.addWindowAndWait(fenetre);
+    }
+    
+    /**
+     * Rafraîchit les tables d'affichage des items
+     */
+    private void rafraichirTables(Table<String> tableCoffre, Table<String> tableInventaire) {
+        // Vider les tables
+        tableCoffre.getTableModel().clear();
+        tableInventaire.getTableModel().clear();
+        
+        // Remplir la table du coffre
+        if (joueur.getCoffre() != null) {
+            for (Slot slot : joueur.getCoffre().getSlots()) {
+                if (slot != null && slot.getItem() != null) {
+                    Item item = slot.getItem();
+                    String details = obtenirDetailsItem(item);
+                    tableCoffre.getTableModel().addRow(
+                            String.valueOf(item.getId()),
+                            item.getNom(),
+                            item.getType(),
+                            details + " (Quantité: " + slot.getQuantity() + ")"
+                    );
+                }
+            }
+        }
+        
+        // Remplir la table de l'inventaire de combat
+        if (joueur.getPersonnage() != null && joueur.getPersonnage().getInventaire() != null) {
+            for (Slot slot : joueur.getPersonnage().getInventaire().getSlots()) {
+                if (slot != null && slot.getItem() != null) {
+                    Item item = slot.getItem();
+                    String details = obtenirDetailsItem(item);
+                    tableInventaire.getTableModel().addRow(
+                            String.valueOf(item.getId()),
+                            item.getNom(),
+                            item.getType(),
+                            details + " (Quantité: " + slot.getQuantity() + ")"
+                    );
+                }
+            }
+        }
+    }
+    
+    /**
+     * Obtient les détails spécifiques d'un item selon son type
+     */
+    private String obtenirDetailsItem(Item item) {
+        String details = "";
+        String className = item.getClass().getSimpleName();
+
+        switch (className) {
+            case "Arme":
+                details = "Dégâts: " + ((be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme) item).getDegats();
+                break;
+            case "Bouclier":
+                details = "Défense: " + ((be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier) item).getDefense();
+                break;
+            case "Potion":
+                be.helha.projects.GuerreDesRoyaumes.Model.Items.Potion potion = (be.helha.projects.GuerreDesRoyaumes.Model.Items.Potion) item;
+                details = "Soin: " + potion.getSoin() + ", Dégâts: " + potion.getDegats();
+                break;
+            default:
+                details = "Type inconnu";
+        }
+
+        return details;
+    }
+    
+    /**
      * Démarre un thread qui vérifie périodiquement si l'adversaire a annulé le combat
      * Si l'adversaire annule, le joueur est redirigé vers l'écran de sélection d'adversaire
      */
@@ -209,6 +396,15 @@ public class EcranPreparationCombat {
     }
 
     private void afficherMessageErreur(String message) {
+        new MessageDialogBuilder()
+                .setTitle("Erreur")
+                .setText(message)
+                .addButton(MessageDialogButton.OK)
+                .build()
+                .showDialog(textGUI);
+    }
+    
+    private void afficherMessageInfo(String message) {
         new MessageDialogBuilder()
                 .setTitle("Information")
                 .setText(message)

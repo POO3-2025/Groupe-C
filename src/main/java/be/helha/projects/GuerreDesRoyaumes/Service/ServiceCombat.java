@@ -90,4 +90,13 @@ public interface ServiceCombat {
      * @return L'instance de CombatDAO
      */
     CombatDAO getCombatDAO();
+    
+    /**
+     * Transfère un item du coffre du joueur vers son inventaire de combat
+     * @param joueur Le joueur concerné
+     * @param item L'item à transférer
+     * @param quantite La quantité à transférer
+     * @return true si le transfert a réussi, false sinon
+     */
+    boolean transfererItemsCoffreVersInventaire(Joueur joueur, Item item, int quantite);
 }
