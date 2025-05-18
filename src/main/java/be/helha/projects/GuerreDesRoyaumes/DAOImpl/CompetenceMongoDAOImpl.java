@@ -28,9 +28,9 @@ public class CompetenceMongoDAOImpl implements CompetenceMongoDAO {
     private static final String COLLECTION_NAME = "competencesAchetees";
 
     /**
-     * Constructeur privé pour le singleton qui initialise la connexion à la collection MongoDB.
+     * Constructeur public pour l'injection de dépendances avec Spring
      */
-    private CompetenceMongoDAOImpl() {
+    public CompetenceMongoDAOImpl() {
         MongoDatabase mongoDB;
         try {
             mongoDB = InitialiserAPP.getMongoConnexion();

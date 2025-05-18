@@ -24,6 +24,8 @@ import com.mongodb.client.MongoDatabase;
 import java.sql.Connection;
 
 import static be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP.initialiserItemsBoutique;
+import be.helha.projects.GuerreDesRoyaumes.Config.DAOProvider;
+import be.helha.projects.GuerreDesRoyaumes.DAO.CoffreMongoDAO;
 
 public class Main {
 
@@ -43,7 +45,7 @@ public class Main {
 
             // Initialiser les DAOs MongoDB
             ItemMongoDAOImpl itemDAO = ItemMongoDAOImpl.getInstance();
-            CoffreMongoDAOImpl coffreDAO = CoffreMongoDAOImpl.getInstance();
+            CoffreMongoDAO coffreDAO = DAOProvider.getCoffreMongoDAO();
             InventaireMongoDAOImpl inventaireDAO = InventaireMongoDAOImpl.getInstance();
 
             // Appel de ta méthode d'initialisation des items boutique

@@ -37,10 +37,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-	// MongoDB dependencies - using consistent version 4.4.2
-	implementation 'org.mongodb:mongodb-driver-sync:4.4.2'
-	implementation 'org.mongodb:mongodb-driver-core:4.4.2'
-	implementation 'org.mongodb:bson:4.4.2'
+	// MongoDB dependencies - mise à jour vers une version compatible avec Micrometer 1.14.5
+	implementation 'org.mongodb:mongodb-driver-sync:4.10.2'
+	implementation 'org.mongodb:mongodb-driver-core:4.10.2'
+	implementation 'org.mongodb:bson:4.10.2'
 
 	// Spring MongoDB support
 	implementation('org.springframework.boot:spring-boot-starter-data-mongodb') {
@@ -50,7 +50,12 @@ dependencies {
 
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	
+	// Exclure mongodb-micrometer de l'actuator
+	implementation('org.springframework.boot:spring-boot-starter-actuator') {
+		exclude group: 'io.micrometer', module: 'micrometer-core'
+	}
+	
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
 
 	// Dépendances JJWT pour la gestion des tokens JWT

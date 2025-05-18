@@ -4,6 +4,7 @@ import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatSessionMongoDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatSessionMongoDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DTO.CombatResolver;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Combat.CombatSession;
@@ -13,6 +14,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Potion;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -266,6 +268,7 @@ public class ServiceCombatImpl implements ServiceCombat {
             
             // Enregistrer le résultat dans la base SQL
             if (vainqueur != null) {
+                // Enregistrer la victoire
                 combatDAO.enregistrerVictoire(vainqueur);
                 
                 // Enregistrer la défaite pour l'autre joueur
@@ -273,6 +276,28 @@ public class ServiceCombatImpl implements ServiceCombat {
                     combatDAO.enregistrerDefaite(joueur2);
                 } else {
                     combatDAO.enregistrerDefaite(joueur1);
+                }
+                
+                // Mettre à jour le niveau du royaume du vainqueur
+                try {
+                    // Obtenir le DAO Royaume
+                    RoyaumeMongoDAOImpl royaumeDAO = new RoyaumeMongoDAOImpl();
+                    
+                    // Récupérer le royaume du vainqueur
+                    Royaume royaume = royaumeDAO.obtenirRoyaumeParJoueurId(vainqueur.getId());
+                    
+                    if (royaume != null) {
+                        // Incrémenter le niveau du royaume
+                        royaume.setNiveau(royaume.getNiveau() + 1);
+                        
+                        // Mettre à jour le royaume dans MongoDB
+                        royaumeDAO.mettreAJourRoyaume(royaume, vainqueur.getId());
+                        
+                        System.out.println("Niveau du royaume de " + vainqueur.getPseudo() + " incrémenté à " + royaume.getNiveau());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Erreur lors de la mise à jour du niveau du royaume: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
         } catch (Exception e) {
@@ -308,29 +333,28 @@ public class ServiceCombatImpl implements ServiceCombat {
 
     @Override
     public int calculerDegats(Joueur attaquant, Joueur defenseur, String typeAttaque) {
-        // Méthode de calcul de dégâts simplifiée
-        // Utilisée pour les cas où nous devons calculer les dégâts en dehors du resolver
+        // Méthode de calcul de dégâts utilisant les statistiques des personnages
         try {
             if (attaquant == null || defenseur == null || attaquant.getPersonnage() == null || defenseur.getPersonnage() == null) {
                 return 0;
             }
             
+            // Utiliser les statistiques du personnage
             double degatsBase = attaquant.getPersonnage().getDegats();
-            double defenseBase = defenseur.getPersonnage().getResistance() / 100.0;
+            
+            System.out.println("Statistiques de " + attaquant.getPersonnage().getNom() + ": " + 
+                             "Vie=" + attaquant.getPersonnage().getVie() + ", " +
+                             "Dégâts=" + attaquant.getPersonnage().getDegats() + ", " +
+                             "Résistance=" + attaquant.getPersonnage().getResistance());
             
             // Modifier les dégâts selon le type d'attaque
             if ("special".equals(typeAttaque)) {
                 degatsBase *= 1.5; // Bonus pour les attaques spéciales
             }
             
-            // Appliquer la défense
-            double degatsFinaux = degatsBase * (1 - defenseBase);
-            
-            // Variation aléatoire de +/- 10%
-            double variation = 0.9 + (random.nextDouble() * 0.2);
-            degatsFinaux *= variation;
-            
-            return (int) Math.max(1, degatsFinaux);
+            // La résistance sera appliquée directement dans la méthode subirDegats
+            // Aucune variation aléatoire
+            return (int) Math.max(1, degatsBase);
         } catch (Exception e) {
             System.err.println("Erreur lors du calcul des dégâts: " + e.getMessage());
             e.printStackTrace();
@@ -345,12 +369,16 @@ public class ServiceCombatImpl implements ServiceCombat {
                 return degats;
             }
             
-            double defenseBase = defenseur.getPersonnage().getResistance() / 100.0;
+            System.out.println("Statistiques de défense de " + defenseur.getPersonnage().getNom() + ": " + 
+                             "Vie=" + defenseur.getPersonnage().getVie() + ", " +
+                             "Résistance=" + defenseur.getPersonnage().getResistance());
             
-            // Réduction des dégâts grâce à la défense
-            double degatsReduits = degats * (1 - defenseBase);
+            // Soustraction directe de la résistance
+            double degatsReduits = Math.max(1, degats - defenseur.getPersonnage().getResistance());
             
-            return (int) Math.max(0, degatsReduits);
+            System.out.println("Dégâts d'origine: " + degats + ", Dégâts après résistance: " + (int)Math.max(1, degatsReduits));
+            
+            return (int) Math.max(1, degatsReduits);
         } catch (Exception e) {
             System.err.println("Erreur lors du calcul de la défense: " + e.getMessage());
             e.printStackTrace();
@@ -540,6 +568,28 @@ public class ServiceCombatImpl implements ServiceCombat {
             System.err.println("Erreur lors du transfert d'items: " + e.getMessage());
             e.printStackTrace();
             return false;
+        }
+    }
+    
+    @Override
+    public String getAdversairePseudo(int joueurId) {
+        try {
+            // Vérifier si un combat est en cours pour ce joueur
+            int adversaireId = getCombatDAO().verifierCombatEnCours(joueurId);
+            
+            if (adversaireId > 0) {
+                // Un combat est en cours, récupérer le pseudo de l'adversaire
+                Joueur adversaire = joueurDAO.obtenirJoueurParId(adversaireId);
+                if (adversaire != null) {
+                    return adversaire.getPseudo();
+                }
+            }
+            
+            return null; // Aucun combat en cours
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la récupération du pseudo de l'adversaire: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 }

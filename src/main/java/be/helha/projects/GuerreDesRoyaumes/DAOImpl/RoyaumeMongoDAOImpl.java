@@ -21,33 +21,20 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class RoyaumeMongoDAOImpl implements RoyaumeMongoDAO {
 
-    private static RoyaumeMongoDAOImpl instance;
     private final MongoCollection<Document> collection;
     private final Gson gson = GsonObjectIdAdapter.getGson();
 
 
     /**
-     * Constructeur privé pour le singleton qui initialise la connexion à la collection MongoDB.
+     * Constructeur pour l'injection de dépendances Spring
      */
-    private RoyaumeMongoDAOImpl() {
+    public RoyaumeMongoDAOImpl() {
         try {
             MongoDatabase mongoDB = InitialiserAPP.getMongoConnexion();
             this.collection = mongoDB.getCollection("royaumes");
         } catch (MongoDBConnectionException ex) {
             throw new RuntimeException(ex);
         }
-    }
-
-    /**
-     * Obtient l'instance unique de RoyaumeMongoDAOImpl (pattern Singleton).
-     *
-     * @return L'instance unique de RoyaumeMongoDAOImpl
-     */
-    public static synchronized RoyaumeMongoDAOImpl getInstance() {
-        if (instance == null) {
-            instance = new RoyaumeMongoDAOImpl();
-        }
-        return instance;
     }
 
     /**

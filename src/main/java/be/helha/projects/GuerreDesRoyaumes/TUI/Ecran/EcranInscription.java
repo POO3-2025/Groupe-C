@@ -9,6 +9,7 @@ import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.screen.Screen;
+import be.helha.projects.GuerreDesRoyaumes.Config.DAOProvider;
 
 public class EcranInscription {
     private final ServiceAuthentification serviceAuthentification;
@@ -124,8 +125,7 @@ public class EcranInscription {
                     serviceAuthentification.mettreAJourJoueur(joueurFinal);
                     
                     // Mettre à jour le royaume dans MongoDB
-                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO = 
-                        be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
+                    be.helha.projects.GuerreDesRoyaumes.DAO.RoyaumeMongoDAO royaumeMongoDAO = DAOProvider.getRoyaumeMongoDAO();
                     
                     // Vérifier s'il faut mettre à jour ou créer un royaume dans MongoDB
                     Royaume royaumeMongo = royaumeMongoDAO.obtenirRoyaumeParJoueurId(joueurFinal.getId());
@@ -188,8 +188,8 @@ public class EcranInscription {
                     }
                     
                     // Enregistrer le personnage dans MongoDB
-                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO = 
-                        be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl.getInstance();
+                    be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageMongoDAO personnageMongoDAO = 
+                        DAOProvider.getPersonnageMongoDAO();
                     personnageMongoDAO.ajouterPersonnage(personnage, joueur.getId());
                     
                     // Mettre à jour le joueur

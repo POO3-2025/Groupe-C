@@ -28,14 +28,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class PersonnageMongoDAOImpl implements PersonnageMongoDAO {
 
-    private static PersonnageMongoDAOImpl instance;
     private final MongoCollection<Document> collection;
     private final Gson gson;
 
     /**
-     * Constructeur privé pour le singleton qui initialise la connexion à la collection MongoDB.
+     * Constructeur pour l'injection de dépendances Spring
      */
-    private PersonnageMongoDAOImpl() {
+    public PersonnageMongoDAOImpl() {
         try {
             MongoDatabase mongoDB = InitialiserAPP.getMongoConnexion();
             this.collection = mongoDB.getCollection("personnages");
@@ -44,18 +43,6 @@ public class PersonnageMongoDAOImpl implements PersonnageMongoDAO {
         } catch (MongoDBConnectionException ex) {
             throw new RuntimeException(ex);
         }
-    }
-
-    /**
-     * Obtient l'instance unique de PersonnageMongoDAOImpl (pattern Singleton).
-     *
-     * @return L'instance unique de PersonnageMongoDAOImpl
-     */
-    public static synchronized PersonnageMongoDAOImpl getInstance() {
-        if (instance == null) {
-            instance = new PersonnageMongoDAOImpl();
-        }
-        return instance;
     }
 
     /**

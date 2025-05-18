@@ -14,6 +14,14 @@ public interface ServiceAuthentification {
     // Méthodes ajoutées
     Joueur obtenirJoueurParPseudo(String pseudo);
     void mettreAJourJoueur(Joueur joueur);
+    
+    /**
+     * Récupère le personnage d'un joueur par son ID.
+     *
+     * @param idJoueur L'ID du joueur
+     * @return Le personnage du joueur ou null si non trouvé
+     */
+    Personnage obtenirPersonnage(int idJoueur);
 
     /**
      * Connecte un joueur (définit son statut comme actif).

@@ -4,7 +4,8 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 
 public class Voleur extends Personnage {
     public Voleur() {
-        super("Voleur",90, 0, 15, new Inventaire());
+        super("Voleur",90, 10
+                , 15, new Inventaire());
     }
 
     @Override
@@ -29,8 +30,7 @@ public class Voleur extends Personnage {
 
     @Override
     public void subirDegats(double degatsSubis) {
-        double degatsReels = degatsSubis / (100 / getResistance());
-        //    double degatsReels = degatsSubis * (1 - (getResistance() / 100.0));
+        double degatsReels = Math.max(1, degatsSubis - getResistance());
         setVie(getVie() - degatsReels);
         System.out.println(getNom() + " subit " + degatsReels + " points de dégâts. Vie restante : " + getVie());
     }

@@ -11,6 +11,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 import be.helha.projects.GuerreDesRoyaumes.Service.InventaireService;
+import be.helha.projects.GuerreDesRoyaumes.Config.DAOProvider;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,7 +33,7 @@ public class InventaireServiceImpl implements InventaireService {
      */
     public InventaireServiceImpl() throws MongoDBConnectionException {
         this.inventairePersonnageDAO = InventairePersonnageMongoDAOImpl.getInstance();
-        this.coffreMongoDAO = CoffreMongoDAOImpl.getInstance();
+        this.coffreMongoDAO = DAOProvider.getCoffreMongoDAO();
     }
 
     /**

@@ -23,6 +23,8 @@ import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CoffreServiceMongoImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.InventaireServiceImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceBoutiqueImpl;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.ServiceCombatImpl;
+import be.helha.projects.GuerreDesRoyaumes.DTO.CombatResolver;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
@@ -39,10 +41,12 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.*;
 import be.helha.projects.GuerreDesRoyaumes.ServiceImpl.CompetenceServiceImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatSessionMongoDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatSessionMongoDAOImpl;
-import be.helha.projects.GuerreDesRoyaumes.DTO.CombatResolver;
 import be.helha.projects.GuerreDesRoyaumes.DTO.SkillManager;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.FileAttenteCombatMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAO.FileAttenteCombatDAO;
+import be.helha.projects.GuerreDesRoyaumes.Config.DAOProvider;
+import be.helha.projects.GuerreDesRoyaumes.DAO.InventaireMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageMongoDAO;
 
 public class EcranPrincipal {
 
@@ -51,6 +55,7 @@ public class EcranPrincipal {
     private final String pseudo;
     private final Screen screen;
     private final WindowBasedTextGUI textGUI;
+    private final ServiceCombat serviceCombat;
 
     public EcranPrincipal(ServiceAuthentification serviceAuthentification, JoueurDAO joueurDAO, String pseudo, Screen screen) {
         this.serviceAuthentification = serviceAuthentification;
@@ -58,6 +63,29 @@ public class EcranPrincipal {
         this.pseudo = pseudo;
         this.screen = screen;
         this.textGUI = new MultiWindowTextGUI(screen);
+        
+        // Initialisation du service de combat
+        ServiceCombat serviceCombatTemp = null;
+        try {
+            be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAO = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
+            CombatSessionMongoDAO sessionDAO = DAOProvider.getCombatSessionMongoDAO();
+            CombatResolver combatResolver = new CombatResolver(joueurDAO, sessionDAO);
+            serviceCombatTemp = new ServiceCombatImpl(joueurDAO, combatDAO, sessionDAO, combatResolver);
+        } catch (MongoDBConnectionException e) {
+            System.err.println("Erreur de connexion à MongoDB lors de l'initialisation du service de combat: " + e.getMessage());
+            e.printStackTrace();
+            // Créer un service minimal qui ne dépend pas de MongoDB
+            try {
+                be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAO = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
+                CombatSessionMongoDAO sessionDAO = null; // Pas de session MongoDB
+                CombatResolver combatResolver = new CombatResolver(joueurDAO, null);
+                serviceCombatTemp = new ServiceCombatImpl(joueurDAO, combatDAO, null, combatResolver);
+            } catch (Exception ex) {
+                System.err.println("Erreur critique lors de l'initialisation du service de secours: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+        this.serviceCombat = serviceCombatTemp;
     }
 
     public void afficher() {
@@ -70,8 +98,7 @@ public class EcranPrincipal {
         // Synchroniser avec les données MongoDB avant d'afficher
         try {
             // Récupérer le personnage depuis MongoDB
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO =
-                be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl.getInstance();
+            be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageMongoDAO personnageMongoDAO = DAOProvider.getPersonnageMongoDAO();
             Personnage personnageMongo = personnageMongoDAO.obtenirPersonnageParJoueurId(joueur.getId());
             
             if (personnageMongo != null) {
@@ -80,8 +107,7 @@ public class EcranPrincipal {
             }
             
             // Récupérer le royaume depuis MongoDB
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO =
-                be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
+            be.helha.projects.GuerreDesRoyaumes.DAO.RoyaumeMongoDAO royaumeMongoDAO = DAOProvider.getRoyaumeMongoDAO();
             Royaume royaumeMongo = royaumeMongoDAO.obtenirRoyaumeParJoueurId(joueur.getId());
             
             if (royaumeMongo != null) {
@@ -257,8 +283,7 @@ public class EcranPrincipal {
         // Tenter de récupérer le personnage depuis MongoDB
         Personnage personnageMongo = null;
         try {
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO =
-                be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl.getInstance();
+            be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageMongoDAO personnageMongoDAO = DAOProvider.getPersonnageMongoDAO();
             personnageMongo = personnageMongoDAO.obtenirPersonnageParJoueurId(joueur.getId());
 
             // Toujours mettre à jour le personnage depuis MongoDB s'il existe
@@ -277,8 +302,7 @@ public class EcranPrincipal {
         // Tenter de récupérer le royaume depuis MongoDB
         Royaume royaumeMongo = null;
         try {
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO =
-                be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
+            be.helha.projects.GuerreDesRoyaumes.DAO.RoyaumeMongoDAO royaumeMongoDAO = DAOProvider.getRoyaumeMongoDAO();
             royaumeMongo = royaumeMongoDAO.obtenirRoyaumeParJoueurId(joueur.getId());
 
             // Si on trouve un royaume dans MongoDB mais pas dans le joueur ou si les noms sont différents, on le met à jour
@@ -388,8 +412,7 @@ public class EcranPrincipal {
                     }
 
                     // Vérifier si un personnage existe déjà dans MongoDB
-                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl personnageMongoDAO =
-                        be.helha.projects.GuerreDesRoyaumes.DAOImpl.PersonnageMongoDAOImpl.getInstance();
+                    be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageMongoDAO personnageMongoDAO = DAOProvider.getPersonnageMongoDAO();
 
                     Personnage personnageExistant = personnageMongoDAO.obtenirPersonnageParJoueurId(joueur.getId());
 
@@ -534,13 +557,14 @@ public class EcranPrincipal {
 
                 panel.addComponent(optionsPanel);
 
-                Panel boutonsPanel = new Panel(new GridLayout(estModeCombat ? 2 : 3));
+                Panel boutonsPanel = new Panel(new GridLayout(estModeCombat ? 3 : 3));
 
                 if (estModeCombat) {
-                    // Mode combat afficher bouton transferer item et confirmer
+                    // Bouton Équiper pour le mode combat
                     Button btnTransferer = new Button("Équiper", () -> {
                         try {
                             int itemId = Integer.parseInt(idBox.getText());
+                            int quantite = Integer.parseInt(quantiteBox.getText());
                             
                             // Initialiser le service d'inventaire
                             InventaireServiceImpl inventaireService = InventaireServiceImpl.getInstance();
@@ -556,13 +580,24 @@ public class EcranPrincipal {
                         } catch (NumberFormatException e) {
                             afficherMessageErreur("Veuillez entrer un ID d'item valide.");
                         } catch (Exception e) {
-                            // Capturer toutes les erreurs de transfert et les afficher dans Lanterna
+                            // Capturer toutes les erreurs de transfert et les afficher
                             afficherMessageErreur(e.getMessage());
                         }
                     });
 
                     Button btnConfirmer = new Button("Confirmer", () -> {
-                        if(joueur.getPersonnage().getInventaire().getSlots().isEmpty()) {
+                        boolean inventaireVide = true;
+                        
+                        if (joueur.getPersonnage().getInventaire() != null) {
+                            for (Slot slot : joueur.getPersonnage().getInventaire().getSlots()) {
+                                if (slot != null && slot.getItem() != null && slot.getQuantity() > 0) {
+                                    inventaireVide = false;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (inventaireVide) {
                             // Afficher une boîte de dialogue de confirmation
                             MessageDialogBuilder confirmDialog = new MessageDialogBuilder()
                                     .setTitle("Confirmation")
@@ -574,42 +609,43 @@ public class EcranPrincipal {
                             
                             if (reponse == MessageDialogButton.No) {
                                 // Si l'utilisateur choisit "Non", réafficher l'écran de gestion du coffre en mode combat
-                                fenetreFinale.close();
-                                afficherEcranGestionCoffre(joueur, true);
                                 return;
                             }
                             // Si l'utilisateur choisit "Oui", continuer le combat sans items
                         }
-
-                        // Passer à l'écran de sélection des compétences avant de lancer le combat
+                        
+                        // Fermer cet écran et lancer le combat
                         fenetreFinale.close();
-                        afficherEcranGestionCompetences(joueur);
+                        
+                        try {
+                            // Obtenir les instances des dépendances nécessaires
+                            CombatSessionMongoDAO sessionDAO;
+                            try {
+                                sessionDAO = DAOProvider.getCombatSessionMongoDAO();
+                            } catch (MongoDBConnectionException e) {
+                                System.err.println("Erreur de connexion à MongoDB lors de l'initialisation de la session de combat: " + e.getMessage());
+                                afficherMessageErreur("Impossible de se connecter à MongoDB. Le combat est indisponible pour le moment.");
+                                return;
+                            }
+                            SkillManager skillManager = new SkillManager();
+                            
+                            // Charger l'adversaire
+                            Joueur adversaire = joueurDAO.obtenirJoueurParPseudo(serviceCombat.getAdversairePseudo(joueur.getId()));
+                            
+                            // Lancer l'écran de combat
+                            new EcranCombat(joueurDAO, textGUI, screen, joueur, adversaire, 
+                                           serviceCombat, sessionDAO, skillManager).afficher();
+                        } catch (Exception e) {
+                            afficherMessageErreur("Erreur lors du lancement du combat: " + e.getMessage());
+                            afficher(); // Retour à l'écran principal
+                        }
                     });
-
-                    // Ajouter les boutons dans l'ordre souhaité : Équiper, Confirmer, puis Annuler
+                    
                     boutonsPanel.addComponent(btnTransferer);
                     boutonsPanel.addComponent(btnConfirmer);
                     boutonsPanel.addComponent(new Button("Annuler", () -> {
-                        // Afficher une boîte de dialogue de confirmation
-                        MessageDialogBuilder confirmDialog = new MessageDialogBuilder()
-                                .setTitle("Confirmation")
-                                .setText("Êtes-vous sûr de vouloir annuler la préparation au combat?")
-                                .addButton(MessageDialogButton.Yes)
-                                .addButton(MessageDialogButton.No);
-
-                        MessageDialogButton reponse = confirmDialog.build().showDialog(textGUI);
-                        
-                        if (reponse == MessageDialogButton.Yes) {
-                            // Si l'utilisateur choisit "Oui", on vide l'inventaire de combat et les compétences
-                            annulerPreparationCombat(joueur);
-                            
-                            // Revenir à l'écran principal
-                            fenetreFinale.close();
-                            afficher();
-                        } else {
-                            // Si l'utilisateur choisit "Non", rester sur l'écran de préparation au combat
-                            // Ne rien faire, l'écran reste affiché
-                        }
+                        fenetreFinale.close();
+                        afficher(); // Retour à l'écran principal
                     }));
                 } else {
                 // Bouton Retirer Item
@@ -778,8 +814,7 @@ public class EcranPrincipal {
 
         // Récupérer également le royaume depuis MongoDB pour s'assurer qu'il est correctement synchronisé
         try {
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO =
-                be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
+            be.helha.projects.GuerreDesRoyaumes.DAO.RoyaumeMongoDAO royaumeMongoDAO = DAOProvider.getRoyaumeMongoDAO();
             Royaume royaumeMongo = royaumeMongoDAO.obtenirRoyaumeParJoueurId(joueur.getId());
 
             // Si le royaume existe dans MongoDB mais a un nom différent, synchroniser avec l'objet joueur
@@ -836,8 +871,7 @@ public class EcranPrincipal {
 
             // Mettre à jour dans MongoDB
             try {
-                be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeMongoDAO =
-                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
+                be.helha.projects.GuerreDesRoyaumes.DAO.RoyaumeMongoDAO royaumeMongoDAO = DAOProvider.getRoyaumeMongoDAO();
 
                 Royaume royaumeMongo = royaumeMongoDAO.obtenirRoyaumeParJoueurId(joueur.getId());
                 if (royaumeMongo != null) {
@@ -879,27 +913,74 @@ public class EcranPrincipal {
         }
 
         try {
-            // Activer le statut du joueur (le rendre disponible pour le combat)
-            try {
-                // Définir le statut comme actif
-                joueurDAO.definirStatutConnexion(joueur.getId(), true);
-                System.out.println("Joueur " + joueur.getPseudo() + " activé pour le combat");
-            } catch (Exception e) {
-                System.err.println("Erreur lors de l'activation du statut de combat: " + e.getMessage());
-                e.printStackTrace();
-            }
-
             // Initialisation du service de combat
             // Créer les dépendances nécessaires
-            be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAO = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
-            CombatSessionMongoDAO sessionDAO = CombatSessionMongoDAOImpl.getInstance();
-            CombatResolver combatResolver = new CombatResolver(joueurDAO, sessionDAO);
+            be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAOLocal = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
+            CombatSessionMongoDAO sessionDAOLocal;
+            try {
+                sessionDAOLocal = DAOProvider.getCombatSessionMongoDAO();
+            } catch (MongoDBConnectionException e) {
+                System.err.println("Erreur de connexion à MongoDB lors de l'initialisation de la session de combat: " + e.getMessage());
+                afficherMessageErreur("Impossible de se connecter à MongoDB. Le combat est indisponible pour le moment.");
+                return;
+            }
+            CombatResolver combatResolver = new CombatResolver(joueurDAO, sessionDAOLocal);
                     
             // Créer le service combat avec tous les paramètres requis
-            ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO, sessionDAO, combatResolver);
+            ServiceCombat serviceCombatLocal = new ServiceCombatImpl(joueurDAO, combatDAOLocal, sessionDAOLocal, combatResolver);
 
-            // Afficher l'écran de sélection d'adversaire
-            new EcranSelectionAdversaire(joueurDAO, textGUI, screen, joueur.getPseudo(), serviceCombat).afficher();
+            // Créer un adversaire bot
+            // Créer un joueur factice pour le bot avec des valeurs par défaut
+            Royaume royaumeBot = new Royaume(999, "Royaume Bot", 3);
+            
+            // Choisir aléatoirement un type de personnage pour le bot
+            Personnage personnageBot;
+            int choixPersonnage = (int) (Math.random() * 4);
+            
+            switch (choixPersonnage) {
+                case 0:
+                    personnageBot = new Guerrier();
+                    break;
+                case 1:
+                    personnageBot = new Voleur();
+                    break;
+                case 2:
+                    personnageBot = new Golem();
+                    break;
+                default:
+                    personnageBot = new Titan();
+                    break;
+            }
+            
+            // Créer un coffre vide pour le bot
+            Coffre coffreBot = new Coffre();
+            
+            // Créer le joueur bot
+            Joueur adversaireBot = new Joueur(
+                9999,                         // ID unique pour le bot
+                "Bot",                        // Nom
+                "Intelligence Artificielle",  // Prénom
+                "OpponentBot",                // Pseudo
+                "password123",                // Mot de passe (non utilisé)
+                1000,                         // Argent
+                royaumeBot,                   // Royaume
+                personnageBot,                // Personnage
+                coffreBot,                    // Coffre
+                0,                            // Victoires
+                0                             // Défaites
+            );
+            
+            // Utiliser les points de vie naturels du personnage choisi
+            // (Ne pas forcer à 100)
+
+            // Lancer directement l'écran de préparation au combat avec le bot
+            SkillManager skillManager = new SkillManager();
+            
+            // Afficher un message d'information
+            afficherMessageSucces("Vous allez combattre contre un bot: " + personnageBot.getNom());
+            
+            // Lancer directement l'écran de combat sans passer par la préparation
+            new EcranCombat(joueurDAO, textGUI, screen, joueur, adversaireBot, serviceCombatLocal, sessionDAOLocal, skillManager).afficher();
 
         } catch (Exception e) {
             afficherMessageErreur("Erreur lors de l'initialisation du combat: " + e.getMessage());
@@ -1095,12 +1176,19 @@ public class EcranPrincipal {
                     competenceService.appliquerCompetences(joueur);
                     
                     // Créer les dépendances nécessaires pour le service de combat
-                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAO = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
-                    CombatSessionMongoDAO sessionDAO = CombatSessionMongoDAOImpl.getInstance();
-                    CombatResolver combatResolver = new CombatResolver(joueurDAO, sessionDAO);
+                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAOLocal = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
+                    CombatSessionMongoDAO sessionDAOLocal;
+                    try {
+                        sessionDAOLocal = DAOProvider.getCombatSessionMongoDAO();
+                    } catch (MongoDBConnectionException e) {
+                        System.err.println("Erreur de connexion à MongoDB lors de l'initialisation de la session de combat: " + e.getMessage());
+                        afficherMessageErreur("Impossible de se connecter à MongoDB. Le combat est indisponible pour le moment.");
+                        return;
+                    }
+                    CombatResolver combatResolver = new CombatResolver(joueurDAO, sessionDAOLocal);
                     
                     // Créer le service combat avec tous les paramètres requis
-                    ServiceCombat serviceCombat = new ServiceCombatImpl(joueurDAO, combatDAO, sessionDAO, combatResolver);
+                    ServiceCombat serviceCombatLocal = new ServiceCombatImpl(joueurDAO, combatDAOLocal, sessionDAOLocal, combatResolver);
                     
                     // Créer l'instance de FileAttenteCombatDAO
                     FileAttenteCombatDAO fileAttenteCombatDAO = FileAttenteCombatMongoDAOImpl.getInstance(joueurDAO);
@@ -1108,7 +1196,7 @@ public class EcranPrincipal {
                     // Rediriger vers l'écran de file d'attente de combat
                     afficherMessageSucces("Préparation au combat terminée. Recherche d'un adversaire...");
                     
-                    new EcranFileAttenteCombat(joueurDAO, textGUI, screen, joueur, serviceCombat, fileAttenteCombatDAO).afficher();
+                    new EcranFileAttenteCombat(joueurDAO, textGUI, screen, joueur, serviceCombatLocal, fileAttenteCombatDAO).afficher();
                 } catch (Exception e) {
                     afficherMessageErreur("Erreur lors de l'initialisation du combat: " + e.getMessage());
                     e.printStackTrace();

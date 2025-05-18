@@ -1,15 +1,18 @@
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
+import be.helha.projects.GuerreDesRoyaumes.Config.DAOProvider;
 import be.helha.projects.GuerreDesRoyaumes.DAO.ItemMongoDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.JoueurDAOImpl;
+import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Coffre;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
 import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.CoffreService;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceBoutique;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,16 +20,33 @@ import java.util.List;
 @Service
 public class ServiceBoutiqueImpl implements ServiceBoutique {
 
-    private ItemMongoDAO itemMongoDAO;
-    private JoueurDAO joueurDAO;
-    private CoffreService coffreService;
+    private final ItemMongoDAO itemMongoDAO;
+    private final JoueurDAO joueurDAO;
+    private final CoffreService coffreService;
     private static final int PRIX_BASE = 100;
     private static ServiceBoutiqueImpl instance;
 
-    public ServiceBoutiqueImpl() {
-        this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
+    /**
+     * Constructeur avec injection de dépendances pour Spring
+     */
+    @Autowired
+    public ServiceBoutiqueImpl(ItemMongoDAO itemMongoDAO, CoffreService coffreService) {
+        this.itemMongoDAO = itemMongoDAO;
         this.joueurDAO = JoueurDAOImpl.getInstance();
-        this.coffreService = CoffreServiceMongoImpl.getInstance();
+        this.coffreService = coffreService;
+    }
+    
+    /**
+     * Constructeur sans paramètres pour compatibilité avec le code existant
+     */
+    public ServiceBoutiqueImpl() {
+        try {
+            this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
+            this.joueurDAO = JoueurDAOImpl.getInstance();
+            this.coffreService = CoffreServiceMongoImpl.getInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur lors de l'initialisation de ServiceBoutiqueImpl", e);
+        }
     }
 
     public static synchronized ServiceBoutiqueImpl getInstance() {

@@ -31,7 +31,7 @@ public class Golem extends Personnage {
 
     @Override
     public void subirDegats(double degatsSubis) {
-        double degatsReels = degatsSubis * (1 - (getResistance() / 100.0));
+        double degatsReels = Math.max(1, degatsSubis - getResistance());
         setVie(getVie() - degatsReels);
         System.out.println(getNom() + " subit " + degatsReels + " points de dégâts. Vie restante : " + getVie());
     }

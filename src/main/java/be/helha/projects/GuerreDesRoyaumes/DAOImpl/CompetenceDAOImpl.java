@@ -5,24 +5,31 @@ import be.helha.projects.GuerreDesRoyaumes.DAO.CompetenceDAO;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.SQLConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.Competence;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.DoubleDegats;
+import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.DoubleResistance;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.DoubleArgent;
 import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.Regeneration;
-import be.helha.projects.GuerreDesRoyaumes.Model.Competence_Combat.DoubleResistance;
+import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import org.springframework.stereotype.Repository;
 import com.mongodb.client.MongoDatabase;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@Repository
 public class CompetenceDAOImpl implements CompetenceDAO {
 
     private static CompetenceDAOImpl instance;
     private Connection connection;
     private final String tableName = "competence";
 
-    private CompetenceDAOImpl() {
+    /**
+     * Constructeur public pour l'injection de dépendances avec Spring
+     */
+    public CompetenceDAOImpl() {
         try {
             connection = InitialiserAPP.getSQLConnexion();
+            creerTableCompetenceSiInexistante();
         } catch (SQLConnectionException ex) {
             throw new RuntimeException(ex);
         }

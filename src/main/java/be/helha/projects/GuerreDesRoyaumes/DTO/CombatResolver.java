@@ -247,17 +247,10 @@ public class CombatResolver {
             }
         }
         
-        // Réduction de base par la défense du personnage défenseur
-        double reduction = persDefenseur.getResistance() / 100.0;
+        // Maintenant, la résistance est soustraite directement des dégâts au lieu d'être un pourcentage
+        double degatsApresResistance = Math.max(1, degats - persDefenseur.getResistance());
         
-        // Appliquer la réduction
-        degats = degats * (1 - reduction);
-        
-        // Variation aléatoire de +/- 10%
-        double variation = 0.9 + (random.nextDouble() * 0.2); // Entre 0.9 et 1.1
-        degats = degats * variation;
-        
-        return Math.max(1, degats); // Au moins 1 point de dégâts
+        return Math.max(1, degatsApresResistance); // Au moins 1 point de dégâts
     }
     
     private Map<String, Double> executerCompetenceSpeciale(Joueur joueur, Joueur adversaire) {

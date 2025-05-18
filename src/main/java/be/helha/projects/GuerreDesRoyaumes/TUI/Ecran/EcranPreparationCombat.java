@@ -15,6 +15,7 @@ import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.gui2.table.Table;
 import com.googlecode.lanterna.screen.Screen;
+import be.helha.projects.GuerreDesRoyaumes.Config.DAOProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,44 +79,23 @@ public class EcranPreparationCombat {
 
             // En mode développement, attendre la confirmation de l'utilisateur
             panel.addComponent(new Label("Préparation complète!"));
-            panel.addComponent(new Label("Attendez que l'adversaire confirme..."));
-
-            // Simuler une attente pour la confirmation
-            // Dans une implémentation réelle, on attendrait un message réseau
-            Panel panelTemporaire = new Panel(new GridLayout(1));
-            Button btnPretSimule = new Button("Simuler adversaire prêt", () -> {
+            
+            // Remplacer le panel "Simuler adversaire prêt" par un bouton direct "Commencer le combat"
+            panel.addComponent(new Button("Commencer le combat contre le bot", () -> {
                 fenetre.close();
-                Window fenetreConfirmation = new BasicWindow("Confirmation");
-                fenetreConfirmation.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
-
-                Panel panelConfirmation = new Panel(new GridLayout(1));
-                panelConfirmation.addComponent(new Label("L'adversaire est prêt!"));
-                panelConfirmation.addComponent(new EmptySpace());
-                panelConfirmation.addComponent(new Button("Commencer le combat", () -> {
-                    fenetreConfirmation.close();
-                    try {
-                        // Obtenir les instances des dépendances nécessaires
-                        CombatSessionMongoDAO sessionDAO = CombatSessionMongoDAOImpl.getInstance();
-                        SkillManager skillManager = new SkillManager();
-                        
-                        // Appeler le constructeur d'EcranCombat avec tous les paramètres requis
-                        new EcranCombat(joueurDAO, textGUI, screen, joueur, adversaire, serviceCombat, 
-                                       sessionDAO, skillManager).afficher();
-                    } catch (MongoDBConnectionException e) {
-                        afficherMessageErreur("Erreur de connexion à MongoDB: " + e.getMessage());
-                        retourEcranPrincipal();
-                    }
-                }));
-
-                fenetreConfirmation.setComponent(panelConfirmation);
-                textGUI.addWindowAndWait(fenetreConfirmation);
-            });
-
-            panelTemporaire.addComponent(btnPretSimule);
-            panel.addComponent(panelTemporaire);
-
-            // Créer un thread de vérification pour voir si l'adversaire a annulé le combat
-            demarrerVerificationAnnulationCombat(joueur, adversaire, fenetre);
+                try {
+                    // Obtenir les instances des dépendances nécessaires
+                    CombatSessionMongoDAO sessionDAO = DAOProvider.getCombatSessionMongoDAO();
+                    SkillManager skillManager = new SkillManager();
+                    
+                    // Appeler le constructeur d'EcranCombat avec tous les paramètres requis
+                    new EcranCombat(joueurDAO, textGUI, screen, joueur, adversaire, serviceCombat, 
+                                    sessionDAO, skillManager).afficher();
+                } catch (MongoDBConnectionException e) {
+                    afficherMessageErreur("Erreur de connexion à MongoDB: " + e.getMessage());
+                    retourEcranPrincipal();
+                }
+            }));
 
             // Bouton d'annulation
             panel.addComponent(new Button("Annuler", () -> {

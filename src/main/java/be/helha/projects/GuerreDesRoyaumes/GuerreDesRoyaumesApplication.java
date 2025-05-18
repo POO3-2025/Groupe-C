@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
  * Classe principale de l'application Guerre des Royaumes.
  * Configure et lance l'application Spring Boot avec support pour JWT.
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = {SecurityAutoConfiguration.class})
 public class GuerreDesRoyaumesApplication {
 
     /** Constructeur par défaut */

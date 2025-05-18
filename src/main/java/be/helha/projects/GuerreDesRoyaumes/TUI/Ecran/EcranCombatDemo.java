@@ -17,6 +17,7 @@ import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.gui2.table.Table;
 import com.googlecode.lanterna.screen.Screen;
+import be.helha.projects.GuerreDesRoyaumes.Config.DAOProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +68,7 @@ public class EcranCombatDemo {
         this.serviceCombat = serviceCombat;
         
         try {
-            this.sessionDAO = CombatSessionMongoDAOImpl.getInstance();
+            this.sessionDAO = DAOProvider.getCombatSessionMongoDAO();
         } catch (MongoDBConnectionException e) {
             throw new RuntimeException("Erreur de connexion à MongoDB", e);
         }

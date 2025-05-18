@@ -14,6 +14,7 @@ import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -28,7 +29,6 @@ import java.util.Map;
 @Repository
 public class CombatSessionMongoDAOImpl implements CombatSessionMongoDAO {
 
-    private static CombatSessionMongoDAOImpl instance;
     private final MongoCollection<Document> sessionCollection;
     private final MongoCollection<Document> actionCollection;
     private final MongoCollection<Document> resultatCollection;
@@ -37,9 +37,9 @@ public class CombatSessionMongoDAOImpl implements CombatSessionMongoDAO {
     private static final String RESULTAT_COLLECTION = "combatResultats";
 
     /**
-     * Constructeur privé pour le singleton qui initialise la connexion aux collections MongoDB.
+     * Constructeur pour l'injection de dépendances Spring
      */
-    private CombatSessionMongoDAOImpl() {
+    public CombatSessionMongoDAOImpl() {
         MongoDatabase mongoDB;
         try {
             mongoDB = InitialiserAPP.getMongoConnexion();
@@ -49,18 +49,6 @@ public class CombatSessionMongoDAOImpl implements CombatSessionMongoDAO {
         this.sessionCollection = mongoDB.getCollection(SESSION_COLLECTION);
         this.actionCollection = mongoDB.getCollection(ACTION_COLLECTION);
         this.resultatCollection = mongoDB.getCollection(RESULTAT_COLLECTION);
-    }
-
-    /**
-     * Obtient l'instance unique de CombatSessionMongoDAOImpl (pattern Singleton).
-     *
-     * @return L'instance unique de CombatSessionMongoDAOImpl
-     */
-    public static synchronized CombatSessionMongoDAOImpl getInstance() throws MongoDBConnectionException {
-        if (instance == null) {
-            instance = new CombatSessionMongoDAOImpl();
-        }
-        return instance;
     }
 
     @Override

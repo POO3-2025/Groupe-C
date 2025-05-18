@@ -1,6 +1,9 @@
 package be.helha.projects.GuerreDesRoyaumes.ServiceImpl;
 
 import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
+import be.helha.projects.GuerreDesRoyaumes.Config.DAOProvider;
+import be.helha.projects.GuerreDesRoyaumes.DAO.CoffreMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAO.ItemMongoDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.CoffreMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.DAOImpl.ItemMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
@@ -10,6 +13,7 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.CoffreService;
 import com.mongodb.client.MongoDatabase;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -19,17 +23,31 @@ import org.springframework.stereotype.Service;
 public class CoffreServiceMongoImpl implements CoffreService {
 
     private static CoffreServiceMongoImpl instance;
-    private final CoffreMongoDAOImpl coffreMongoDAO;
-    private final ItemMongoDAOImpl itemMongoDAO;
+    private final MongoDatabase mongoDB;
+    private final CoffreMongoDAO coffreMongoDAO;
+    private final ItemMongoDAO itemMongoDAO;
 
     /**
-     * Constructeur privé pour le singleton
+     * Constructeur avec injection de dépendances pour Spring
      */
-    private CoffreServiceMongoImpl() {
-        MongoDatabase mongoDB;
+    @Autowired
+    public CoffreServiceMongoImpl(CoffreMongoDAO coffreMongoDAO, ItemMongoDAO itemMongoDAO) {
+        try {
+            this.mongoDB = InitialiserAPP.getMongoConnexion();
+            this.coffreMongoDAO = coffreMongoDAO;
+            this.itemMongoDAO = itemMongoDAO;
+        } catch (MongoDBConnectionException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * Constructeur public sans paramètres pour le singleton
+     */
+    public CoffreServiceMongoImpl() {
         try {
             mongoDB = InitialiserAPP.getMongoConnexion();
-            this.coffreMongoDAO = CoffreMongoDAOImpl.getInstance();
+            this.coffreMongoDAO = DAOProvider.getCoffreMongoDAO();
             this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
         } catch (MongoDBConnectionException ex) {
             throw new RuntimeException(ex);

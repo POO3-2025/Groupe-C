@@ -2,7 +2,8 @@ package be.helha.projects.GuerreDesRoyaumes.Model.Personnage;
 
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
 
-public class Guerrier extends Personnage {
+public class
+Guerrier extends Personnage {
     public Guerrier() {
         super("Guerrier",100, 40, 20, new Inventaire());
     }
@@ -29,8 +30,7 @@ public class Guerrier extends Personnage {
 
     @Override
     public void subirDegats(double degatsSubis) {
-        double degatsReels = degatsSubis / (100 / getResistance());
-        //    double degatsReels = degatsSubis * (1 - (getResistance() / 100.0));
+        double degatsReels = Math.max(1, degatsSubis - getResistance());
         setVie(getVie() - degatsReels);
         System.out.println(getNom() + " subit " + degatsReels + " points de dégâts. Vie restante : " + getVie());
     }

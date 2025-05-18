@@ -16,6 +16,7 @@ import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.stereotype.Repository;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,12 +25,16 @@ import java.util.List;
 public class ItemMongoDAOImpl implements ItemMongoDAO {
     private static ItemMongoDAOImpl instance;
     private final MongoCollection<Document> itemCollection;
-    MongoDatabase mongoDB = null;
+    private final MongoDatabase mongoDB;
     private final Gson gson;
 
-    private ItemMongoDAOImpl() {
+    /**
+     * Constructeur public pour Spring
+     */
+    @Autowired
+    public ItemMongoDAOImpl() {
         try {
-             mongoDB = InitialiserAPP.getMongoConnexion();
+            this.mongoDB = InitialiserAPP.getMongoConnexion();
             this.itemCollection = mongoDB.getCollection("items");
             this.gson = GsonObjectIdAdapter.getGson();
         } catch (MongoDBConnectionException ex) {
@@ -37,13 +42,16 @@ public class ItemMongoDAOImpl implements ItemMongoDAO {
         }
     }
 
+    /**
+     * Obtient l'instance unique (Singleton pattern)
+     * @return L'instance unique
+     */
     public static synchronized ItemMongoDAOImpl getInstance() {
         if (instance == null) {
             instance = new ItemMongoDAOImpl();
         }
         return instance;
     }
-
 
     public List<Item> obtenirTousLesItems() {
         List<Item> items = new ArrayList<>();

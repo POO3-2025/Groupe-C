@@ -3,13 +3,21 @@ package be.helha.projects.GuerreDesRoyaumes.TUI.Ecran;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatSessionMongoDAO;
 import be.helha.projects.GuerreDesRoyaumes.DAO.JoueurDAO;
 import be.helha.projects.GuerreDesRoyaumes.DTO.SkillManager;
+import be.helha.projects.GuerreDesRoyaumes.Model.Bot.AdvancedBot;
+import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Slot;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Arme;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Bouclier;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Item;
+import be.helha.projects.GuerreDesRoyaumes.Model.Items.Potion;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Personnage;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.screen.Screen;
 
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -22,15 +30,19 @@ public class EcranCombat {
     private final ServiceCombat serviceCombat;
     private int tourActuel = 1;
     private final int MAX_TOURS = 5;
-    private boolean actionAdversaireRecue = false;
-    private String actionAdversaire = null;
-    private int compteurVerifications = 0;
-    // Ajouter ces dépendances
+    private String actionJoueur = null;
+    private String actionBot = null;
+    
+    // Dépendances
     private final CombatSessionMongoDAO sessionDAO;
     private final SkillManager skillManager;
-
+    
+    // Bot pour le mode solo
+    private final AdvancedBot bot;
+    
     public EcranCombat(JoueurDAO joueurDAO, WindowBasedTextGUI textGUI, Screen screen,
-                       Joueur joueur, Joueur adversaire, ServiceCombat serviceCombat, CombatSessionMongoDAO sessionDAO, SkillManager skillManager) {
+                       Joueur joueur, Joueur adversaire, ServiceCombat serviceCombat, 
+                       CombatSessionMongoDAO sessionDAO, SkillManager skillManager) {
         this.joueurDAO = joueurDAO;
         this.textGUI = textGUI;
         this.screen = screen;
@@ -39,49 +51,39 @@ public class EcranCombat {
         this.serviceCombat = serviceCombat;
         this.sessionDAO = sessionDAO;
         this.skillManager = skillManager;
+        
+        // Initialiser le bot avec l'adversaire
+        this.bot = new AdvancedBot(adversaire);
+        
+        // Utiliser les valeurs réelles de vie des personnages au lieu de les forcer à 100
+        // Ces valeurs viennent des classes spécifiques (Golem: 120, Titan: 200, Voleur: 90, Guerrier: 100)
+        System.out.println("Points de vie initiaux de " + joueur.getPersonnage().getNom() + ": " + joueur.getPersonnage().getVie());
+        System.out.println("Points de vie initiaux de " + adversaire.getPersonnage().getNom() + ": " + adversaire.getPersonnage().getVie());
     }
 
     public void afficher() {
-        // Vérifier si c'est le tour du joueur
-        boolean estTourDuJoueur = serviceCombat.estTourDuJoueur(joueur, adversaire);
+        // Le joueur humain joue toujours en premier
+        boolean estTourDuJoueur = true;
 
         Window fenetre = new BasicWindow("Combat - Tour " + tourActuel + "/" + MAX_TOURS);
         fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
 
         Panel panel = new Panel(new GridLayout(1));
 
-        // Statut du combat
+        // Statut du combat - utiliser Math.floor pour un affichage cohérent
         panel.addComponent(new Label("Votre personnage: " + joueur.getPersonnage().getNom() +
-                " (PV: " + joueur.getPersonnage().getPointsDeVie() + ")"));
+                " (PV: " + (int)Math.floor(joueur.getPersonnage().getPointsDeVie()) + ")"));
         panel.addComponent(new Label("Adversaire: " + adversaire.getPersonnage().getNom() +
-                " (PV: " + adversaire.getPersonnage().getPointsDeVie() + ")"));
+                " (PV: " + (int)Math.floor(adversaire.getPersonnage().getPointsDeVie()) + ")"));
 
         panel.addComponent(new EmptySpace());
 
-        // Si ce n'est pas le tour du joueur, afficher un message d'attente
-        if (!estTourDuJoueur) {
-            panel.addComponent(new Label("Attendez que l'adversaire joue son tour..."));
-
-            // Panel pour les boutons d'attente
-            Panel panelAttente = new Panel(new GridLayout(2));
-
-            panelAttente.addComponent(new Button("Vérifier", () -> {
-                fenetre.close();
-                verifierTourAdversaire();
-            }));
-
-            // Ajouter un bouton "Débloquer" pour forcer manuellement le jeu à continuer
-            panelAttente.addComponent(new Button("Débloquer", () -> {
-                fenetre.close();
-                debloquerCombat();
-            }));
-
-            panel.addComponent(panelAttente);
-        } else {
+        // Si c'est au joueur de jouer
+        if (estTourDuJoueur) {
             panel.addComponent(new Label("Tour " + tourActuel + " - Choisissez votre action:"));
 
             // Actions possibles
-            Panel actionsPanel = new Panel(new GridLayout(3));
+            Panel actionsPanel = new Panel(new GridLayout(4));
 
             actionsPanel.addComponent(new Button("Attaque", () -> {
                 executerAction("attaque");
@@ -97,182 +99,268 @@ public class EcranCombat {
                 executerAction("special");
                 fenetre.close();
             }));
+            
+            actionsPanel.addComponent(new Button("Utiliser Item", () -> {
+                // Ouvrir une fenêtre pour sélectionner un item
+                afficherSelectionItems(fenetre);
+            }));
 
             panel.addComponent(actionsPanel);
         }
+
+        // Ajouter un bouton pour abandonner le combat
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(new Button("Abandonner", () -> {
+            MessageDialogButton confirmation = new MessageDialogBuilder()
+                .setTitle("Confirmation")
+                .setText("Êtes-vous sûr de vouloir abandonner ce combat?")
+                .addButton(MessageDialogButton.Yes)
+                .addButton(MessageDialogButton.No)
+                .build()
+                .showDialog(textGUI);
+            
+            if (confirmation == MessageDialogButton.Yes) {
+                fenetre.close();
+                terminerCombat(null); // L'adversaire (bot) gagne par forfait
+            }
+        }));
 
         fenetre.setComponent(panel);
         textGUI.addWindowAndWait(fenetre);
     }
 
-    private void verifierTourAdversaire() {
-        try {
-            // Méthode de simulation pour débloquer l'attente mutuelle
-            // En mode développement, on simule une action de l'adversaire après quelques vérifications
-            if (!serviceCombat.estTourDuJoueur(joueur, adversaire)) {
-                // Détecter le blocage: si après plusieurs vérifications, toujours pas de tour
-                if (++compteurVerifications > 2) {
-                    // Force l'action de l'adversaire en mode développement
-                    Window fenetreInfo = new BasicWindow("Déblocage...");
-                    fenetreInfo.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
-
-                    Panel panelInfo = new Panel(new GridLayout(1));
-                    panelInfo.addComponent(new Label("Tentative de déblocage du combat..."));
-
-                    fenetreInfo.setComponent(panelInfo);
-                    textGUI.addWindow(fenetreInfo);
-
-                    // Simuler un délai
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-
-                    // Forcer le changement de tour
-                    boolean changeOk = serviceCombat.forcerChangementTour(joueur, adversaire);
-
-                    // Fermer la fenêtre d'information
-                    fenetreInfo.close();
-
-                    if (!changeOk) {
-                        afficherMessageErreur("Échec du déblocage, veuillez réessayer.");
-                        compteurVerifications = 0; // Réinitialiser pour pouvoir retenter
-                        afficher();
-                        return;
-                    }
-
-                    // Réinitialiser le compteur
-                    compteurVerifications = 0;
-                } else {
-                    // Si pas encore assez de vérifications, informer le joueur
-                    afficherMessageErreur("L'adversaire n'a pas encore joué. Veuillez patienter. ("
-                            + compteurVerifications + "/3)");
-                    afficher(); // Réafficher l'écran d'attente
-                    return;
-                }
-            } else {
-                // Réinitialiser le compteur car on a bien obtenu le tour
-                compteurVerifications = 0;
-            }
-
-            // Si c'est maintenant notre tour, afficher le résultat de l'action adverse
-            String resultatActionAdverse = serviceCombat.obtenirResultatActionAdverse(joueur, adversaire, tourActuel);
-
-            // Afficher le résultat de l'action adverse
-            Window fenetreResultat = new BasicWindow("Action de l'adversaire");
-            fenetreResultat.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
-
-            Panel panel = new Panel(new GridLayout(1));
-            panel.addComponent(new Label(resultatActionAdverse));
-            panel.addComponent(new Label("Points de vie restants:"));
-            panel.addComponent(new Label("- Vous: " + joueur.getPersonnage().getPointsDeVie()));
-            panel.addComponent(new Label("- Adversaire: " + adversaire.getPersonnage().getPointsDeVie()));
-
-            panel.addComponent(new Button("Continuer", () -> {
-                fenetreResultat.close();
-                afficher(); // Réafficher l'écran principal pour jouer notre tour
-            }));
-
-            fenetreResultat.setComponent(panel);
-            textGUI.addWindowAndWait(fenetreResultat);
-        } catch (Exception e) {
-            afficherMessageErreur("Erreur lors de la vérification du tour: " + e.getMessage());
-            afficher(); // Réafficher l'écran d'attente
-        }
-    }
-
     private void executerAction(String typeAction) {
         try {
-            // Exécuter l'action du joueur
-            String resultatJoueur = serviceCombat.executerAction(joueur, adversaire, typeAction, tourActuel);
-
-            // Afficher le résultat immédiat de notre action
-            Window fenetreResultat = new BasicWindow("Votre action");
-            fenetreResultat.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
-
-            Panel panel = new Panel(new GridLayout(1));
-            panel.addComponent(new Label("Vous avez choisi: " + typeAction));
-            panel.addComponent(new Label(resultatJoueur));
-            panel.addComponent(new EmptySpace());
-            panel.addComponent(new Label("En attente de l'action de l'adversaire..."));
-
-            panel.addComponent(new Button("Continuer", () -> {
-                fenetreResultat.close();
-
-                // Vérifier si le combat est terminé après notre action
-                if (estCombatTermine()) {
-                    terminerCombat();
-                } else {
-                    // Afficher l'écran d'attente pour l'action de l'adversaire
-                    afficher();
-                }
-            }));
-
-            fenetreResultat.setComponent(panel);
-            textGUI.addWindowAndWait(fenetreResultat);
-
+            // Enregistrer l'action du joueur
+            actionJoueur = typeAction;
+            String messageJoueur = "Vous avez choisi: " + typeAction;
+            
+            // Afficher l'action du joueur
+            Window fenetreAttente = new BasicWindow("Action en cours");
+            fenetreAttente.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
+            
+            Panel panelAttente = new Panel(new GridLayout(1));
+            panelAttente.addComponent(new Label(messageJoueur));
+            panelAttente.addComponent(new Label("Le bot réfléchit..."));
+            
+            fenetreAttente.setComponent(panelAttente);
+            textGUI.addWindow(fenetreAttente);
+            
+            // Simuler un délai
+            bot.simulerDelaiReflexion();
+            
+            // Fermer la fenêtre d'attente
+            fenetreAttente.close();
+            
+            // Le bot choisit son action en fonction de l'état du jeu
+            actionBot = bot.choisirAction(joueur, tourActuel);
+            
+            // Appliquer les effets de l'action du joueur et du bot
+            appliquerEffetsActions(actionJoueur, actionBot);
+            
+            // Afficher les résultats du tour
+            afficherResultatsTour();
+            
+            // Passer au tour suivant
+            tourActuel++;
+            
+            // Vérifier si le combat est terminé
+            if (estCombatTermine()) {
+                terminerCombat();
+            } else {
+                // Continuer au tour suivant
+                afficher();
+            }
         } catch (Exception e) {
             afficherMessageErreur("Erreur lors de l'exécution de l'action: " + e.getMessage());
         }
     }
+    
+    private void appliquerEffetsActions(String actionJoueur, String actionBot) {
+        // Calculer les dégâts en fonction des actions et des statistiques spécifiques de chaque type de personnage
+        int degatsJoueur = 0;
+        int degatsBot = 0;
+        
+        Personnage joueurPerso = joueur.getPersonnage();
+        Personnage botPerso = adversaire.getPersonnage();
+        
+        // Afficher les statistiques réelles des personnages
+        System.out.println("Statistiques de " + joueurPerso.getNom() + ": " +
+                "Vie=" + joueurPerso.getVie() + ", " +
+                "Dégâts=" + joueurPerso.getDegats() + ", " +
+                "Résistance=" + joueurPerso.getResistance());
+        
+        System.out.println("Statistiques du bot " + botPerso.getNom() + ": " +
+                "Vie=" + botPerso.getVie() + ", " +
+                "Dégâts=" + botPerso.getDegats() + ", " +
+                "Résistance=" + botPerso.getResistance());
+        
+        // Dégâts de base selon l'action du joueur utilisant ses statistiques spécifiques
+        switch (actionJoueur) {
+            case "attaque":
+                // Utiliser les dégâts exacts du personnage sans variation
+                degatsJoueur = (int)joueurPerso.getDegats();
+                break;
+            case "special":
+                // Compétence spéciale: 50% de bonus, sans variation
+                degatsJoueur = (int)(joueurPerso.getDegats() * 1.5);
+                break;
+            case "utiliser_item":
+                // Les dégâts des items sont gérés par appliquerEffetsActionsAvecItem
+                return;
+        }
+        
+        // Utiliser la méthode calculerDegatsAction du bot pour ses dégâts
+        degatsBot = bot.calculerDegatsAction(actionBot);
+        
+        // Bonus de défense supplémentaire si action de défense
+        if (actionBot.equals("defense")) {
+            // 25% de réduction supplémentaire si le bot est en défense
+            degatsJoueur = (int)(degatsJoueur * 0.75);
+        }
+        
+        if (actionJoueur.equals("defense")) {
+            // 25% de réduction supplémentaire si le joueur est en défense
+            degatsBot = (int)(degatsBot * 0.75);
+        }
+        
+        // S'assurer que les dégâts ne sont pas négatifs
+        degatsJoueur = Math.max(0, degatsJoueur);
+        degatsBot = Math.max(0, degatsBot);
+        
+        System.out.println("Dégâts bruts infligés par " + joueurPerso.getNom() + ": " + degatsJoueur);
+        System.out.println("Dégâts bruts infligés par " + botPerso.getNom() + ": " + degatsBot);
+        
+        // Appliquer les dégâts avec la méthode subirDegats spécifique à chaque personnage
+        // Cette méthode prend en compte la résistance selon la formule définie dans chaque classe
+        if (degatsJoueur > 0) {
+            botPerso.subirDegats(degatsJoueur);
+        }
+        
+        if (degatsBot > 0) {
+            joueurPerso.subirDegats(degatsBot);
+        }
+    }
+    
+    private void afficherResultatsTour() {
+        Window fenetreResultat = new BasicWindow("Résultats du tour " + tourActuel);
+        fenetreResultat.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
+        
+        Panel panel = new Panel(new GridLayout(1));
+        
+        // Action du joueur
+        panel.addComponent(new Label("Vous avez choisi: " + actionJoueur));
+        switch (actionJoueur) {
+            case "attaque":
+                panel.addComponent(new Label("Vous attaquez et infligez des dégâts."));
+                break;
+            case "defense":
+                panel.addComponent(new Label("Vous vous mettez en position défensive."));
+                break;
+            case "special":
+                panel.addComponent(new Label("Vous utilisez votre compétence spéciale!"));
+                break;
+            case "utiliser_item":
+                panel.addComponent(new Label("Vous utilisez un item de votre inventaire."));
+                break;
+            default:
+                panel.addComponent(new Label("Action inconnue."));
+                break;
+        }
+        
+        panel.addComponent(new EmptySpace());
+        
+        // Action du bot
+        String messageBot = bot.executerAction(actionBot, actionJoueur);
+        String[] lignes = messageBot.split("\n");
+        for (String ligne : lignes) {
+            panel.addComponent(new Label(ligne));
+        }
+        
+        panel.addComponent(new EmptySpace());
+        
+        // Points de vie après le tour - utiliser les valeurs exactes sans conversion en int
+        panel.addComponent(new Label("Points de vie restants:"));
+        panel.addComponent(new Label("- Vous: " + (int)Math.floor(joueur.getPersonnage().getPointsDeVie())));
+        panel.addComponent(new Label("- Bot: " + (int)Math.floor(adversaire.getPersonnage().getPointsDeVie())));
+        
+        panel.addComponent(new Button("Continuer", fenetreResultat::close));
+        
+        fenetreResultat.setComponent(panel);
+        textGUI.addWindowAndWait(fenetreResultat);
+    }
 
     private boolean estCombatTermine() {
-        return tourActuel >= MAX_TOURS ||
+        return tourActuel > MAX_TOURS ||
                 joueur.getPersonnage().getPointsDeVie() <= 0 ||
                 adversaire.getPersonnage().getPointsDeVie() <= 0;
     }
 
-    private Window afficherFenetreAttente(String message) {
-        Window fenetre = new BasicWindow("Attente");
-        fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
-
-        Panel panel = new Panel(new GridLayout(1));
-        panel.addComponent(new Label(message));
-
-        fenetre.setComponent(panel);
-        textGUI.addWindow(fenetre);
-
-        return fenetre;
-    }
-
     private void terminerCombat() {
         Joueur vainqueur = determinerVainqueur();
-        serviceCombat.terminerCombat(joueur, adversaire, vainqueur);
-
-        Window fenetre = new BasicWindow("Fin du combat");
+        
+        terminerCombat(vainqueur);
+    }
+    
+    private void terminerCombat(Joueur vainqueur) {
+        // Méthode surchargée pour l'abandon ou la fin du combat
+        Window fenetre = new BasicWindow(vainqueur != null && vainqueur.getId() == joueur.getId() ? "Victoire !" : "Défaite...");
         fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
 
         Panel panel = new Panel(new GridLayout(1));
-
-        if (vainqueur != null) {
-            panel.addComponent(new Label("Le vainqueur est: " + vainqueur.getPseudo()));
-
-            if (vainqueur.getId() == joueur.getId()) {
-                panel.addComponent(new Label("Félicitations, vous avez gagné!"));
+        
+        boolean joueurHumainGagne = (vainqueur != null && vainqueur.getId() == joueur.getId());
+        
+        try {
+            if (joueurHumainGagne) {
+                panel.addComponent(new Label("Félicitations! Vous avez vaincu " + adversaire.getPersonnage().getNom()));
+                
+                // Enregistrer la victoire
+                serviceCombat.enregistrerVictoire(joueur);
+                
+                // Mettre à jour le niveau du royaume
+                serviceCombat.terminerCombat(joueur, adversaire, joueur);
+                
+                panel.addComponent(new Label("Votre nombre de victoires a été incrémenté."));
+                panel.addComponent(new Label("Le niveau de votre royaume a été augmenté de 1!"));
             } else {
-                panel.addComponent(new Label("Vous avez perdu. Meilleure chance la prochaine fois!"));
+                if (vainqueur == null) {
+                    panel.addComponent(new Label("Vous avez abandonné le combat."));
+                    panel.addComponent(new Label("Votre adversaire remporte la victoire."));
+                } else {
+                    panel.addComponent(new Label("Vous avez été vaincu par " + adversaire.getPersonnage().getNom()));
+                }
+                
+                // Enregistrer la défaite directement dans la base de données
+                try {
+                    // Utiliser directement le DAO pour s'assurer que la défaite est enregistrée
+                    System.out.println("Enregistrement de la défaite pour le joueur ID=" + joueur.getId() + " (pseudo: " + joueur.getPseudo() + ")");
+                    serviceCombat.getCombatDAO().enregistrerDefaite(joueur);
+                    // Mettre également à jour l'objet joueur
+                    joueur.ajouterDefaite();
+                    System.out.println("Après ajout, le joueur " + joueur.getPseudo() + " a maintenant " + joueur.getDefaites() + " défaites");
+                } catch (Exception ex) {
+                    System.err.println("Erreur lors de l'enregistrement direct de la défaite: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+                
+                // Enregistrer la défaite via le service de combat
+                serviceCombat.terminerCombat(joueur, adversaire, adversaire);
+                
+                panel.addComponent(new Label("Votre nombre de défaites a été incrémenté."));
             }
-        } else {
-            panel.addComponent(new Label("Match nul! Aucun vainqueur."));
+        } catch (Exception e) {
+            panel.addComponent(new Label("Erreur lors de la finalisation du combat: " + e.getMessage()));
         }
 
         panel.addComponent(new EmptySpace());
-        panel.addComponent(new Label("Retour au menu principal dans 5 secondes..."));
+        panel.addComponent(new Button("Retour au menu principal", () -> {
+            fenetre.close();
+            retourMenuPrincipal();
+        }));
 
         fenetre.setComponent(panel);
-        textGUI.addWindow(fenetre);
-
-
-
-        // Compte à rebours de 5 secondes
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                fenetre.close();
-                retourMenuPrincipal();
-            }
-        }, 5000); // 5 secondes
+        textGUI.addWindowAndWait(fenetre);
     }
 
     private Joueur determinerVainqueur() {
@@ -302,197 +390,165 @@ public class EcranCombat {
                 .showDialog(textGUI);
     }
 
-    /**
-     * Méthode pour débloquer manuellement le combat quand il est bloqué
-     */
-    private void debloquerCombat() {
-        // Afficher une fenêtre de progression
-        Window fenetre = new BasicWindow("Déblocage manuel");
-        fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
-
+    // Nouvelle méthode pour afficher et sélectionner des items
+    private void afficherSelectionItems(Window fenetrePrecedente) {
+        Window fenetreItems = new BasicWindow("Sélection d'item");
+        fenetreItems.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
+        
         Panel panel = new Panel(new GridLayout(1));
-        panel.addComponent(new Label("Déblocage du combat en cours..."));
-        panel.addComponent(new Label("Tentative de synchronisation des états..."));
-
-        fenetre.setComponent(panel);
-        textGUI.addWindow(fenetre);
-
-        try {
-            // Première étape: synchroniser les points de vie (recharger depuis la BDD)
-            panel.addComponent(new Label("Synchronisation des points de vie..."));
-
-            // Recharger les joueurs depuis la base de données pour s'assurer d'avoir les données les plus récentes
-            Joueur joueurMisAJour = joueurDAO.obtenirJoueurParId(joueur.getId());
-            Joueur adversaireMisAJour = joueurDAO.obtenirJoueurParId(adversaire.getId());
-
-            if (joueurMisAJour != null && joueurMisAJour.getPersonnage() != null) {
-                joueur.getPersonnage().setPointsDeVie(joueurMisAJour.getPersonnage().getPointsDeVie());
-            }
-
-            if (adversaireMisAJour != null && adversaireMisAJour.getPersonnage() != null) {
-                adversaire.getPersonnage().setPointsDeVie(adversaireMisAJour.getPersonnage().getPointsDeVie());
-            }
-
-            panel.addComponent(new Label("Points de vie synchronisés."));
-
-            // Deuxième étape: forcer le changement de tour
-            panel.addComponent(new Label("Forçage du tour..."));
-            boolean succes = serviceCombat.forcerChangementTour(joueur, adversaire);
-
-            // Fermer la fenêtre de progression
-            fenetre.close();
-
-            if (succes) {
-                // Mettre à jour le numéro de tour local
-                tourActuel = serviceCombat.getTourActuel(joueur, adversaire);
-
-                // Si le déblocage a réussi, passer au tour du joueur
-                afficherMessageErreur("Combat débloqué avec succès. C'est maintenant votre tour.\nTour actuel: " + tourActuel);
-
-                // Forcer l'affichage de l'écran de combat actualisé
-                afficher();
-            } else {
-                // Si échec, proposer des solutions alternatives
-                Window fenetreEchec = new BasicWindow("Échec du déblocage");
-                fenetreEchec.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
-
-                Panel panelEchec = new Panel(new GridLayout(1));
-                panelEchec.addComponent(new Label("Le déblocage automatique a échoué."));
-                panelEchec.addComponent(new EmptySpace());
-                panelEchec.addComponent(new Label("Que voulez-vous faire ?"));
-
-                // Offrir trois options
-                Panel optionsPanel = new Panel(new GridLayout(3));
-
-                optionsPanel.addComponent(new Button("Réessayer", () -> {
-                    fenetreEchec.close();
-                    debloquerCombat();
-                }));
-
-                optionsPanel.addComponent(new Button("Forcer tour suivant", () -> {
-                    fenetreEchec.close();
-                    // Solution plus radicale: passer directement au tour suivant
-                    forcerTourSuivant();
-                }));
-
-                optionsPanel.addComponent(new Button("Abandonner combat", () -> {
-                    fenetreEchec.close();
-
-                    // Demander confirmation avant d'abandonner
-                    MessageDialogButton result = new MessageDialogBuilder()
-                            .setTitle("Confirmation")
-                            .setText("Êtes-vous sûr de vouloir abandonner ce combat?")
-                            .addButton(MessageDialogButton.Yes)
-                            .addButton(MessageDialogButton.No)
-                            .build()
-                            .showDialog(textGUI);
-
-                    if (result == MessageDialogButton.Yes) {
-                        // Terminer le combat immédiatement avec défaite
-                        serviceCombat.terminerCombat(joueur, adversaire, adversaire);
-                        retourMenuPrincipal();
-                    } else {
-                        // Revenir à l'écran de combat
-                        afficher();
+        panel.addComponent(new Label("Choisissez un item à utiliser:"));
+        
+        // Récupérer les items de l'inventaire du joueur
+        List<Slot> slots = joueur.getPersonnage().getInventaire().getSlots();
+        boolean itemsTrouves = false;
+        
+        for (Slot slot : slots) {
+            if (slot != null && slot.getItem() != null && slot.getQuantity() > 0) {
+                itemsTrouves = true;
+                Item item = slot.getItem();
+                String description = item.getNom() + " (x" + slot.getQuantity() + ")";
+                
+                if (item instanceof Potion) {
+                    Potion potion = (Potion) item;
+                    if (potion.getSoin() > 0) {
+                        description += " - Soin: +" + potion.getSoin();
                     }
-                }));
-
-                panelEchec.addComponent(optionsPanel);
-                fenetreEchec.setComponent(panelEchec);
-                textGUI.addWindowAndWait(fenetreEchec);
-            }
-        } catch (Exception e) {
-            fenetre.close();
-            afficherMessageErreur("Erreur lors du déblocage: " + e.getMessage());
-            afficher();
-        }
-    }
-
-    /**
-     * Force le passage au tour suivant en cas de blocage persistant
-     */
-    private void forcerTourSuivant() {
-        Window fenetre = new BasicWindow("Passage forcé");
-        fenetre.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
-
-        Panel panel = new Panel(new GridLayout(1));
-        panel.addComponent(new Label("Passage forcé au tour suivant..."));
-
-        fenetre.setComponent(panel);
-        textGUI.addWindow(fenetre);
-
-        try {
-            // 1. Réinitialiser l'état du tour actuel
-            String[] actions = {"defense"}; // Utiliser defense car c'est l'action la plus sûre
-            String actionSimulee = actions[0];
-
-            // 2. Vérifier si c'est au tour du joueur actuel
-            boolean estTourDuJoueurActuel = serviceCombat.estTourDuJoueur(joueur, adversaire);
-
-            if (!estTourDuJoueurActuel) {
-                // Si ce n'est pas notre tour, forcer une action pour l'adversaire
-                serviceCombat.executerAction(adversaire, joueur, actionSimulee, tourActuel);
-                panel.addComponent(new Label("Action simulée pour l'adversaire."));
-            }
-
-            // 3. Maintenant s'assurer que c'est notre tour
-            boolean forcageTourReussi = serviceCombat.forcerChangementTour(joueur, adversaire);
-
-            if (forcageTourReussi) {
-                panel.addComponent(new Label("Tour de jeu récupéré avec succès."));
-
-                // 4. Obtenir le numéro de tour officiel
-                tourActuel = serviceCombat.getTourActuel(joueur, adversaire);
-                panel.addComponent(new Label("Tour actuel: " + tourActuel));
-            } else {
-                panel.addComponent(new Label("Échec du changement de tour."));
-            }
-
-            // Attendre un peu pour que l'utilisateur puisse lire
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            // Fermer la fenêtre
-            fenetre.close();
-
-            // Afficher un message de confirmation
-            if (forcageTourReussi) {
-                afficherMessageErreur("Tour forcé avec succès. C'est maintenant votre tour.");
-            } else {
-                afficherMessageErreur("Échec du forçage de tour. Veuillez réessayer ou abandonner.");
-            }
-
-            // Afficher l'écran principal actualisé
-            afficher();
-        } catch (Exception e) {
-            fenetre.close();
-            afficherMessageErreur("Erreur lors du forçage du tour: " + e.getMessage());
-            afficher();
-        }
-    }
-
-    /**
-     * Vérifie et incrémente le tour si nécessaire
-     */
-    private void verifierEtIncrementerTour() {
-        if (serviceCombat.estTourDuJoueur(joueur, adversaire)) {
-            // Possible passage au tour suivant, vérifier l'état du jeu
-            if (tourActuel < MAX_TOURS &&
-                    joueur.getPersonnage().getPointsDeVie() > 0 &&
-                    adversaire.getPersonnage().getPointsDeVie() > 0) {
-                // Nous sommes peut-être passés au tour suivant
-                // Obtenir les résultats du tour précédent
-                String resultatsPrecedents = serviceCombat.obtenirResultatActionAdverse(joueur, adversaire, tourActuel);
-
-                // Si aucun résultat disponible, possiblement nouveau tour
-                if (resultatsPrecedents.equals("Aucun résultat disponible")) {
-                    tourActuel++;
-                    System.out.println("DEBUG: Incrémentation du tour à " + tourActuel);
+                    if (potion.getDegats() > 0) {
+                        description += " - Dégâts: +" + potion.getDegats();
+                    }
+                } else if (item instanceof Arme) {
+                    Arme arme = (Arme) item;
+                    description += " - Dégâts: +" + arme.getDegats();
+                } else if (item instanceof Bouclier) {
+                    Bouclier bouclier = (Bouclier) item;
+                    description += " - Défense: +" + bouclier.getDefense();
                 }
+                
+                panel.addComponent(new Button(description, () -> {
+                    // Utiliser l'item sélectionné
+                    utiliserItem(item);
+                    fenetreItems.close();
+                    fenetrePrecedente.close();
+                }));
             }
+        }
+        
+        if (!itemsTrouves) {
+            panel.addComponent(new Label("Votre inventaire est vide!"));
+        }
+        
+        panel.addComponent(new EmptySpace());
+        panel.addComponent(new Button("Retour", fenetreItems::close));
+        
+        fenetreItems.setComponent(panel);
+        textGUI.addWindowAndWait(fenetreItems);
+    }
+    
+    // Méthode pour utiliser un item sélectionné
+    private void utiliserItem(Item item) {
+        try {
+            // Retirer l'item de l'inventaire
+            joueur.getPersonnage().getInventaire().enleverItem(item, 1);
+            
+            // Enregistrer l'action du joueur
+            actionJoueur = "utiliser_item";
+            String messageJoueur = "Vous avez utilisé: " + item.getNom();
+            
+            // Afficher l'action du joueur
+            Window fenetreAttente = new BasicWindow("Action en cours");
+            fenetreAttente.setHints(java.util.Collections.singletonList(Window.Hint.CENTERED));
+            
+            Panel panelAttente = new Panel(new GridLayout(1));
+            panelAttente.addComponent(new Label(messageJoueur));
+            panelAttente.addComponent(new Label("Le bot réfléchit..."));
+            
+            fenetreAttente.setComponent(panelAttente);
+            textGUI.addWindow(fenetreAttente);
+            
+            // Simuler un délai
+            bot.simulerDelaiReflexion();
+            
+            // Fermer la fenêtre d'attente
+            fenetreAttente.close();
+            
+            // Le bot choisit son action
+            actionBot = bot.choisirAction(joueur, tourActuel);
+            
+            // Appliquer les effets de l'action du joueur et du bot
+            appliquerEffetsActionsAvecItem(item, actionBot);
+            
+            // Afficher les résultats du tour
+            afficherResultatsTour();
+            
+            // Passer au tour suivant
+            tourActuel++;
+            
+            // Vérifier si le combat est terminé
+            if (estCombatTermine()) {
+                terminerCombat();
+            } else {
+                // Continuer au tour suivant
+                afficher();
+            }
+        } catch (Exception e) {
+            afficherMessageErreur("Erreur lors de l'utilisation de l'item: " + e.getMessage());
+        }
+    }
+    
+    // Méthode spécifique pour appliquer les effets des actions quand un item est utilisé
+    private void appliquerEffetsActionsAvecItem(Item item, String actionBot) {
+        // Calculer les dégâts en fonction des actions et des statistiques
+        int degatsJoueur = 0;
+        int degatsBot = 0;
+        int soinJoueur = 0;
+        
+        Personnage joueurPerso = joueur.getPersonnage();
+        Personnage botPerso = adversaire.getPersonnage();
+        
+        // Appliquer les effets de l'item
+        if (item instanceof Potion) {
+            Potion potion = (Potion) item;
+            if (potion.getSoin() > 0) {
+                soinJoueur = (int)potion.getSoin();
+                // Soigner le joueur
+                joueurPerso.soigner(soinJoueur);
+            }
+            if (potion.getDegats() > 0) {
+                degatsJoueur = (int)potion.getDegats();
+            }
+        } else if (item instanceof Arme) {
+            Arme arme = (Arme) item;
+            // Attaque spéciale avec l'arme (dégâts doublés)
+            degatsJoueur = (int)(arme.getDegats() * 2);
+        } else if (item instanceof Bouclier) {
+            // Effet défensif: réduction des dégâts reçus par 2
+            // Cet effet sera appliqué plus tard
+        }
+        
+        // Calculer les dégâts du bot
+        degatsBot = bot.calculerDegatsAction(actionBot);
+        
+        // Réduction des dégâts si le joueur a utilisé un bouclier
+        if (item instanceof Bouclier) {
+            degatsBot = degatsBot / 2;
+        }
+        
+        // Bonus de défense supplémentaire si action de défense du bot
+        if (actionBot.equals("defense")) {
+            degatsJoueur = (int)(degatsJoueur * 0.75);
+        }
+        
+        // S'assurer que les dégâts ne sont pas négatifs
+        degatsJoueur = Math.max(0, degatsJoueur);
+        degatsBot = Math.max(0, degatsBot);
+        
+        // Appliquer les dégâts
+        if (degatsJoueur > 0) {
+            botPerso.subirDegats(degatsJoueur);
+        }
+        
+        if (degatsBot > 0) {
+            joueurPerso.subirDegats(degatsBot);
         }
     }
 }

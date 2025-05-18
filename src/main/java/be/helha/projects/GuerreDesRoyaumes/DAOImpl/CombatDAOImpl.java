@@ -27,8 +27,18 @@ public class CombatDAOImpl implements CombatDAO {
     public CombatDAOImpl() {
         try {
             this.connection = InitialiserAPP.getSQLConnexion();
-            System.out.println("Connexion SQL initialisée via InitialiserAPP");
+            if (this.connection != null) {
+                // Désactiver l'autocommit pour gérer manuellement les transactions
+                this.connection.setAutoCommit(false);
+                System.out.println("Connexion SQL initialisée via InitialiserAPP dans CombatDAOImpl avec autoCommit = " + this.connection.getAutoCommit());
+            } else {
+                System.err.println("La connexion SQL est null dans CombatDAOImpl");
+            }
         } catch (SQLConnectionException e) {
+            System.err.println("Erreur lors de l'initialisation de la connexion SQL: " + e.getMessage());
+            throw new RuntimeException(e);
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la configuration de la connexion SQL: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -94,11 +104,27 @@ public class CombatDAOImpl implements CombatDAO {
         String sql = "UPDATE joueurs SET defaites = defaites + 1 WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, joueur.getId());
-            stmt.executeUpdate();
+            int rowsAffected = stmt.executeUpdate();
+            
+            // Valider explicitement la transaction
+            if (!connection.getAutoCommit()) {
+                connection.commit();
+            }
+            
+            System.out.println("Défaite enregistrée pour le joueur ID=" + joueur.getId() + 
+                              ", Rows affected: " + rowsAffected + 
+                              ", Table: joueurs, AutoCommit: " + connection.getAutoCommit());
         } catch (SQLException e) {
+            System.err.println("Erreur SQL lors de l'enregistrement de la défaite: " + e.getMessage());
+            try {
+                if (!connection.getAutoCommit()) {
+                    connection.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Erreur lors du rollback: " + ex.getMessage());
+            }
             e.printStackTrace();
         }
-
     }
 
     @Override

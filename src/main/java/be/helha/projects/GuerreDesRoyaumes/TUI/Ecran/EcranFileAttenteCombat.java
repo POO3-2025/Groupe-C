@@ -9,6 +9,7 @@ import be.helha.projects.GuerreDesRoyaumes.DTO.SkillManager;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
 import be.helha.projects.GuerreDesRoyaumes.Service.ServiceCombat;
+import be.helha.projects.GuerreDesRoyaumes.Config.DAOProvider;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
@@ -190,7 +191,7 @@ public class EcranFileAttenteCombat {
                         
                         try {
                             // Obtenir les instances des dépendances nécessaires
-                            CombatSessionMongoDAO sessionDAO = CombatSessionMongoDAOImpl.getInstance();
+                            CombatSessionMongoDAO sessionDAO = DAOProvider.getCombatSessionMongoDAO();
                             SkillManager skillManager = new SkillManager();
                             
                             // Lancer l'écran de combat

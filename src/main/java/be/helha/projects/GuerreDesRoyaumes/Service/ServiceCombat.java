@@ -111,5 +111,11 @@ public interface ServiceCombat {
      */
     boolean transfererItemsCoffreVersInventaire(Joueur joueur, Item item, int quantite);
 
+    /**
+     * Récupère le pseudo de l'adversaire dans un combat
+     * @param joueurId L'ID du joueur dont on veut l'adversaire
+     * @return Le pseudo de l'adversaire, ou null si aucun combat en cours
+     */
+    String getAdversairePseudo(int joueurId);
 
 }

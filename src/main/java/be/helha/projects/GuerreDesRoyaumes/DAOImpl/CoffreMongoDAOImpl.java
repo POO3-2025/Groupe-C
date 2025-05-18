@@ -21,6 +21,7 @@ import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.springframework.stereotype.Repository;
 import org.bson.conversions.Bson;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,9 +39,24 @@ public class CoffreMongoDAOImpl implements CoffreMongoDAO {
     private static final String COLLECTION_NAME = "coffres";
 
     /**
-     * Constructeur privé pour le singleton qui initialise la connexion à la collection MongoDB.
+     * Constructeur pour Spring qui initialise la connexion à la collection MongoDB.
      */
-    private CoffreMongoDAOImpl() {
+    @Autowired
+    public CoffreMongoDAOImpl(ItemMongoDAO itemMongoDAO) {
+        MongoDatabase mongoDB;
+        try {
+            mongoDB = InitialiserAPP.getMongoConnexion();
+        } catch (MongoDBConnectionException ex) {
+            throw new RuntimeException(ex);
+        }
+        this.collection = mongoDB.getCollection("coffres");
+        this.itemMongoDAO = itemMongoDAO;
+    }
+
+    /**
+     * Constructeur sans paramètre pour la compatibilité avec le code existant.
+     */
+    public CoffreMongoDAOImpl() {
         MongoDatabase mongoDB;
         try {
             mongoDB = InitialiserAPP.getMongoConnexion();
@@ -53,6 +69,7 @@ public class CoffreMongoDAOImpl implements CoffreMongoDAO {
 
     /**
      * Obtient l'instance unique de CoffreMongoDAOImpl (pattern Singleton).
+     * Conservé pour compatibilité avec le code existant.
      *
      * @return L'instance unique de CoffreMongoDAOImpl
      */

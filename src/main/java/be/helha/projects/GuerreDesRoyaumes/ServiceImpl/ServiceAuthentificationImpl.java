@@ -17,6 +17,10 @@ import be.helha.projects.GuerreDesRoyaumes.Service.ServiceAuthentification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
+import be.helha.projects.GuerreDesRoyaumes.Config.DAOProvider;
+import be.helha.projects.GuerreDesRoyaumes.DAO.RoyaumeMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAO.PersonnageMongoDAO;
+import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
 
 @Service
 public class ServiceAuthentificationImpl implements ServiceAuthentification {
@@ -59,7 +63,7 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
         // Créer et persister le royaume dans MongoDB
         try {
-            RoyaumeMongoDAOImpl royaumeMongoDAO = RoyaumeMongoDAOImpl.getInstance();
+            RoyaumeMongoDAO royaumeMongoDAO = DAOProvider.getRoyaumeMongoDAO();
             royaumeMongoDAO.ajouterRoyaume(royaume, joueurCree.getId());
             System.out.println("Royaume créé dans MongoDB pour le joueur: " + joueurCree.getId());
         } catch (Exception e) {
@@ -67,6 +71,14 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
             e.printStackTrace();
             // On continue même en cas d'erreur pour ne pas bloquer l'inscription
         }
+
+        // Créer un personnage par défaut (Guerrier par défaut)
+        Personnage personnage = new Guerrier();
+        joueur.setPersonnage(personnage);
+        
+        // Ajouter le personnage à MongoDB
+        PersonnageMongoDAO personnageMongoDAO = DAOProvider.getPersonnageMongoDAO();
+        personnageMongoDAO.ajouterPersonnage(personnage, joueur.getId());
     }
 
     @Override
@@ -175,7 +187,7 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
             }
 
             // Récupérer le personnage depuis MongoDB en utilisant l'ID du joueur
-            PersonnageMongoDAOImpl personnageMongoDAO = PersonnageMongoDAOImpl.getInstance();
+            PersonnageMongoDAO personnageMongoDAO = DAOProvider.getPersonnageMongoDAO();
             Personnage personnage = personnageMongoDAO.obtenirPersonnageParJoueurId(joueurId);
 
             if (personnage == null) {
@@ -217,6 +229,18 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
             // Il sera activé uniquement lorsque le joueur clique sur Combattre
             joueurDAO.definirStatutConnexion(joueur.getId(), false);
             System.out.println("Joueur connecté avec succès (statut inactif): " + pseudo);
+
+            // Récupérer les données du joueur, du royaume et du personnage depuis l'authentification réussie
+            // Pour vérifier si les données existent bien en base
+            try {
+                // Vérifier et récupérer le personnage dans MongoDB
+                PersonnageMongoDAO personnageMongoDAO = DAOProvider.getPersonnageMongoDAO();
+                Personnage personnageMongo = personnageMongoDAO.obtenirPersonnageParJoueurId(joueur.getId());
+            } catch (Exception e) {
+                System.err.println("Erreur lors de la récupération des données du personnage: " + e.getMessage());
+                e.printStackTrace();
+            }
+
             return true;
         } catch (Exception e) {
             System.err.println("Erreur lors de la connexion du joueur " + pseudo + ": " + e.getMessage());
@@ -242,6 +266,18 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
             System.err.println("Erreur lors de la déconnexion du joueur " + pseudo + ": " + e.getMessage());
             e.printStackTrace();
             return false;
+        }
+    }
+
+    @Override
+    public Personnage obtenirPersonnage(int idJoueur) {
+        try {
+            PersonnageMongoDAO personnageMongoDAO = DAOProvider.getPersonnageMongoDAO();
+            return personnageMongoDAO.obtenirPersonnageParJoueurId(idJoueur);
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la récupération du personnage: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
     }
 }

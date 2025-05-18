@@ -26,7 +26,10 @@ public class InventaireMongoDAOImpl implements InventaireDAO {
     private MongoCollection<Document> inventaireCollection;
     private static final String COLLECTION_NAME = "inventaires";
 
-    private InventaireMongoDAOImpl() {
+    /**
+     * Constructeur public pour l'injection de dépendances avec Spring
+     */
+    public InventaireMongoDAOImpl() {
         try {
             // Utiliser ConnexionManager pour obtenir la base de données MongoDB
             database = ConnexionManager.getInstance().getMongoDatabase();

@@ -38,9 +38,9 @@ public class InventairePersonnageMongoDAOImpl implements InventaireMongoDAO {
     private static final String COLLECTION_NAME = "inventaires";
 
     /**
-     * Constructeur privé pour le singleton qui initialise la connexion à la collection MongoDB.
+     * Constructeur public pour l'injection de dépendances avec Spring
      */
-    private InventairePersonnageMongoDAOImpl() {
+    public InventairePersonnageMongoDAOImpl() {
         MongoDatabase mongoDB;
         try {
             mongoDB = InitialiserAPP.getMongoConnexion();
