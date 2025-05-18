@@ -11,11 +11,16 @@ import java.util.Map;
 import java.util.Scanner;
 
 /**
- * Classe représentant un joueur dans le jeu Guerre des Royaumes.
- * Un joueur possède un royaume, un personnage, un coffre et des compétences.
- * Il peut effectuer diverses actions comme acheter des items, gagner de l'argent, etc.
+ * Représente un joueur dans le jeu Guerre des Royaumes.
+ * <p>
+ * Un joueur possède un royaume, un personnage, un coffre, des compétences achetées,
+ * ainsi que des statistiques telles que victoires, défaites et argent.
+ * Il peut réaliser des actions telles qu'acheter des items ou des compétences,
+ * gagner ou perdre de l'argent, et choisir des compétences avant un combat.
+ * </p>
  */
 public class Joueur {
+
     private int id;
     private String nom;
     private String prenom;
@@ -27,23 +32,25 @@ public class Joueur {
     private int victoires;
     private int defaites;
     private Coffre coffre;
-    private Map<String, Competence> competencesAchetees; // Stocke les compétences achetées
-
+    private Map<String, Competence> competencesAchetees; // Compétences achetées par le joueur
 
     /**
-     * Constructeur complet pour créer un joueur avec toutes ses propriétés.
+     * Constructeur complet.
      *
-     * @param id Identifiant unique du joueur
-     * @param nom Nom du joueur
-     * @param prenom Prénom du joueur
-     * @param pseudo Pseudonyme du joueur (utilisé pour la connexion)
-     * @param motDePasse Mot de passe du joueur (utilisé pour la connexion)
-     * @param argent Montant d'argent initial du joueur
-     * @param royaume Royaume associé au joueur
-     * @param personnage Personnage associé au joueur
-     * @param coffre Coffre du joueur pour stocker ses items
+     * @param id Identifiant unique du joueur.
+     * @param nom Nom de famille du joueur.
+     * @param prenom Prénom du joueur.
+     * @param pseudo Pseudonyme utilisé pour la connexion.
+     * @param motDePasse Mot de passe utilisé pour la connexion.
+     * @param argent Montant d'argent initial du joueur.
+     * @param royaume Royaume associé au joueur.
+     * @param personnage Personnage associé au joueur.
+     * @param coffre Coffre contenant les items du joueur.
+     * @param victoires Nombre de victoires du joueur.
+     * @param defaites Nombre de défaites du joueur.
      */
-    public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent , Royaume royaume, Personnage personnage, Coffre coffre , int victoires, int defaites) {
+    public Joueur(int id, String nom, String prenom, String pseudo, String motDePasse, int argent,
+                  Royaume royaume, Personnage personnage, Coffre coffre, int victoires, int defaites) {
         this.id = id;
         this.nom = nom;
         this.prenom = prenom;
@@ -55,75 +62,126 @@ public class Joueur {
         this.victoires = victoires;
         this.defaites = defaites;
         this.coffre = coffre;
-        this.competencesAchetees = new HashMap<>(); // Initialisation de la liste des compétences achetées
+        this.competencesAchetees = new HashMap<>();
     }
 
     /**
      * Constructeur par défaut.
      */
-    public Joueur() {
+    public Joueur() {}
 
-    }
+    // --- Getters ---
 
-
-    // Getters
+    /**
+     * @return L'identifiant unique du joueur.
+     */
     public int getId() {
         return id;
     }
+
+    /**
+     * @return Le nom de famille du joueur.
+     */
     public String getNom() {
         return nom;
     }
+
+    /**
+     * @return Le prénom du joueur.
+     */
     public String getPrenom() {
         return prenom;
     }
+
+    /**
+     * @return Le pseudonyme du joueur.
+     */
     public String getPseudo() {
         return pseudo;
     }
+
+    /**
+     * @return Le mot de passe du joueur.
+     */
     public String getMotDePasse() {
         return motDePasse;
     }
+
+    /**
+     * @return Le royaume associé au joueur.
+     */
     public Royaume getRoyaume() {
         return royaume;
     }
+
+    /**
+     * @return Le personnage associé au joueur.
+     */
     public Personnage getPersonnage() {
         return personnage;
     }
 
+    /**
+     * @return Le montant d'argent du joueur.
+     */
     public int getArgent() {
         return argent;
     }
+
+    /**
+     * @return Le nombre de victoires du joueur.
+     */
     public int getVictoires() {
         return victoires;
     }
+
+    /**
+     * @return Le nombre de défaites du joueur.
+     */
     public int getDefaites() {
         return defaites;
     }
+
+    /**
+     * @return Le coffre contenant les items du joueur.
+     */
     public Coffre getCoffre() {
         return coffre;
     }
+
+    /**
+     * @return La map des compétences achetées par le joueur, avec leur identifiant en clé.
+     */
     public Map<String, Competence> getCompetencesAchetees() {
         return competencesAchetees;
     }
 
-    // Setters
+    // --- Setters ---
+
     public void setId(int id) {
         this.id = id;
     }
+
     public void setNom(String nom) {
         this.nom = nom;
     }
+
     public void setPrenom(String prenom) {
         this.prenom = prenom;
     }
+
     public void setPseudo(String pseudo) {
         this.pseudo = pseudo;
     }
+
     public void setMotDePasse(String motDePasse) {
         this.motDePasse = motDePasse;
     }
+
     public void setRoyaume(Royaume royaume) {
         this.royaume = royaume;
     }
+
     public void setPersonnage(Personnage personnage) {
         this.personnage = personnage;
     }
@@ -131,32 +189,43 @@ public class Joueur {
     public void setArgent(int argent) {
         this.argent = argent;
     }
+
     public void setVictoires(int victoires) {
         this.victoires = victoires;
     }
+
     public void setDefaites(int defaites) {
         this.defaites = defaites;
     }
+
     public void setCoffre(Coffre coffre) {
         this.coffre = coffre;
     }
+
     public void setCompetencesAchetees(Map<String, Competence> competencesAchetees) {
         this.competencesAchetees = competencesAchetees;
     }
 
-    //Méthodes
+    // --- Méthodes métier ---
+
+    /**
+     * Incrémente le nombre de victoires du joueur de 1.
+     */
     public void ajouterVictoire() {
         this.victoires++;
     }
+
+    /**
+     * Incrémente le nombre de défaites du joueur de 1.
+     */
     public void ajouterDefaite() {
         this.defaites++;
     }
 
     /**
-     * Ajoute un montant d'argent au joueur.
-     * Le montant doit être positif.
+     * Ajoute un montant positif d'argent au joueur.
      *
-     * @param montant Le montant d'argent à ajouter
+     * @param montant Montant à ajouter (doit être > 0).
      */
     public void ajouterArgent(int montant) {
         if (montant > 0) {
@@ -166,12 +235,10 @@ public class Joueur {
         }
     }
 
-
     /**
-     * Retire un montant d'argent au joueur.
-     * Le joueur doit avoir suffisamment d'argent.
+     * Retire un montant d'argent au joueur s'il dispose de suffisamment d'argent.
      *
-     * @param montant Le montant d'argent à retirer
+     * @param montant Montant à retirer.
      */
     public void retirerArgent(int montant) {
         if (montant <= this.argent) {
@@ -182,55 +249,46 @@ public class Joueur {
     }
 
     /**
-     * Fait gagner de l'argent au joueur avec application éventuelle de bonus.
-     * Si le joueur possède la compétence "Double Argent", le montant est doublé.
+     * Fait gagner de l'argent au joueur, doublé si la compétence "Double Argent" est activée.
      *
-     * @param montant Le montant d'argent à gagner
+     * @param montant Montant d'argent gagné.
      */
     public void gagnerArgent(int montant) {
-        // Vérifier si la compétence "DoubleArgent" est active
-        Competence doubleArgent = competencesAchetees.get("C3"); // C3 correspond à l'ID de DoubleArgent
+        Competence doubleArgent = competencesAchetees.get("C3"); // ID de la compétence "Double Argent"
         if (doubleArgent != null) {
-            montant *= 2;  // Si la compétence DoubleArgent est achetée, doubler l'argent gagné
+            montant *= 2;
             System.out.println("Compétence 'Double Argent' activée. L'argent gagné est doublé.");
         }
-        ajouterArgent(montant); // Ajoute l'argent gagné
+        ajouterArgent(montant);
         System.out.println("Le joueur gagne " + montant + " TerraCoin.");
     }
 
     /**
-     * Permet au joueur d'acheter un item.
-     * Le joueur doit avoir suffisamment d'argent et l'item est ajouté à son coffre.
+     * Permet au joueur d'acheter un item s'il a assez d'argent.
+     * L'item est ajouté à son coffre.
      *
-     * @param item L'item à acheter
+     * @param item Item à acheter.
      */
     public void acheterItem(Item item) {
         if (this.argent >= item.getPrix()) {
-            // Déduit le prix de l'item du solde du joueur
             this.argent -= item.getPrix();
-
-            // Ajoute 1 item au coffre du joueur
             this.coffre.ajouterItem(item, 1);
-
-            // Affiche le message de confirmation d'achat
             System.out.println("Achat réussi : " + item.getNom());
         } else {
-            // Si le joueur n'a pas assez d'argent
             System.out.println("Pas assez d'argent pour acheter " + item.getNom());
         }
     }
 
     /**
-     * Permet au joueur d'acheter une compétence.
-     * Le joueur doit avoir suffisamment d'argent et la compétence est immédiatement appliquée.
+     * Permet au joueur d'acheter une compétence s'il a assez d'argent.
+     * La compétence est appliquée immédiatement au personnage.
      *
-     * @param competence La compétence à acheter
+     * @param competence Compétence à acheter.
      */
     public void acheterCompetence(Competence competence) {
         if (this.argent >= competence.getPrix()) {
-            this.argent -= competence.getPrix();  // Déduit l'argent du joueur
-            this.competencesAchetees.put(competence.getId(), competence);  // Ajoute la compétence aux compétences achetées
-            // Appliquer directement la compétence au personnage
+            this.argent -= competence.getPrix();
+            this.competencesAchetees.put(competence.getId(), competence);
             competence.appliquerEffet(personnage);
             System.out.println("Compétence achetée et activée avec succès : " + competence.getNom());
         } else {
@@ -239,47 +297,50 @@ public class Joueur {
     }
 
     /**
-     * Permet au joueur de choisir une compétence à utiliser avant un combat.
-     * Affiche les compétences disponibles et applique celle choisie par le joueur.
+     * Affiche les compétences disponibles et permet au joueur d'en choisir une
+     * à utiliser avant un combat.
      */
     public void choisirCompetenceAvantCombat() {
-        // Afficher toutes les compétences disponibles
         if (competencesAchetees.isEmpty()) {
             System.out.println("Vous n'avez pas de compétences à utiliser.");
-            return;  // Aucune compétence disponible
+            return;
         }
 
         System.out.println("Choisissez une compétence parmi celles que vous avez achetées :");
-
-        // Liste des compétences achetées
         int index = 1;
         for (Competence competence : competencesAchetees.values()) {
             System.out.println(index++ + ". " + competence.getNom() + " - " + competence.getDescription());
         }
 
-        // Demander à l'utilisateur de choisir une compétence
         Scanner scanner = new Scanner(System.in);
         int choix = scanner.nextInt();
 
-        // Vérifier si le choix est valide
         if (choix > 0 && choix <= competencesAchetees.size()) {
             Competence competenceChoisie = (Competence) competencesAchetees.values().toArray()[choix - 1];
-            competenceChoisie.appliquerEffet(personnage);  // Appliquer l'effet de la compétence choisie
+            competenceChoisie.appliquerEffet(personnage);
             System.out.println("Compétence " + competenceChoisie.getNom() + " activée !");
         } else {
             System.out.println("Choix invalide. Aucune compétence activée.");
         }
     }
 
+    /**
+     * Applique les effets de toutes les compétences achetées au personnage.
+     */
     public void appliquerCompetencesAvantCombat() {
         for (Competence competence : competencesAchetees.values()) {
-            competence.appliquerEffet(personnage);  // Applique chaque compétence achetée sur le personnage
+            competence.appliquerEffet(personnage);
         }
     }
 
+    /**
+     * Représentation textuelle du joueur.
+     *
+     * @return Chaîne contenant nom, prénom, pseudo, royaume, personnage et argent.
+     */
     @Override
     public String toString() {
-        return  "\nNom        = " + nom +
+        return "\nNom        = " + nom +
                 "\nPrenom     = " + prenom +
                 "\nPseudo     = " + pseudo +
                 "\nRoyaume    = " + royaume +

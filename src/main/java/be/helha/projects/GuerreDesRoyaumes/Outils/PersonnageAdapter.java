@@ -7,47 +7,72 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Guerrier;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Titan;
 import be.helha.projects.GuerreDesRoyaumes.Model.Personnage.Voleur;
 import be.helha.projects.GuerreDesRoyaumes.Model.Inventaire.Inventaire;
-import org.bson.types.ObjectId;
 
 import java.lang.reflect.Type;
 
+/**
+ * Adaptateur Gson personnalisé pour la sérialisation et la désérialisation
+ * des objets {@link Personnage} et leurs sous-classes.
+ * <p>
+ * Lors de la sérialisation, convertit un personnage en JSON en ajoutant ses
+ * propriétés de base et son type concret.
+ * </p>
+ * <p>
+ * Lors de la désérialisation, crée une instance concrète selon le type,
+ * puis remplit ses attributs et son inventaire.
+ * </p>
+ * <p>
+ * Supporte les types : {@link Golem}, {@link Guerrier}, {@link Titan}, {@link Voleur}.
+ * </p>
+ */
 public class PersonnageAdapter implements JsonSerializer<Personnage>, JsonDeserializer<Personnage> {
-    private static final String PERSONNAGE_PACKAGE = "be.helha.projects.GuerreDesRoyaumes.Model.Personnage.";
 
+    /**
+     * Sérialise un objet {@link Personnage} en {@link JsonElement}.
+     *
+     * @param src        Le personnage à sérialiser.
+     * @param typeOfSrc  Le type source.
+     * @param context    Contexte de sérialisation Gson.
+     * @return Un {@link JsonElement} représentant le personnage.
+     */
     @Override
     public JsonElement serialize(Personnage src, Type typeOfSrc, JsonSerializationContext context) {
         JsonObject jsonObject = new JsonObject();
-        
-        // Ajouter les propriétés de base du personnage
+
         jsonObject.addProperty("nom", src.getNom());
         jsonObject.addProperty("vie", src.getVie());
         jsonObject.addProperty("degats", src.getDegats());
         jsonObject.addProperty("resistance", src.getResistance());
         jsonObject.addProperty("type", src.getClass().getSimpleName());
-        
-        // Ajouter l'inventaire si présent
+
         if (src.getInventaire() != null) {
             jsonObject.add("inventaire", context.serialize(src.getInventaire()));
         }
-        
+
         return jsonObject;
     }
 
+    /**
+     * Désérialise un {@link JsonElement} en objet {@link Personnage}.
+     *
+     * @param json       L'élément JSON à désérialiser.
+     * @param typeOfT    Le type cible.
+     * @param context    Contexte de désérialisation Gson.
+     * @return Le personnage désérialisé.
+     * @throws JsonParseException Si le type n'est pas reconnu ou si une erreur survient.
+     */
     @Override
     public Personnage deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
         JsonObject jsonObject = json.getAsJsonObject();
-        
-        // Récupérer le type de personnage (Golem, Guerrier, etc.)
-        String className;
-        if (jsonObject.has("type")) {
-            className = jsonObject.get("type").getAsString();
-        } else {
+
+        if (!jsonObject.has("type")) {
             throw new JsonParseException("Type de personnage non trouvé dans le JSON");
         }
-        
+
+        String className = jsonObject.get("type").getAsString();
+
         Personnage personnage;
         try {
-            // Créer l'instance appropriée en fonction du type
             switch (className) {
                 case "Golem":
                     personnage = new Golem();
@@ -64,8 +89,7 @@ public class PersonnageAdapter implements JsonSerializer<Personnage>, JsonDeseri
                 default:
                     throw new ClassNotFoundException("Type de personnage non reconnu: " + className);
             }
-            
-            // Définir les valeurs de base depuis le JSON
+
             if (jsonObject.has("nom")) {
                 personnage.setNom(jsonObject.get("nom").getAsString());
             }
@@ -78,13 +102,11 @@ public class PersonnageAdapter implements JsonSerializer<Personnage>, JsonDeseri
             if (jsonObject.has("resistance")) {
                 personnage.setResistance(jsonObject.get("resistance").getAsDouble());
             }
-            
-            // Gérer l'inventaire si présent
             if (jsonObject.has("inventaire") && !jsonObject.get("inventaire").isJsonNull()) {
                 Inventaire inventaire = context.deserialize(jsonObject.get("inventaire"), Inventaire.class);
                 personnage.setInventaire(inventaire);
             }
-            
+
             return personnage;
         } catch (ClassNotFoundException e) {
             throw new JsonParseException("Classe de personnage non trouvée: " + className, e);

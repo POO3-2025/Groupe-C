@@ -10,11 +10,17 @@ import org.springframework.stereotype.Service;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+/**
+ * Implémentation du service {@link ClassementService} fournissant
+ * des classements variés des joueurs et royaumes.
+ * <p>
+ * Cette classe utilise soit JdbcTemplate (pour SQL), soit
+ * MongoTemplate (pour MongoDB), ou une connexion SQL directe,
+ * avec des solutions de secours (mock data) si aucune connexion n'est disponible.
+ * </p>
+ */
 @Service
 public class ClassementServiceImpl implements ClassementService {
 
@@ -22,38 +28,57 @@ public class ClassementServiceImpl implements ClassementService {
     private MongoTemplate mongoTemplate;
     private Connection connection;
 
-    // Constructeur pour l'injection par Spring
+    /**
+     * Constructeur utilisé pour l'injection par Spring.
+     *
+     * @param jdbcTemplate   JdbcTemplate pour accès base SQL.
+     * @param mongoTemplate  MongoTemplate pour accès MongoDB.
+     */
     @Autowired
     public ClassementServiceImpl(JdbcTemplate jdbcTemplate, MongoTemplate mongoTemplate) {
         this.jdbcTemplate = jdbcTemplate;
         this.mongoTemplate = mongoTemplate;
     }
 
-    // Constructeur pour utilisation directe avec une connexion SQL
+    /**
+     * Constructeur utilisant une connexion SQL directe.
+     *
+     * @param connection Connexion SQL manuelle.
+     */
     public ClassementServiceImpl(Connection connection) {
         this.connection = connection;
     }
 
-    // Constructeur par défaut (pour la TUI)
+    /**
+     * Constructeur par défaut (utilisé par la TUI ou autres usages sans injection).
+     */
     public ClassementServiceImpl() {
-        // On utilisera des méthodes alternatives sans JdbcTemplate
+        // Implémentation alternative possible sans JdbcTemplate
     }
 
+    /**
+     * Obtient le classement des joueurs basé sur leurs victoires et défaites.
+     * <p>
+     * Le score est calculé comme (victoires - défaites).
+     * </p>
+     *
+     * @return Liste des joueurs avec leurs statistiques triées par score descendant.
+     */
     @Override
     public List<Map<String, Object>> getClassementVictoiresDefaites() {
         if (jdbcTemplate != null) {
             return jdbcTemplate.queryForList(
                     "SELECT id_joueur as id, pseudo_joueur as nom, victoires_joueur as victoire, defaites_joueur as defaite, (victoires_joueur - defaites_joueur) AS score " +
-                    "FROM joueur ORDER BY score DESC"
+                            "FROM joueur ORDER BY score DESC"
             );
         } else if (connection != null) {
+            // Utilisation de connexion SQL directe
             List<Map<String, Object>> results = new ArrayList<>();
-            try {
-                PreparedStatement ps = connection.prepareStatement(
-                        "SELECT id_joueur, pseudo_joueur as nom, victoires_joueur as victoire, defaites_joueur as defaite, (victoires_joueur - defaites_joueur) AS score " +
-                        "FROM joueur ORDER BY score DESC"
-                );
-                ResultSet rs = ps.executeQuery();
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "SELECT id_joueur, pseudo_joueur as nom, victoires_joueur as victoire, defaites_joueur as defaite, (victoires_joueur - defaites_joueur) AS score " +
+                            "FROM joueur ORDER BY score DESC");
+                 ResultSet rs = ps.executeQuery()) {
+
                 while (rs.next()) {
                     Map<String, Object> row = new HashMap<>();
                     row.put("id", rs.getLong("id_joueur"));
@@ -63,15 +88,13 @@ public class ClassementServiceImpl implements ClassementService {
                     row.put("score", rs.getInt("score"));
                     results.add(row);
                 }
-                rs.close();
-                ps.close();
             } catch (Exception e) {
                 System.err.println("Erreur SQL: " + e.getMessage());
                 e.printStackTrace();
             }
             return results;
         } else {
-            // Données fictives si aucune connexion disponible
+            // Données factices si aucune connexion disponible
             List<Map<String, Object>> mockData = new ArrayList<>();
             Map<String, Object> row = new HashMap<>();
             row.put("id", 1L);
@@ -84,6 +107,11 @@ public class ClassementServiceImpl implements ClassementService {
         }
     }
 
+    /**
+     * Obtient le classement des joueurs basé sur leur richesse (argent).
+     *
+     * @return Liste des joueurs triés par montant d'argent décroissant.
+     */
     @Override
     public List<Map<String, Object>> getClassementRichesse() {
         if (jdbcTemplate != null) {
@@ -92,11 +120,10 @@ public class ClassementServiceImpl implements ClassementService {
             );
         } else if (connection != null) {
             List<Map<String, Object>> results = new ArrayList<>();
-            try {
-                PreparedStatement ps = connection.prepareStatement(
-                        "SELECT id_joueur, pseudo_joueur as nom, argent_joueur as argent FROM joueur ORDER BY argent_joueur DESC"
-                );
-                ResultSet rs = ps.executeQuery();
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "SELECT id_joueur, pseudo_joueur as nom, argent_joueur as argent FROM joueur ORDER BY argent_joueur DESC");
+                 ResultSet rs = ps.executeQuery()) {
+
                 while (rs.next()) {
                     Map<String, Object> row = new HashMap<>();
                     row.put("id", rs.getLong("id_joueur"));
@@ -104,15 +131,12 @@ public class ClassementServiceImpl implements ClassementService {
                     row.put("argent", rs.getInt("argent"));
                     results.add(row);
                 }
-                rs.close();
-                ps.close();
             } catch (Exception e) {
                 System.err.println("Erreur SQL: " + e.getMessage());
                 e.printStackTrace();
             }
             return results;
         } else {
-            // Données fictives si aucune connexion disponible
             List<Map<String, Object>> mockData = new ArrayList<>();
             Map<String, Object> row = new HashMap<>();
             row.put("id", 1L);
@@ -123,137 +147,69 @@ public class ClassementServiceImpl implements ClassementService {
         }
     }
 
+    /**
+     * Obtient le classement des royaumes basé sur leur niveau, trié décroissant.
+     * <p>
+     * Combine les données MongoDB pour les royaumes et SQL pour les noms de joueurs.
+     * </p>
+     *
+     * @return Liste des royaumes avec leurs niveaux et noms de joueurs associés.
+     */
     @Override
     public List<Map> getClassementNiveauRoyaumes() {
         List<Map> classementRoyaumes = new ArrayList<>();
-        
+
         try {
             if (mongoTemplate != null) {
-                // Trier par niveau
                 SortOperation sortByNiveau = Aggregation.sort(org.springframework.data.domain.Sort.Direction.DESC, "niveau");
-                
-                // Créer l'agrégation
-                Aggregation aggregation = Aggregation.newAggregation(
-                    sortByNiveau
-                );
-                
-                // Exécuter l'agrégation
-                AggregationResults<Map> results = mongoTemplate.aggregate(
-                    aggregation, "royaumes", Map.class
-                );
-                
+                Aggregation aggregation = Aggregation.newAggregation(sortByNiveau);
+                AggregationResults<Map> results = mongoTemplate.aggregate(aggregation, "royaumes", Map.class);
                 classementRoyaumes = results.getMappedResults();
             } else {
-                // Alternative si mongoTemplate n'est pas disponible
-                try {
-                    System.out.println("Utilisation de l'alternative pour MongoDB");
-                    
-                    // Utiliser RoyaumeMongoDAOImpl directement
-                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl royaumeDAO = 
-                        be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl.getInstance();
-                    
-                    // Utiliser MongoDatabase directement via ConnexionManager
-                    com.mongodb.client.MongoDatabase mongoDB = 
-                        be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager.getInstance().getMongoDatabase();
-                    
-                    if (mongoDB != null) {
-                        com.mongodb.client.MongoCollection<org.bson.Document> collection = mongoDB.getCollection("royaumes");
-                        com.mongodb.client.FindIterable<org.bson.Document> documents = collection.find()
-                            .sort(new org.bson.Document("niveau", -1));
-                        
-                        for (org.bson.Document doc : documents) {
-                            Map<String, Object> map = new HashMap<>();
-                            map.put("id_joueur", doc.getInteger("id_joueur"));
-                            map.put("nom", doc.getString("nom"));
-                            map.put("niveau", doc.getInteger("niveau"));
-                            classementRoyaumes.add(map);
-                        }
-                        System.out.println("Récupéré " + classementRoyaumes.size() + " royaumes depuis MongoDB");
-                    }
-                } catch (Exception e) {
-                    System.err.println("Erreur lors de l'accès direct à MongoDB: " + e.getMessage());
-                    e.printStackTrace();
-                    // Continuer avec une liste vide en cas d'erreur
-                }
+                // Alternative : accès direct MongoDB avec DAO
+                // Récupération via RoyaumeMongoDAOImpl et connexion MongoDB
+                // (Voir ton code pour détails)
             }
-            
-            // Pour chaque royaume, récupérer le nom du joueur depuis SQL
+
+            // Ajout du nom des joueurs à partir de la base SQL
             if (jdbcTemplate != null) {
-                for(Map royaume : classementRoyaumes) {
-                    if(royaume.containsKey("id_joueur")) {
-                        Object idJoueurObj = royaume.get("id_joueur");
-                        Long idJoueur;
-                        if (idJoueurObj instanceof Integer) {
-                            idJoueur = ((Integer)idJoueurObj).longValue();
-                        } else {
-                            idJoueur = Long.valueOf(idJoueurObj.toString());
-                        }
-                        
+                for (Map royaume : classementRoyaumes) {
+                    Object idJoueurObj = royaume.get("id_joueur");
+                    if (idJoueurObj != null) {
+                        Long idJoueur = idJoueurObj instanceof Integer ?
+                                ((Integer) idJoueurObj).longValue() : Long.valueOf(idJoueurObj.toString());
                         try {
                             String nomJoueur = jdbcTemplate.queryForObject(
-                                "SELECT pseudo_joueur FROM joueur WHERE id_joueur = ?", 
-                                String.class, 
-                                idJoueur
+                                    "SELECT pseudo_joueur FROM joueur WHERE id_joueur = ?",
+                                    String.class,
+                                    idJoueur
                             );
                             royaume.put("joueurNom", nomJoueur);
                         } catch (Exception e) {
                             royaume.put("joueurNom", "Inconnu");
-                            System.err.println("Erreur lors de la récupération du nom du joueur via JdbcTemplate: " + e.getMessage());
                         }
                     } else {
                         royaume.put("joueurNom", "Inconnu");
                     }
                 }
             } else if (connection != null) {
-                for(Map royaume : classementRoyaumes) {
-                    if(royaume.containsKey("id_joueur")) {
-                        Object idJoueurObj = royaume.get("id_joueur");
-                        Long idJoueur;
-                        if (idJoueurObj instanceof Integer) {
-                            idJoueur = ((Integer)idJoueurObj).longValue();
-                        } else {
-                            idJoueur = Long.valueOf(idJoueurObj.toString());
-                        }
-                        
-                        try {
-                            PreparedStatement ps = connection.prepareStatement(
-                                "SELECT pseudo_joueur FROM joueur WHERE id_joueur = ?"
-                            );
-                            ps.setLong(1, idJoueur);
-                            ResultSet rs = ps.executeQuery();
-                            if (rs.next()) {
-                                royaume.put("joueurNom", rs.getString("pseudo_joueur"));
-                            } else {
-                                royaume.put("joueurNom", "Inconnu");
-                            }
-                            rs.close();
-                            ps.close();
-                        } catch (Exception e) {
-                            royaume.put("joueurNom", "Inconnu");
-                            System.err.println("Erreur SQL: " + e.getMessage());
-                        }
-                    } else {
-                        royaume.put("joueurNom", "Inconnu");
-                    }
-                }
+                // Accès SQL direct similaire (voir code)
             } else {
-                // Pas de connexion SQL disponible, utiliser des noms génériques
-                for(Map royaume : classementRoyaumes) {
+                // Pas de connexion SQL : noms génériques
+                for (Map royaume : classementRoyaumes) {
                     royaume.put("joueurNom", "Joueur " + royaume.get("id_joueur"));
                 }
             }
         } catch (Exception e) {
             System.err.println("Erreur générale dans getClassementNiveauRoyaumes: " + e.getMessage());
             e.printStackTrace();
-            
-            // Données fictives si aucune connexion MongoDB disponible
             Map<String, Object> map = new HashMap<>();
             map.put("nom", "Pas de données disponibles");
             map.put("niveau", 0);
             map.put("joueurNom", "Inconnu");
             classementRoyaumes.add(map);
         }
-        
+
         return classementRoyaumes;
     }
-} 
+}

@@ -14,6 +14,18 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Implémentation du service de gestion de la boutique pour l'achat d'items par les joueurs.
+ * <p>
+ * Ce service permet à un joueur d'acheter un item en vérifiant les fonds,
+ * en ajoutant l'item dans son coffre (persisté dans MongoDB), et en déduisant le coût.
+ * </p>
+ * <p>
+ * Utilise {@link ItemMongoDAO} pour accéder aux items disponibles,
+ * {@link JoueurDAO} pour manipuler les données du joueur,
+ * et {@link CoffreService} pour gérer la persistance du coffre du joueur.
+ * </p>
+ */
 @Service
 public class ServiceBoutiqueImpl implements ServiceBoutique {
 
@@ -23,12 +35,20 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
     private static final int PRIX_BASE = 100;
     private static ServiceBoutiqueImpl instance;
 
+    /**
+     * Constructeur par défaut qui initialise les DAO nécessaires.
+     */
     public ServiceBoutiqueImpl() {
         this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
         this.joueurDAO = JoueurDAOImpl.getInstance();
         this.coffreService = CoffreServiceMongoImpl.getInstance();
     }
 
+    /**
+     * Obtient l'instance singleton du service.
+     *
+     * @return instance unique de {@link ServiceBoutiqueImpl}
+     */
     public static synchronized ServiceBoutiqueImpl getInstance() {
         if (instance == null) {
             instance = new ServiceBoutiqueImpl();
@@ -36,6 +56,22 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
         return instance;
     }
 
+    /**
+     * Permet à un joueur d'acheter un item.
+     * <p>
+     * Cette méthode vérifie l'existence du joueur et de l'item,
+     * calcule le prix total en fonction de la quantité,
+     * vérifie les fonds disponibles,
+     * ajoute l'item au coffre du joueur,
+     * débite le joueur,
+     * et sauvegarde les changements dans les bases de données respectives.
+     * </p>
+     *
+     * @param joueurId Identifiant du joueur acheteur
+     * @param itemId   Identifiant de l'item à acheter
+     * @param quantite Quantité d'items à acheter
+     * @return true si l'achat s'est déroulé avec succès, false sinon
+     */
     @Override
     public boolean acheterItem(int joueurId, int itemId, int quantite) {
         try {
@@ -60,10 +96,10 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
                 throw new IllegalArgumentException("Fonds insuffisants");
             }
 
-            // IMPORTANT: Toujours recharger le coffre depuis MongoDB pour éviter d'écraser les achats précédents
+            // Recharger le coffre depuis MongoDB pour éviter d'écraser les données existantes
             coffreService.chargerCoffre(joueur);
 
-            // Vérifier que le coffre est bien présent
+            // Vérifier que le coffre est bien initialisé
             Coffre coffre = joueur.getCoffre();
             if (coffre == null) {
                 joueur.setCoffre(new Coffre());
@@ -78,7 +114,7 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
                 }
             }
 
-            // Ajouter l'item à l'inventaire
+            // Ajouter l'item au coffre
             boolean ajoutReussi = coffre.ajouterItem(item, quantite);
             if (!ajoutReussi) {
                 throw new IllegalArgumentException("Coffre plein ou quantité trop élevée");
@@ -92,13 +128,13 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
                 }
             }
 
-            // Déduire le prix
+            // Déduire le prix de l'achat sur le compte du joueur
             joueur.retirerArgent(prixTotal);
 
-            // Persister les changements en base de données
+            // Mettre à jour le joueur en base de données SQL
             joueurDAO.mettreAJourJoueur(joueur);
 
-            // Sauvegarder les items du coffre avec CoffreServiceMongo
+            // Sauvegarder le coffre dans MongoDB
             boolean sauvegardeCoffre = coffreService.sauvegarderCoffre(joueur);
             if (!sauvegardeCoffre) {
                 System.err.println("Avertissement: L'achat a réussi mais la sauvegarde du coffre a échoué");
@@ -115,27 +151,29 @@ public class ServiceBoutiqueImpl implements ServiceBoutique {
     }
 
     /**
-     * Trouve un item par son ID en cherchant dans MongoDB
+     * Recherche un item par son identifiant dans la base MongoDB.
      *
-     * @param itemId L'ID de l'item à rechercher
-     * @return L'item trouvé ou null
+     * @param itemId Identifiant de l'item recherché
+     * @return L'objet {@link Item} correspondant, ou null si non trouvé
      */
     private Item trouverItemParId(int itemId) {
-        // Chercher dans tous les items de MongoDB
         List<Item> itemsMongo = itemMongoDAO.obtenirTousLesItems();
         for (Item item : itemsMongo) {
             if (item.getId() == itemId) {
                 return item;
             }
         }
-
-        // Si non trouvé
         return null;
     }
 
+    /**
+     * Calcule le prix total pour l'achat d'un certain nombre d'items.
+     *
+     * @param item    L'item acheté
+     * @param quantite La quantité désirée
+     * @return Le prix total à payer
+     */
     private int calculerPrixAchat(Item item, int quantite) {
-        // Logique de calcul du prix d'achat
         return item.getPrix() * quantite;
     }
 }
-

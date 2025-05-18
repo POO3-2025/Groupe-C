@@ -13,7 +13,12 @@ import com.mongodb.client.MongoDatabase;
 import org.springframework.stereotype.Service;
 
 /**
- * Implémentation de l'interface CoffreService utilisant MongoDB pour la gestion des coffres des joueurs.
+ * Implémentation du service {@link CoffreService} utilisant MongoDB
+ * pour la gestion des coffres des joueurs.
+ * <p>
+ * Cette classe est un singleton et gère la sauvegarde, le chargement,
+ * le vidage ainsi que l'ajout et le retrait d'items dans les coffres.
+ * </p>
  */
 @Service
 public class CoffreServiceMongoImpl implements CoffreService {
@@ -23,12 +28,12 @@ public class CoffreServiceMongoImpl implements CoffreService {
     private final ItemMongoDAOImpl itemMongoDAO;
 
     /**
-     * Constructeur privé pour le singleton
+     * Constructeur privé du singleton.
+     * Initialise les DAO MongoDB et la connexion.
      */
     private CoffreServiceMongoImpl() {
-        MongoDatabase mongoDB;
         try {
-            mongoDB = InitialiserAPP.getMongoConnexion();
+            MongoDatabase mongoDB = InitialiserAPP.getMongoConnexion();
             this.coffreMongoDAO = CoffreMongoDAOImpl.getInstance();
             this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
         } catch (MongoDBConnectionException ex) {
@@ -37,8 +42,9 @@ public class CoffreServiceMongoImpl implements CoffreService {
     }
 
     /**
-     * Obtient l'instance unique de CoffreServiceMongoImpl (Singleton)
-     * @return L'instance unique de CoffreServiceMongoImpl
+     * Obtient l'instance unique du singleton.
+     *
+     * @return instance unique de CoffreServiceMongoImpl.
      */
     public static synchronized CoffreServiceMongoImpl getInstance() {
         if (instance == null) {
@@ -47,13 +53,18 @@ public class CoffreServiceMongoImpl implements CoffreService {
         return instance;
     }
 
+    /**
+     * Sauvegarde le coffre d'un joueur dans MongoDB.
+     *
+     * @param joueur Le joueur dont le coffre sera sauvegardé.
+     * @return true si la sauvegarde a réussi, false sinon.
+     */
     @Override
     public boolean sauvegarderCoffre(Joueur joueur) {
         if (joueur == null || joueur.getCoffre() == null) {
             System.err.println("Impossible de sauvegarder le coffre: joueur ou coffre null");
             return false;
         }
-
         try {
             return coffreMongoDAO.sauvegarderCoffre(joueur, joueur.getCoffre());
         } catch (Exception e) {
@@ -63,26 +74,26 @@ public class CoffreServiceMongoImpl implements CoffreService {
         }
     }
 
+    /**
+     * Charge le coffre d'un joueur depuis MongoDB.
+     *
+     * @param joueur Le joueur dont le coffre sera chargé.
+     * @return true si le chargement a réussi, false sinon.
+     */
     @Override
     public boolean chargerCoffre(Joueur joueur) {
         if (joueur == null) {
             System.err.println("Impossible de charger le coffre: joueur null");
             return false;
         }
-
         try {
-            // Récupérer le coffre depuis MongoDB
             Coffre coffre = coffreMongoDAO.obtenirCoffreParJoueurId(joueur.getId());
-            
             if (coffre != null) {
-                // Mettre à jour le coffre du joueur
                 joueur.setCoffre(coffre);
-                return true;
             } else {
-                // Si aucun coffre n'est trouvé, initialiser un nouveau coffre vide
                 joueur.setCoffre(new Coffre());
-                return true;
             }
+            return true;
         } catch (Exception e) {
             System.err.println("Erreur lors du chargement du coffre depuis MongoDB: " + e.getMessage());
             e.printStackTrace();
@@ -90,22 +101,23 @@ public class CoffreServiceMongoImpl implements CoffreService {
         }
     }
 
+    /**
+     * Vide le coffre d'un joueur dans MongoDB et en mémoire.
+     *
+     * @param joueur Le joueur dont le coffre sera vidé.
+     * @return true si l'opération a réussi, false sinon.
+     */
     @Override
     public boolean viderCoffre(Joueur joueur) {
         if (joueur == null) {
             System.err.println("Impossible de vider le coffre: joueur null");
             return false;
         }
-
         try {
-            // Vider le coffre dans MongoDB
             boolean success = coffreMongoDAO.viderCoffre(joueur.getId());
-            
-            // Vider également l'objet coffre en mémoire
             if (success && joueur.getCoffre() != null) {
                 joueur.setCoffre(new Coffre());
             }
-            
             return success;
         } catch (Exception e) {
             System.err.println("Erreur lors du vidage du coffre dans MongoDB: " + e.getMessage());
@@ -115,33 +127,26 @@ public class CoffreServiceMongoImpl implements CoffreService {
     }
 
     /**
-     * Ajoute un item au coffre d'un joueur.
-     * 
-     * @param joueur Le joueur
-     * @param item L'item à ajouter
-     * @param quantite La quantité à ajouter
-     * @return true si l'ajout a réussi, false sinon
+     * Ajoute un item au coffre d'un joueur, puis sauvegarde.
+     *
+     * @param joueur   Le joueur concerné.
+     * @param item     L'item à ajouter.
+     * @param quantite La quantité à ajouter.
+     * @return true si l'ajout et la sauvegarde ont réussi, false sinon.
      */
     public boolean ajouterItemAuCoffre(Joueur joueur, Item item, int quantite) {
         if (joueur == null || item == null || quantite <= 0) {
             System.err.println("Paramètres invalides pour l'ajout d'item au coffre");
             return false;
         }
-
         try {
-            // S'assurer que le coffre est chargé
             if (joueur.getCoffre() == null) {
                 chargerCoffre(joueur);
             }
-            
-            // Ajouter l'item au coffre
             boolean success = joueur.getCoffre().ajouterItem(item, quantite);
-            
             if (success) {
-                // Sauvegarder le coffre mis à jour
                 return sauvegarderCoffre(joueur);
             }
-            
             return false;
         } catch (Exception e) {
             System.err.println("Erreur lors de l'ajout d'un item au coffre: " + e.getMessage());
@@ -151,21 +156,19 @@ public class CoffreServiceMongoImpl implements CoffreService {
     }
 
     /**
-     * Retire un item du coffre d'un joueur.
-     * 
-     * @param joueur Le joueur
-     * @param itemId L'identifiant de l'item à retirer
-     * @param quantite La quantité à retirer
-     * @return true si le retrait a réussi, false sinon
+     * Retire un item du coffre d'un joueur, puis sauvegarde.
+     *
+     * @param joueur   Le joueur concerné.
+     * @param itemId   L'identifiant de l'item à retirer.
+     * @param quantite La quantité à retirer.
+     * @return true si le retrait et la sauvegarde ont réussi, false sinon.
      */
     public boolean retirerItemDuCoffre(Joueur joueur, int itemId, int quantite) {
         if (joueur == null || joueur.getCoffre() == null || quantite <= 0) {
             System.err.println("Paramètres invalides pour le retrait d'item du coffre");
             return false;
         }
-
         try {
-            // Chercher l'item dans le coffre
             Item itemToRemove = null;
             for (Slot slot : joueur.getCoffre().getSlots()) {
                 if (slot != null && slot.getItem() != null && slot.getItem().getId() == itemId) {
@@ -173,20 +176,14 @@ public class CoffreServiceMongoImpl implements CoffreService {
                     break;
                 }
             }
-            
             if (itemToRemove == null) {
                 System.err.println("Item non trouvé dans le coffre");
                 return false;
             }
-            
-            // Retirer l'item du coffre
             boolean success = joueur.getCoffre().enleverItem(itemToRemove, quantite);
-            
             if (success) {
-                // Sauvegarder le coffre mis à jour
                 return sauvegarderCoffre(joueur);
             }
-            
             return false;
         } catch (Exception e) {
             System.err.println("Erreur lors du retrait d'un item du coffre: " + e.getMessage());
@@ -194,4 +191,4 @@ public class CoffreServiceMongoImpl implements CoffreService {
             return false;
         }
     }
-} 
+}

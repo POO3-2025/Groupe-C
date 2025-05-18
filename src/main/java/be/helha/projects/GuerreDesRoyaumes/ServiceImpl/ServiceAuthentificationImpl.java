@@ -18,46 +18,58 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
+/**
+ * Implémentation du service d'authentification des joueurs.
+ * <p>
+ * Gère l'inscription, l'authentification, la gestion de profil,
+ * le choix du personnage, et l'initialisation des données du joueur.
+ * </p>
+ */
 @Service
 public class ServiceAuthentificationImpl implements ServiceAuthentification {
 
     private JoueurDAO joueurDAO;
 
+    /**
+     * Constructeur avec injection du DAO joueur.
+     *
+     * @param joueurDAO DAO pour accéder aux données des joueurs.
+     */
     @Autowired
     public ServiceAuthentificationImpl(JoueurDAO joueurDAO) {
         this.joueurDAO = joueurDAO;
     }
 
+    /**
+     * Inscrit un nouveau joueur en vérifiant la disponibilité du pseudo,
+     * validant le format, créant le royaume, le coffre et hachant le mot de passe.
+     *
+     * @param nom        Nom du joueur
+     * @param prenom     Prénom du joueur
+     * @param pseudo     Pseudo unique du joueur
+     * @param motDePasse Mot de passe en clair
+     * @throws AuthentificationException en cas de pseudo déjà utilisé ou format invalide
+     */
     @Override
     public void inscrireJoueur(String nom, String prenom, String pseudo, String motDePasse) {
-        // Vérifier si le pseudo existe déjà
         if (joueurDAO.obtenirJoueurParPseudo(pseudo) != null) {
             throw new AuthentificationException("Ce pseudo est déjà utilisé");
         }
-
-        // Validation du format du pseudo
         if (!pseudo.matches("[a-zA-Z0-9_]+")) {
             throw new AuthentificationException("Le pseudo ne peut contenir que des lettres, chiffres et underscores.");
         }
 
-        // Créer un nouveau royaume et le coffre par défaut
         Royaume royaume = new Royaume(0, "Royaume de " + pseudo, 1);
         Coffre coffre = new Coffre();
-
-        // Créer le joueur avec le mot de passe haché
         String motDePasseHache = BCrypt.hashpw(motDePasse, BCrypt.gensalt());
         Joueur joueur = new Joueur(0, nom, prenom, pseudo, motDePasseHache, 5000, royaume, null, coffre, 0, 0);
-
-        // Persister le joueur dans SQL
         joueurDAO.ajouterJoueur(joueur);
 
-        // Récupérer l'ID généré pour le joueur
         Joueur joueurCree = joueurDAO.obtenirJoueurParPseudo(pseudo);
         if (joueurCree == null) {
             throw new AuthentificationException("Erreur lors de la création du joueur");
         }
 
-        // Créer et persister le royaume dans MongoDB
         try {
             RoyaumeMongoDAOImpl royaumeMongoDAO = RoyaumeMongoDAOImpl.getInstance();
             royaumeMongoDAO.ajouterRoyaume(royaume, joueurCree.getId());
@@ -65,23 +77,27 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
         } catch (Exception e) {
             System.err.println("Erreur lors de la création du royaume dans MongoDB: " + e.getMessage());
             e.printStackTrace();
-            // On continue même en cas d'erreur pour ne pas bloquer l'inscription
         }
     }
 
+    /**
+     * Authentifie un joueur en vérifiant son pseudo et mot de passe.
+     *
+     * @param pseudo     Pseudo du joueur
+     * @param motDePasse Mot de passe en clair
+     * @return true si l'authentification réussit, false sinon
+     */
     @Override
     public boolean authentifierJoueur(String pseudo, String motDePasse) {
         if (pseudo == null || pseudo.trim().isEmpty()) {
             System.err.println("Le pseudo ne peut pas être vide");
             return false;
         }
-
         if (motDePasse == null || motDePasse.trim().isEmpty()) {
             System.err.println("Le mot de passe ne peut pas être vide");
             return false;
         }
 
-        // Caster joueurDAO en JoueurDAOImpl pour accéder à la méthode verifierIdentifiants
         if (joueurDAO instanceof JoueurDAOImpl) {
             try {
                 boolean resultat = ((JoueurDAOImpl) joueurDAO).verifierIdentifiants(pseudo, motDePasse);
@@ -100,49 +116,58 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
         }
     }
 
+    /**
+     * Met à jour le profil du joueur (pseudo et mot de passe).
+     * Valide la disponibilité du pseudo et hache le mot de passe si modifié.
+     *
+     * @param id         ID du joueur
+     * @param pseudo     Nouveau pseudo
+     * @param motDePasse Nouveau mot de passe
+     * @throws AuthentificationException Si pseudo déjà utilisé ou erreur de mise à jour
+     * @throws JoueurNotFoundException    Si joueur non trouvé
+     */
     @Override
     public void gererProfil(int id, String pseudo, String motDePasse) {
         try {
             Joueur joueur = joueurDAO.obtenirJoueurParId(id);
-
-            // Vérifier si le nouveau pseudo est disponible (si changé)
             if (!joueur.getPseudo().equals(pseudo)) {
                 Joueur existant = joueurDAO.obtenirJoueurParPseudo(pseudo);
                 if (existant != null && existant.getId() != joueur.getId()) {
                     throw new AuthentificationException("Ce pseudo est déjà utilisé");
                 }
             }
-
-            // Mettre à jour les informations
             joueur.setPseudo(pseudo);
 
-            // Si le mot de passe est changé, le hacher
             if (!motDePasse.equals(joueur.getMotDePasse())) {
                 joueur.setMotDePasse(BCrypt.hashpw(motDePasse, BCrypt.gensalt()));
             }
-
-            // Persister les modifications
             joueurDAO.mettreAJourJoueur(joueur);
         } catch (JoueurNotFoundException e) {
-            throw e; // Relance l'exception si c'est déjà une JoueurNotFoundException
+            throw e;
         } catch (Exception e) {
             throw new AuthentificationException("Erreur lors de la mise à jour du profil", e);
         }
     }
 
+    /**
+     * Initialise le joueur avec un royaume et un personnage.
+     * Initialise aussi l'inventaire du personnage si nécessaire.
+     *
+     * @param pseudo    Pseudo du joueur
+     * @param royaume   Royaume à associer
+     * @param personnage Personnage à associer
+     * @throws IllegalArgumentException Si joueur non trouvé
+     * @throws IllegalStateException    Si joueur déjà initialisé
+     */
     @Override
     public void initialiserJoueur(String pseudo, Royaume royaume, Personnage personnage) {
         Joueur joueur = joueurDAO.obtenirJoueurParPseudo(pseudo);
         if (joueur == null) {
             throw new IllegalArgumentException("Joueur non trouvé");
         }
-
-        // Vérifier si le joueur a déjà un royaume ou un personnage
         if (joueur.getRoyaume() != null || joueur.getPersonnage() != null) {
             throw new IllegalStateException("Le joueur est déjà initialisé");
         }
-
-        // Initialisation de l'inventaire du personnage
         if (personnage.getInventaire() == null) {
             Inventaire inventaire = new Inventaire();
             for (int i = 0; i < inventaire.getMaxSlots(); i++) {
@@ -156,54 +181,69 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
                 }
             }
         }
-
-        // Mettre à jour le joueur avec le royaume et le personnage
         joueur.setRoyaume(royaume);
         joueur.setPersonnage(personnage);
-
-        // Persister les modifications
         joueurDAO.mettreAJourJoueur(joueur);
     }
 
+    /**
+     * Associe un personnage à un joueur via leurs IDs.
+     * Récupère le personnage depuis MongoDB et met à jour le joueur.
+     *
+     * @param joueurId    ID du joueur
+     * @param personnageId ID du personnage (non utilisé directement ici)
+     * @throws JoueurNotFoundException      Si joueur introuvable
+     * @throws PersonnageNotFoundException  Si personnage introuvable
+     * @throws RuntimeException             En cas d'autres erreurs
+     */
     @Override
     public void choisirPersonnage(int joueurId, int personnageId) {
         try {
-            // Récupérer le joueur
             Joueur joueur = joueurDAO.obtenirJoueurParId(joueurId);
             if (joueur == null) {
                 throw new JoueurNotFoundException("Joueur non trouvé avec l'ID: " + joueurId);
             }
 
-            // Récupérer le personnage depuis MongoDB en utilisant l'ID du joueur
             PersonnageMongoDAOImpl personnageMongoDAO = PersonnageMongoDAOImpl.getInstance();
             Personnage personnage = personnageMongoDAO.obtenirPersonnageParJoueurId(joueurId);
-
             if (personnage == null) {
                 throw new PersonnageNotFoundException("Personnage non trouvé pour ce joueur");
             }
-
-            // Assigner le personnage au joueur
             joueur.setPersonnage(personnage);
-
-            // Persister les modifications
             joueurDAO.mettreAJourJoueur(joueur);
-
             System.out.println("Personnage associé au joueur " + joueur.getPseudo());
         } catch (Exception e) {
             throw new RuntimeException("Erreur lors du choix du personnage: " + e.getMessage(), e);
         }
     }
 
+    /**
+     * Récupère un joueur par son pseudo.
+     *
+     * @param pseudo Le pseudo recherché
+     * @return Le joueur ou null s'il n'existe pas
+     */
     @Override
     public Joueur obtenirJoueurParPseudo(String pseudo) {
         return joueurDAO.obtenirJoueurParPseudo(pseudo);
     }
 
+    /**
+     * Met à jour un joueur en base.
+     *
+     * @param joueur Le joueur à mettre à jour
+     */
     @Override
     public void mettreAJourJoueur(Joueur joueur) {
         joueurDAO.mettreAJourJoueur(joueur);
     }
 
+    /**
+     * Connecte un joueur en positionnant son statut comme inactif (attente).
+     *
+     * @param pseudo Le pseudo du joueur
+     * @return true si succès, false sinon
+     */
     @Override
     public boolean connecterJoueur(String pseudo) {
         try {
@@ -212,9 +252,6 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
                 System.err.println("Impossible de connecter le joueur, pseudo introuvable: " + pseudo);
                 return false;
             }
-
-            // Définir le statut comme inactif lors de la connexion
-            // Il sera activé uniquement lorsque le joueur clique sur Combattre
             joueurDAO.definirStatutConnexion(joueur.getId(), false);
             System.out.println("Joueur connecté avec succès (statut inactif): " + pseudo);
             return true;
@@ -225,6 +262,12 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
         }
     }
 
+    /**
+     * Déconnecte un joueur en positionnant son statut comme inactif.
+     *
+     * @param pseudo Le pseudo du joueur
+     * @return true si succès, false sinon
+     */
     @Override
     public boolean deconnecterJoueur(String pseudo) {
         try {
@@ -233,8 +276,6 @@ public class ServiceAuthentificationImpl implements ServiceAuthentification {
                 System.err.println("Impossible de déconnecter le joueur, pseudo introuvable: " + pseudo);
                 return false;
             }
-
-            // Définir le statut comme inactif
             joueurDAO.definirStatutConnexion(joueur.getId(), false);
             System.out.println("Joueur déconnecté avec succès: " + pseudo);
             return true;

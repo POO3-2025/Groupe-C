@@ -4,8 +4,10 @@ import org.bson.types.ObjectId;
 
 /**
  * Classe représentant un royaume dans le jeu Guerre des Royaumes.
+ * <p>
  * Un royaume est caractérisé par un identifiant, un nom et un niveau.
  * Chaque joueur possède un royaume qu'il peut développer au cours du jeu.
+ * </p>
  */
 public class Royaume {
 
@@ -14,16 +16,19 @@ public class Royaume {
     private int niveau;
 
     /**
-     * Constructeur par défaut pour créer un royaume avec des valeurs par défaut.
+     * Constructeur par défaut.
+     * <p>
+     * Initialise un royaume avec des valeurs par défaut (non définies).
+     * </p>
      */
     public Royaume() {}
 
     /**
-     * Constructeur pour créer un royaume avec toutes ses propriétés.
+     * Constructeur complet.
      *
-     * @param id Identifiant unique du royaume
-     * @param nom Nom du royaume
-     * @param niveau Niveau actuel du royaume
+     * @param id     Identifiant unique du royaume.
+     * @param nom    Nom du royaume.
+     * @param niveau Niveau actuel du royaume.
      */
     public Royaume(int id, String nom, int niveau) {
         this.id = id;
@@ -31,45 +36,55 @@ public class Royaume {
         this.niveau = niveau;
     }
 
-    // Getters
     /**
-     * @return L'identifiant du royaume
+     * Obtient l'identifiant unique du royaume.
+     *
+     * @return L'identifiant du royaume.
      */
     public int getId() {
         return id;
     }
 
     /**
-     * @return Le nom du royaume
-     */
-    public String getNom() {
-        return nom;
-    }
-
-    /**
-     * @return Le niveau actuel du royaume
-     */
-    public int getNiveau() {
-        return niveau;
-    }
-
-    // Setters
-    /**
-     * @param id Le nouvel identifiant du royaume
+     * Définit l'identifiant unique du royaume.
+     *
+     * @param id Nouvel identifiant du royaume.
      */
     public void setId(int id) {
         this.id = id;
     }
 
     /**
-     * @param nom Le nouveau nom du royaume
+     * Obtient le nom du royaume.
+     *
+     * @return Le nom du royaume.
+     */
+    public String getNom() {
+        return nom;
+    }
+
+    /**
+     * Définit le nom du royaume.
+     *
+     * @param nom Nouveau nom du royaume.
      */
     public void setNom(String nom) {
         this.nom = nom;
     }
 
     /**
-     * @param niveau Le nouveau niveau du royaume
+     * Obtient le niveau actuel du royaume.
+     *
+     * @return Le niveau du royaume.
+     */
+    public int getNiveau() {
+        return niveau;
+    }
+
+    /**
+     * Définit le niveau actuel du royaume.
+     *
+     * @param niveau Nouveau niveau du royaume.
      */
     public void setNiveau(int niveau) {
         this.niveau = niveau;
@@ -78,7 +93,7 @@ public class Royaume {
     /**
      * Retourne une représentation textuelle du royaume.
      *
-     * @return Une chaîne contenant le nom et le niveau du royaume
+     * @return Une chaîne contenant le nom et le niveau du royaume.
      */
     @Override
     public String toString() {

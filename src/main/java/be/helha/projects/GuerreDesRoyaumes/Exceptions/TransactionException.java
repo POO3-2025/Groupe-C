@@ -1,24 +1,44 @@
 package be.helha.projects.GuerreDesRoyaumes.Exceptions;
 
 /**
- * Exception lancée lors d'erreurs liées aux transactions financières (achats, ventes, etc.).
+ * Exception personnalisée lancée lors d'erreurs liées aux transactions financières
+ * telles que les achats ou ventes dans le jeu.
+ * <p>
+ * Permet de gérer les cas d'erreurs spécifiques au système de transaction monétaire
+ * dans le projet Guerre des Royaumes.
+ * </p>
+ * <p>
+ * Hérite de {@link GuerreDesRoyaumesException} pour une gestion cohérente des exceptions.
+ * </p>
  */
 public class TransactionException extends GuerreDesRoyaumesException {
 
+    /**
+     * Constructeur avec un message décrivant l'erreur liée à la transaction.
+     *
+     * @param message Description de l'erreur survenue lors de la transaction
+     */
     public TransactionException(String message) {
         super(message);
     }
 
+    /**
+     * Constructeur avec un message et une cause sous-jacente.
+     *
+     * @param message Description de l'erreur survenue lors de la transaction
+     * @param cause   Cause originale de l'exception
+     */
     public TransactionException(String message, Throwable cause) {
         super(message, cause);
     }
 
     /**
-     * Exception spécifique pour les cas où un joueur n'a pas assez d'argent pour une transaction.
+     * Méthode utilitaire statique pour créer une exception indiquant
+     * que les fonds disponibles sont insuffisants pour effectuer une transaction.
      *
-     * @param argent Le montant actuel du joueur
-     * @param montantNecessaire Le montant nécessaire pour l'achat
-     * @return Une exception de type TransactionException avec un message approprié
+     * @param argent            Montant d'argent actuellement disponible
+     * @param montantNecessaire Montant d'argent requis pour la transaction
+     * @return Une instance de {@link TransactionException} avec un message détaillé
      */
     public static TransactionException fondsInsuffisants(int argent, int montantNecessaire) {
         return new TransactionException("Fonds insuffisants: " + argent +
