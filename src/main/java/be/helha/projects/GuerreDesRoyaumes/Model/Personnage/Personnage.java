@@ -17,6 +17,7 @@ public abstract class Personnage {
 
     private String nom;
     private double vie;
+    private double pointsDeVieMAX;
     private double degats;
     private double resistance;
     private Inventaire inventaire;
@@ -33,6 +34,7 @@ public abstract class Personnage {
     public Personnage(String nom, int vie, int degats, int resistance, Inventaire inventaire) {
         this.nom = nom;
         this.vie = vie;
+        pointsDeVieMAX = vie;
         this.degats = degats;
         this.resistance = resistance;
         this.inventaire = inventaire;
@@ -89,6 +91,9 @@ public abstract class Personnage {
     public Inventaire getInventaire() {
         return inventaire;
     }
+    public double getPointsDeVieMAX() {
+        return pointsDeVieMAX;
+    }
 
     // --- Setters ---
 
@@ -105,9 +110,7 @@ public abstract class Personnage {
      *
      * @param pointsDeVie Nouveaux points de vie.
      */
-    public void setPointsDeVie(double pointsDeVie) {
-        this.vie = pointsDeVie;
-    }
+
 
     public void setDegats(double degats) {
         this.degats = degats;
@@ -119,6 +122,9 @@ public abstract class Personnage {
 
     public void setInventaire(Inventaire inventaire) {
         this.inventaire = inventaire;
+    }
+    public void setPointsDeVieMAX(double pointsDeVieMAX) {
+        this.pointsDeVieMAX = pointsDeVieMAX;
     }
 
     // --- Méthodes abstraites ---

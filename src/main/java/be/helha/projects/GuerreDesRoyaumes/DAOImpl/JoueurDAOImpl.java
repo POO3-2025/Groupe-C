@@ -500,31 +500,93 @@ public class JoueurDAOImpl implements JoueurDAO {
 
     @Override
     public void definirStatutConnexion(int id, boolean estActif) {
-        // Vérifier si la colonne actif_joueur existe
+        // Vérifier si la colonne existe, sinon la créer
         boolean colonneExiste = verifierExistenceColonne(tableName, "actif_joueur");
         if (!colonneExiste) {
-            // Créer la colonne si elle n'existe pas
-            try (PreparedStatement stmtAlter = connection.prepareStatement(
-                    "ALTER TABLE " + tableName + " ADD actif_joueur BIT NOT NULL DEFAULT 0")) {
-                stmtAlter.executeUpdate();
-                System.out.println("DEBUG: Colonne actif_joueur ajoutée à la table " + tableName);
+            // Ajouter la colonne actif_joueur
+            try {
+                String sqlAlter = "ALTER TABLE " + tableName + " ADD actif_joueur BIT NOT NULL DEFAULT 0";
+                try (PreparedStatement stmtAlter = connection.prepareStatement(sqlAlter)) {
+                    stmtAlter.executeUpdate();
+                    System.out.println("Colonne actif_joueur ajoutée avec succès à la table " + tableName);
+                }
             } catch (SQLException e) {
-                throw new DatabaseException("Erreur lors de l'ajout de la colonne actif_joueur", e);
+                System.err.println("Erreur lors de l'ajout de la colonne actif_joueur: " + e.getMessage());
+                return; // Sortir de la méthode si l'ajout de colonne échoue
             }
         }
 
-        // Mettre à jour le statut de connexion
-        String sql = "UPDATE " + tableName + " SET actif_joueur = ? WHERE id_joueur = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setBoolean(1, estActif);
-            statement.setInt(2, id);
-            int rowsAffected = statement.executeUpdate();
-            if (rowsAffected == 0) {
-                throw new JoueurNotFoundException(id);
+        // Mettre à jour le statut du joueur
+        try {
+            String sql = "UPDATE " + tableName + " SET actif_joueur = ? WHERE id_joueur = ?";
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setInt(1, estActif ? 1 : 0);
+                stmt.setInt(2, id);
+                stmt.executeUpdate();
+                System.out.println("Statut actif mis à jour pour le joueur ID " + id + ": " + (estActif ? "actif" : "inactif"));
             }
-            System.out.println("DEBUG: Statut de connexion du joueur ID=" + id + " mis à jour: " + (estActif ? "connecté" : "déconnecté"));
         } catch (SQLException e) {
-            throw new DatabaseException("Erreur lors de la mise à jour du statut de connexion du joueur", e);
+            System.err.println("Erreur lors de la mise à jour du statut actif: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean incrementerVictoires(int id) {
+        try {
+            // Vérifier si la colonne existe, sinon la créer
+            boolean colonneExiste = verifierExistenceColonne(tableName, "victoires_joueur");
+            if (!colonneExiste) {
+                // Ajouter la colonne victoires_joueur
+                String sqlAlter = "ALTER TABLE " + tableName + " ADD victoires_joueur INT NOT NULL DEFAULT 0";
+                try (PreparedStatement stmtAlter = connection.prepareStatement(sqlAlter)) {
+                    stmtAlter.executeUpdate();
+                    System.out.println("Colonne victoires_joueur ajoutée avec succès à la table " + tableName);
+                }
+            }
+            
+            // Incrémenter le compteur de victoires
+            String sql = "UPDATE " + tableName + " SET victoires_joueur = victoires_joueur + 1 WHERE id_joueur = ?";
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setInt(1, id);
+                int rowsAffected = stmt.executeUpdate();
+                
+                System.out.println("Victoires incrémentées pour le joueur ID " + id + ", " + rowsAffected + " ligne(s) affectée(s)");
+                return rowsAffected > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de l'incrémentation des victoires: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean incrementerDefaites(int id) {
+        try {
+            // Vérifier si la colonne existe, sinon la créer
+            boolean colonneExiste = verifierExistenceColonne(tableName, "defaites_joueur");
+            if (!colonneExiste) {
+                // Ajouter la colonne defaites_joueur
+                String sqlAlter = "ALTER TABLE " + tableName + " ADD defaites_joueur INT NOT NULL DEFAULT 0";
+                try (PreparedStatement stmtAlter = connection.prepareStatement(sqlAlter)) {
+                    stmtAlter.executeUpdate();
+                    System.out.println("Colonne defaites_joueur ajoutée avec succès à la table " + tableName);
+                }
+            }
+            
+            // Incrémenter le compteur de défaites
+            String sql = "UPDATE " + tableName + " SET defaites_joueur = defaites_joueur + 1 WHERE id_joueur = ?";
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setInt(1, id);
+                int rowsAffected = stmt.executeUpdate();
+                
+                System.out.println("Défaites incrémentées pour le joueur ID " + id + ", " + rowsAffected + " ligne(s) affectée(s)");
+                return rowsAffected > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de l'incrémentation des défaites: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 

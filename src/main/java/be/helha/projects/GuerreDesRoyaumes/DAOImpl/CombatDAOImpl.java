@@ -873,6 +873,79 @@ public class CombatDAOImpl implements CombatDAO {
             return false;
         }
     }
+
+    /**
+     * Supprime un combat en cours à partir de son ID
+     * 
+     * @param idCombat L'identifiant du combat à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
+    public boolean supprimerCombatEnCours(String idCombat) {
+        // S'assurer que la table combats_en_cours existe
+        creerTableCombatsEnCoursSiInexistante();
+
+        String sql = "DELETE FROM combats_en_cours WHERE id_combat = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, idCombat);
+            int rowsAffected = stmt.executeUpdate();
+            System.out.println("DEBUG: Combat en cours supprimé avec ID " + idCombat + ", " + rowsAffected + " lignes affectées");
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la suppression du combat en cours par ID: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Vérifie si un combat est marqué comme terminé dans la base de données
+     * 
+     * @param idCombat L'identifiant du combat à vérifier
+     * @return true si le combat est terminé, false sinon ou en cas d'erreur
+     */
+    public boolean estCombatTermine(String idCombat) {
+        if (connection == null) {
+            throw new IllegalStateException("La connexion n'a pas été initialisée dans CombatDAOImpl");
+        }
+        
+        // S'assurer que la table combats_en_cours existe
+        creerTableCombatsEnCoursSiInexistante();
+        
+        // Vérifier d'abord si le combat existe encore (il peut avoir été supprimé s'il est terminé)
+        String sqlExist = "SELECT COUNT(*) FROM combats_en_cours WHERE id_combat = ?";
+        try (PreparedStatement stmtExist = connection.prepareStatement(sqlExist)) {
+            stmtExist.setString(1, idCombat);
+            ResultSet rsExist = stmtExist.executeQuery();
+            
+            if (rsExist.next() && rsExist.getInt(1) == 0) {
+                // Si le combat n'existe plus, cela signifie qu'il est terminé
+                System.out.println("Combat " + idCombat + " non trouvé dans la table, considéré comme terminé");
+                return true;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la vérification de l'existence du combat: " + e.getMessage());
+            return false;
+        }
+        
+        // Si le combat existe, vérifier son statut
+        String sql = "SELECT termine FROM combats_en_cours WHERE id_combat = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, idCombat);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                boolean termine = rs.getBoolean("termine");
+                System.out.println("Statut du combat " + idCombat + ": " + (termine ? "Terminé" : "En cours"));
+                return termine;
+            }
+            
+            // Si on ne trouve pas le combat, il est probablement terminé (supprimé)
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la vérification du statut du combat: " + e.getMessage());
+            return false;
+        }
+    }
 }
 
 
