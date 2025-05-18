@@ -19,14 +19,27 @@ import java.util.Map;
 @RequestMapping("/boutique")
 public class BoutiqueController {
 
-    private final ItemMongoDAO itemMongoDAO;
-    private final ServiceBoutique serviceBoutique;
-    private final JoueurDAOImpl joueurDAO;
+    private ItemMongoDAO itemMongoDAO;
+    private ServiceBoutique serviceBoutique;
+    private JoueurDAOImpl joueurDAO;
 
     @Autowired
     public BoutiqueController(ServiceBoutique serviceBoutique) {
         this.itemMongoDAO = ItemMongoDAOImpl.getInstance();
         this.joueurDAO = JoueurDAOImpl.getInstance();
+        this.serviceBoutique = serviceBoutique;
+    }
+    
+    // Ajout des setters pour les tests unitaires
+    public void setItemMongoDAO(ItemMongoDAO itemMongoDAO) {
+        this.itemMongoDAO = itemMongoDAO;
+    }
+    
+    public void setJoueurDAO(JoueurDAOImpl joueurDAO) {
+        this.joueurDAO = joueurDAO;
+    }
+    
+    public void setServiceBoutique(ServiceBoutique serviceBoutique) {
         this.serviceBoutique = serviceBoutique;
     }
 

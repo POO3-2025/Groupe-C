@@ -74,6 +74,13 @@ public class Royaume {
     public void setNiveau(int niveau) {
         this.niveau = niveau;
     }
+    
+    /**
+     * Incrémente le niveau du royaume de 1.
+     */
+    public void incrementNiveau() {
+        this.niveau++;
+    }
 
     /**
      * Retourne une représentation textuelle du royaume.
@@ -83,5 +90,35 @@ public class Royaume {
     @Override
     public String toString() {
         return nom + " niveau " + niveau;
+    }
+    
+    /**
+     * Compare ce royaume avec un autre objet pour vérifier l'égalité.
+     *
+     * @param o L'objet à comparer avec ce royaume
+     * @return true si l'objet est égal à ce royaume, false sinon
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        
+        Royaume autre = (Royaume) o;
+        return id == autre.id && 
+               niveau == autre.niveau && 
+               (nom != null ? nom.equals(autre.nom) : autre.nom == null);
+    }
+    
+    /**
+     * Calcule le code de hachage pour ce royaume.
+     *
+     * @return Le code de hachage
+     */
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + (nom != null ? nom.hashCode() : 0);
+        result = 31 * result + niveau;
+        return result;
     }
 }

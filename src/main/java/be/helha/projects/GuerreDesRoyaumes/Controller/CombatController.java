@@ -25,9 +25,8 @@ import java.util.List;
 @RequestMapping("/combat")
 public class CombatController {
 
-    private final ServiceCombat serviceCombat;
-
-    private final CombatDAO combatDAO;
+    private ServiceCombat serviceCombat;
+    private CombatDAO combatDAO;
     private Joueur joueur1;
     private Joueur joueur2;
     private Joueur joueurActuel;
@@ -41,6 +40,32 @@ public class CombatController {
         this.joueur1 = joueur1;
         this.joueur2 = joueur2;
         this.actionTours = new ArrayList<>();
+    }
+    
+    // Constructeur pour les tests unitaires
+    public CombatController() {
+        this.actionTours = new ArrayList<>();
+    }
+    
+    // Setters pour les tests unitaires
+    public void setServiceCombat(ServiceCombat serviceCombat) {
+        this.serviceCombat = serviceCombat;
+    }
+    
+    public void setCombatDAO(CombatDAO combatDAO) {
+        this.combatDAO = combatDAO;
+    }
+    
+    public void setJoueur1(Joueur joueur1) {
+        this.joueur1 = joueur1;
+    }
+    
+    public void setJoueur2(Joueur joueur2) {
+        this.joueur2 = joueur2;
+    }
+    
+    public void setCombatEnCours(Combat combatEnCours) {
+        this.combatEnCours = combatEnCours;
     }
 
     @PostMapping("/creerCombat")

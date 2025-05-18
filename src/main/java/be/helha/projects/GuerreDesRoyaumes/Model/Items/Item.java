@@ -7,6 +7,7 @@ public abstract class Item {
     private int quantiteMax;
     private String type;
     private int prix;
+    private String description;
 
     //Constructeur
     public Item(int id, String nom, int quantiteMax, String type, int prix) {
@@ -15,6 +16,7 @@ public abstract class Item {
         this.quantiteMax = quantiteMax;
         this.type = type;
         this.prix = prix;
+        this.description = "";
     }
 
     //Getteur
@@ -33,6 +35,9 @@ public abstract class Item {
     public int getPrix() {
         return prix;
     }
+    public String getDescription() {
+        return description;
+    }
 
     //Setteur
     public void setId(int id) {
@@ -49,6 +54,9 @@ public abstract class Item {
     }
     public void setPrix(int prix) {
         this.prix = prix;
+    }
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     // Méthode abstraite 'use()' à implémenter dans les classes dérivées
