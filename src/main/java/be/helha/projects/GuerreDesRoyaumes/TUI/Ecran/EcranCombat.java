@@ -168,7 +168,7 @@ public class EcranCombat {
                 double pvApresAttaque = 0;
                 double pvActuelsAdversaire = 0;
                 double degatsRestants = 0;
-                double resistanceRestante =  0;
+                double resistanceRestante = 0;
 
 
                 if (degatsTotal > resistanceAdversaire) {
@@ -213,14 +213,14 @@ public class EcranCombat {
                 
                 // Insérer les deux joueurs dans la table action_etats_personnage avec les nouvelles vie restante et points_defense
                 // Récupérer les points de défense actuels
-                int defenseJoueur = (int) joueur.getPersonnage().getResistance();
-                int defenseAdversaire = (int) adversaire.getPersonnage().getResistance();
+                double defenseJoueur =  joueur.getPersonnage().getResistance();
+                double defenseAdversaire =  adversaire.getPersonnage().getResistance();
                 
                 // Enregistrer l'état du joueur attaquant
                 actionCombatDAO.enregistrerEtatPersonnage(
                     idCombat,
                     joueur.getId(),
-                    (int) pvJoueur,
+                        pvJoueur,
                     defenseJoueur,
                     null // Aucun buff pour l'instant
                 );
@@ -229,7 +229,7 @@ public class EcranCombat {
                 actionCombatDAO.enregistrerEtatPersonnage(
                     idCombat,
                     adversaire.getId(),
-                    (int) pvApresAttaque,
+                    pvApresAttaque,
                     defenseAdversaire,
                     null // Aucun buff pour l'instant
                 );

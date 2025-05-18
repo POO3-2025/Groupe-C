@@ -351,7 +351,7 @@ public class ActionCombatDAOImpl implements ActionCombatDAO {
      * @param buffs JSON des buffs actifs sur le personnage
      * @return true si l'état a été enregistré avec succès, false sinon
      */
-    public boolean enregistrerEtatPersonnage(String idCombat, int joueurId, int pointsDeVie, int pointsDefense, String buffs) {
+    public boolean enregistrerEtatPersonnage(String idCombat, int joueurId, double pointsDeVie, double pointsDefense, String buffs) {
         if (connection == null) {
             throw new IllegalStateException("La connexion n'a pas été initialisée dans ActionCombatDAOImpl");
         }
@@ -362,8 +362,8 @@ public class ActionCombatDAOImpl implements ActionCombatDAO {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, idCombat);
             stmt.setInt(2, joueurId);
-            stmt.setInt(3, pointsDeVie);
-            stmt.setInt(4, pointsDefense);
+            stmt.setDouble(3, pointsDeVie);
+            stmt.setDouble(4, pointsDefense);
             stmt.setString(5, buffs);
             
             int rowsAffected = stmt.executeUpdate();
