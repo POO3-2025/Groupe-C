@@ -1176,7 +1176,7 @@ public class EcranPrincipal {
                     competenceService.appliquerCompetences(joueur);
                     
                     // Créer les dépendances nécessaires pour le service de combat
-                    be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl combatDAOLocal = new be.helha.projects.GuerreDesRoyaumes.DAOImpl.CombatDAOImpl();
+               CombatDAOImpl combatDAOLocal = new CombatDAOImpl();
                     CombatSessionMongoDAO sessionDAOLocal;
                     try {
                         sessionDAOLocal = DAOProvider.getCombatSessionMongoDAO();

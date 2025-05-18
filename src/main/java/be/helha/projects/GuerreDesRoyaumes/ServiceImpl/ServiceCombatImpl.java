@@ -278,27 +278,7 @@ public class ServiceCombatImpl implements ServiceCombat {
                     combatDAO.enregistrerDefaite(joueur1);
                 }
                 
-                // Mettre à jour le niveau du royaume du vainqueur
-                try {
-                    // Obtenir le DAO Royaume
-                    RoyaumeMongoDAOImpl royaumeDAO = new RoyaumeMongoDAOImpl();
-                    
-                    // Récupérer le royaume du vainqueur
-                    Royaume royaume = royaumeDAO.obtenirRoyaumeParJoueurId(vainqueur.getId());
-                    
-                    if (royaume != null) {
-                        // Incrémenter le niveau du royaume
-                        royaume.setNiveau(royaume.getNiveau() + 1);
-                        
-                        // Mettre à jour le royaume dans MongoDB
-                        royaumeDAO.mettreAJourRoyaume(royaume, vainqueur.getId());
-                        
-                        System.out.println("Niveau du royaume de " + vainqueur.getPseudo() + " incrémenté à " + royaume.getNiveau());
-                    }
-                } catch (Exception e) {
-                    System.err.println("Erreur lors de la mise à jour du niveau du royaume: " + e.getMessage());
-                    e.printStackTrace();
-                }
+                                // L'incrémentation du niveau du royaume est maintenant gérée dans enregistrerVictoire()                // Pas besoin de mise à jour ici car déjà fait dans CombatDAOImpl.enregistrerVictoire
             }
         } catch (Exception e) {
             System.err.println("Erreur lors de la terminaison du combat: " + e.getMessage());

@@ -3,11 +3,13 @@ package be.helha.projects.GuerreDesRoyaumes.DAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Config.ConnexionConfig.ConnexionManager;
 import be.helha.projects.GuerreDesRoyaumes.Config.InitialiserAPP;
 import be.helha.projects.GuerreDesRoyaumes.DAO.CombatDAO;
+import be.helha.projects.GuerreDesRoyaumes.DAOImpl.RoyaumeMongoDAOImpl;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.DatabaseException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.MongoDBConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Exceptions.SQLConnectionException;
 import be.helha.projects.GuerreDesRoyaumes.Model.Combat.Combat;
 import be.helha.projects.GuerreDesRoyaumes.Model.Joueur;
+import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 import com.mongodb.client.MongoDatabase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -64,7 +66,7 @@ public class CombatDAOImpl implements CombatDAO {
         }
 
         // Insérer le combat dans la base de données
-        String sql = "INSERT INTO combats (id_combat, joueur1_id, joueur2_id, gagnant, tours_final) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO combat (id_combat, joueur1_id, joueur2_id, gagnant, tours_final) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, combat.getId());
             stmt.setInt(2, combat.getJoueur1().getId());
@@ -72,7 +74,21 @@ public class CombatDAOImpl implements CombatDAO {
             stmt.setObject(4, combat.getVainqueur() != null ? combat.getVainqueur().getId() : null);
             stmt.setInt(5, combat.getNombreTours());
             stmt.executeUpdate();
+            
+            // Ajouter un commit explicite si nécessaire
+            if (!connection.getAutoCommit()) {
+                connection.commit();
+            }
+            
+            System.out.println("Combat enregistré avec succès: ID=" + combat.getId());
         } catch (SQLException e) {
+            try {
+                if (!connection.getAutoCommit()) {
+                    connection.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Erreur lors du rollback: " + ex.getMessage());
+            }
             e.printStackTrace();
         }
     }
@@ -84,13 +100,53 @@ public class CombatDAOImpl implements CombatDAO {
         }
 
         // Enregistrer une victoire du joueur dans la base de données
-        String sql = "UPDATE joueurs SET victoires = victoires + 1 WHERE id = ?";
+        String sql = "UPDATE joueur SET victoires_joueur = victoires_joueur + 1 WHERE id_joueur = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, joueur.getId());
-            stmt.executeUpdate();
+            int rowsAffected = stmt.executeUpdate();
+            
+            // Valider explicitement la transaction
+            if (!connection.getAutoCommit()) {
+                connection.commit();
+            }
+            
+            System.out.println("Victoire enregistrée pour le joueur ID=" + joueur.getId() + 
+                              ", Rows affected: " + rowsAffected + 
+                              ", Table: joueur, AutoCommit: " + connection.getAutoCommit());
+            
+            // Mettre à jour le niveau du royaume dans MongoDB
+            try {
+                // Obtenir le DAO Royaume
+                RoyaumeMongoDAOImpl royaumeDAO = new RoyaumeMongoDAOImpl();
+                
+                // Récupérer le royaume du joueur
+                Royaume royaume = royaumeDAO.obtenirRoyaumeParJoueurId(joueur.getId());
+                
+                if (royaume != null) {
+                    // Incrémenter le niveau du royaume
+                    royaume.setNiveau(royaume.getNiveau() + 1);
+                    
+                    // Mettre à jour le royaume dans MongoDB
+                    royaumeDAO.mettreAJourRoyaume(royaume, joueur.getId());
+                    
+                    System.out.println("Niveau du royaume de " + joueur.getPseudo() + " incrémenté à " + royaume.getNiveau());
+                } else {
+                    System.out.println("Aucun royaume trouvé pour le joueur ID=" + joueur.getId());
+                }
+            } catch (Exception e) {
+                System.err.println("Erreur lors de la mise à jour du niveau du royaume: " + e.getMessage());
+                e.printStackTrace();
+            }
         } catch (SQLException e) {
+            System.err.println("Erreur SQL lors de l'enregistrement de la victoire: " + e.getMessage());
+            try {
+                if (!connection.getAutoCommit()) {
+                    connection.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Erreur lors du rollback: " + ex.getMessage());
+            }
             e.printStackTrace();
-
         }
     }
 
@@ -101,7 +157,7 @@ public class CombatDAOImpl implements CombatDAO {
         }
 
         // Enregistrer une défaite du joueur dans la base de données
-        String sql = "UPDATE joueurs SET defaites = defaites + 1 WHERE id = ?";
+        String sql = "UPDATE joueur SET defaites_joueur = defaites_joueur + 1 WHERE id_joueur = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, joueur.getId());
             int rowsAffected = stmt.executeUpdate();
@@ -113,7 +169,7 @@ public class CombatDAOImpl implements CombatDAO {
             
             System.out.println("Défaite enregistrée pour le joueur ID=" + joueur.getId() + 
                               ", Rows affected: " + rowsAffected + 
-                              ", Table: joueurs, AutoCommit: " + connection.getAutoCommit());
+                              ", Table: joueur, AutoCommit: " + connection.getAutoCommit());
         } catch (SQLException e) {
             System.err.println("Erreur SQL lors de l'enregistrement de la défaite: " + e.getMessage());
             try {
@@ -134,15 +190,15 @@ public class CombatDAOImpl implements CombatDAO {
         }
 
         // Implémentation de la méthode pour obtenir le classement par victoires
-        String sql = "SELECT * FROM joueurs ORDER BY victoires DESC";
+        String sql = "SELECT * FROM joueur ORDER BY victoires_joueur DESC";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             ResultSet resultSet = statement.executeQuery();
             List<Joueur> classement = new ArrayList<>();
             while (resultSet.next()) {
                 Joueur joueur = new Joueur();
-                joueur.setId(resultSet.getInt("id"));
-                joueur.setPseudo(resultSet.getString("pseudo"));
-                joueur.setVictoires(resultSet.getInt("victoires"));
+                joueur.setId(resultSet.getInt("id_joueur"));
+                joueur.setPseudo(resultSet.getString("pseudo_joueur"));
+                joueur.setVictoires(resultSet.getInt("victoires_joueur"));
                 classement.add(joueur);
             }
             return classement;
@@ -159,15 +215,15 @@ public class CombatDAOImpl implements CombatDAO {
         }
 
         // Implémentation de la méthode pour obtenir le classement par défaites
-        String sql = "SELECT * FROM joueurs ORDER BY defaites DESC";
+        String sql = "SELECT * FROM joueur ORDER BY defaites_joueur DESC";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             ResultSet resultSet = statement.executeQuery();
             List<Joueur> classement = new ArrayList<>();
             while (resultSet.next()) {
                 Joueur joueur = new Joueur();
-                joueur.setId(resultSet.getInt("id"));
-                joueur.setPseudo(resultSet.getString("pseudo"));
-                joueur.setDefaites(resultSet.getInt("defaites"));
+                joueur.setId(resultSet.getInt("id_joueur"));
+                joueur.setPseudo(resultSet.getString("pseudo_joueur"));
+                joueur.setDefaites(resultSet.getInt("defaites_joueur"));
                 classement.add(joueur);
             }
             return classement;
@@ -186,11 +242,13 @@ public class CombatDAOImpl implements CombatDAO {
         }
 
         Combat combat = null;
-        String sql = "SELECT * FROM combats WHERE id_combat = ?";
+        String sql = "SELECT * FROM combat WHERE id_combat = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
+                // Création du combat à partir des données du ResultSet
+                // (à implémenter selon votre modèle)
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -205,10 +263,12 @@ public class CombatDAOImpl implements CombatDAO {
         }
 
         List<Combat> combats = new ArrayList<>();
-        String sql = "SELECT c.*, j.id as joueur_id FROM combats c LEFT JOIN joueurs j ON c.joueur_id = j.id";
+        String sql = "SELECT c.*, j.id_joueur as joueur_id FROM combat c LEFT JOIN joueur j ON c.joueur_id = j.id_joueur";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
+                // Création des combats à partir des données du ResultSet
+                // (à implémenter selon votre modèle)
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -223,11 +283,13 @@ public class CombatDAOImpl implements CombatDAO {
         }
 
         List<Combat> combats = new ArrayList<>();
-        String sql = "SELECT c.*, j.id as joueur_id FROM combats c LEFT JOIN joueurs j ON c.joueur_id = j.id WHERE j.id = ?";
+        String sql = "SELECT c.*, j.id_joueur as joueur_id FROM combat c LEFT JOIN joueur j ON c.joueur_id = j.id_joueur WHERE j.id_joueur = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, joueurId);
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
+                // Création des combats à partir des données du ResultSet
+                // (à implémenter selon votre modèle)
             }
         } catch (SQLException e) {
             e.printStackTrace();
