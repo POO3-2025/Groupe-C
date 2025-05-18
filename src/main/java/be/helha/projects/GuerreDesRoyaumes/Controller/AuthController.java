@@ -11,6 +11,8 @@ import be.helha.projects.GuerreDesRoyaumes.Model.Royaume;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +28,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/joueurs")
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
 public class AuthController {
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
@@ -40,6 +43,36 @@ public class AuthController {
 
     @Autowired
     private JoueurDAO joueurDAO;
+
+    @RequestMapping(method = RequestMethod.OPTIONS)
+    public ResponseEntity<?> handleOptions() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Access-Control-Allow-Origin", "*");
+        headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        headers.add("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept");
+        headers.add("Access-Control-Max-Age", "3600");
+        return new ResponseEntity<>(headers, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/connexion", method = RequestMethod.OPTIONS)
+    public ResponseEntity<?> handleOptionsConnexion() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Access-Control-Allow-Origin", "*");
+        headers.add("Access-Control-Allow-Methods", "POST, OPTIONS");
+        headers.add("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept");
+        headers.add("Access-Control-Max-Age", "3600");
+        return new ResponseEntity<>(headers, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/inscription", method = RequestMethod.OPTIONS)
+    public ResponseEntity<?> handleOptionsInscription() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Access-Control-Allow-Origin", "*");
+        headers.add("Access-Control-Allow-Methods", "POST, OPTIONS");
+        headers.add("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept");
+        headers.add("Access-Control-Max-Age", "3600");
+        return new ResponseEntity<>(headers, HttpStatus.OK);
+    }
 
     @PostMapping
     public ResponseEntity<String> ajouterJoueur(@RequestBody Joueur joueur) {
@@ -106,6 +139,7 @@ public class AuthController {
     }
 
     @PostMapping("/connexion")
+    @CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.POST, RequestMethod.OPTIONS})
     public ResponseEntity<?> authentifierJoueur(@RequestBody LoginRequest loginRequest) {
         try {
             // Authentification avec Spring Security
@@ -141,6 +175,7 @@ public class AuthController {
     }
 
     @PostMapping("/inscription")
+    @CrossOrigin(origins = "*", allowedHeaders = "*", methods = {RequestMethod.POST, RequestMethod.OPTIONS})
     public ResponseEntity<?> inscrireJoueur(@RequestBody Joueur joueur) {
         try {
             // Vérifier si le pseudo existe déjà
